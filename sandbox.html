@@ -480,11 +480,11 @@
       padding: 8px 10px;
       border: 1px solid var(--line);
       background: var(--panel);
-      font-size: 11px;
+      font-size: 12px;
       line-height: 1.45;
-      max-height: 320px;
+      max-height: min(560px, 58vh);
       overflow: auto;
-      min-width: 320px;
+      min-width: 0;
     }
     .talent-picker-group { margin-bottom: 8px; }
     .talent-picker-group h4 {
@@ -495,7 +495,23 @@
     }
     .talent-picker-row { display: flex; align-items: flex-start; gap: 6px; margin: 2px 0; }
     .talent-picker-row input { margin-top: 2px; }
-    .talent-picker-row label { color: var(--muted); cursor: pointer; }
+    .talent-picker-row label { color: var(--muted); cursor: pointer; display: block; }
+    .talent-name { display: block; color: var(--text); font-weight: 650; }
+    .talent-rules { display: block; white-space: pre-wrap; margin-top: 2px; color: var(--muted); font-weight: 400; }
+    .wizard-party-slots {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .wizard-party-slot { display: flex; flex-direction: column; gap: 4px; color: var(--muted); font-size: 12px; }
+    .wizard-party-slot select {
+      font: inherit;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: #2e343a;
+      color: var(--text);
+    }
     .talent-picker-row.checked label { color: var(--fg, #ddd); }
     .talent-picker-actions { margin-top: 6px; display: flex; gap: 8px; align-items: center; }
     .talent-picker-actions button {
@@ -786,17 +802,26 @@
         <div class="wizard-choices">
           <button type="button" class="wizard-choice" id="wizard-rank-0">
             <strong>Rank 0</strong>
-            <span>Bez talentów. n = 0. Dalej od razu pełny rift Easy / Medium / Hard.</span>
+            <span>Bez talentów. n = 0. Najpierw party, potem pełny rift Easy / Medium / Hard.</span>
           </button>
           <button type="button" class="wizard-choice" id="wizard-rank-1">
             <strong>Rank 1</strong>
-            <span>Z talentami. Najpierw ile (n = 1, 2, 3 albo 4), potem które.</span>
+            <span>Z talentami. Najpierw party, potem ile (n = 1–4) i które.</span>
           </button>
         </div>
         <p class="wizard-secondary">
           <button type="button" class="wizard-link" id="wizard-rank-lab">Lab / Dummy</button>
           <span class="wizard-note">Pojedyncze walki i manekiny — nie domyślna ścieżka po randze.</span>
         </p>
+      </section>
+
+      <section id="wizard-panel-party" hidden>
+        <div id="wizard-party-slots" class="wizard-party-slots"></div>
+        <p id="wizard-party-status" class="wizard-note"></p>
+        <div class="wizard-nav">
+          <button type="button" id="wizard-party-back">Wstecz</button>
+          <button type="button" class="primary" id="wizard-party-next">Dalej</button>
+        </div>
       </section>
 
       <section id="wizard-panel-count" hidden>
@@ -1023,7 +1048,7 @@
       resolveAbilityTierDamage,
       critPassiveBonusDmg,
     } from "./engine/index.js?v=20260919gate";
-    import { loadCardPack, SCENARIOS, RIFT_CHAINS, makeR1Encounter, resolvePartyIds, FEAT_SMOKE_STUBS } from "./mc/r1.js?v=20260919gate";
+    import { loadCardPack, SCENARIOS, RIFT_CHAINS, makeR1Encounter, resolvePartyIds, FEAT_SMOKE_STUBS, lanePadFromTalents, effectiveEncounterBp, encounterSpentBp, PARTY_PRESETS, partyLabel } from "./mc/r1.js?v=20260919gate";
     import { r1LadderFeats, trainClassFeats, mixLadderFeats } from "./mc/talent-ladder.js?v=20260919gate";
     import {
       loadBuilderRoster,
@@ -1082,6 +1107,10 @@
     let wizardComplete = false;
     let wizardTalentsReady = false;
     let wizardAfterTalents = "diff";
+    let wizardAfterParty = "diff";
+    let wizardPartyReady = false;
+    const PLAYABLE_CLASSES = ["fighter", "brawler", "assassin", "scout", "mystic", "acolyte", "primalist"];
+    let wizardPartyIds = ["fighter", "brawler", "assassin", "scout"];
     let pendingBegin = null;
 
     const SETUP_STORE_KEY = "combat-lab-sandbox-setups-v1";
@@ -1133,9 +1162,11 @@
      * panel is only a picker over that existing registry, no new engine code.
      */
     function talentPickerGroups() {
+      const allowed = new Set(partyClassIds());
       const byClass = {};
       for (const [id, stub] of Object.entries(FEAT_SMOKE_STUBS)) {
         const cls = stub.classId || "?";
+        if (cls === "warrior" || !allowed.has(cls)) continue;
         if (!byClass[cls]) byClass[cls] = [];
         byClass[cls].push({ id, stub });
       }
@@ -1217,10 +1248,8 @@
             '"/><label for="tp-' +
             escapeHtml(id) +
             '">' +
-            escapeHtml(stub.label || id) +
-            " <i>(" +
-            (stub.xp | 0) +
-            " xp)</i></label></div>";
+            talentCopyHtml(id, stub) +
+            "</label></div>";
         }
         html += "</div>";
       }
@@ -1970,8 +1999,7 @@
 
       const builderRoster =
         scenario === "__builder__" ? loadBuilderRoster() : null;
-      const partyOpt =
-        partySel === "__builder__" ? loadBuilderParty() || "r1" : partySel || "r1";
+      const partyOpt = currentPartyOpt();
       const mode = (elFeatMode && elFeatMode.value) || "ladder4";
       let featSmoke = null;
       let talentsPerHero = null;
@@ -6540,14 +6568,135 @@
       arenaId = "custom";
       render();
     };
+    function currentPartyOpt() {
+      if (partySel === "__builder__") return loadBuilderParty() || "r1";
+      if (partySel === "__wizard__" || Array.isArray(partySel)) return wizardPartyIds.slice();
+      return partySel || "r1";
+    }
+
     function partyClassIds() {
-      const partyOpt =
-        partySel === "__builder__" ? loadBuilderParty() || "r1" : partySel || "r1";
       try {
-        return resolvePartyIds(partyOpt);
+        return resolvePartyIds(currentPartyOpt()).filter((id) => id !== "warrior");
       } catch (_) {
-        return ["fighter", "brawler", "assassin", "scout"];
+        return wizardPartyIds.filter((id) => id !== "warrior");
       }
+    }
+
+    function presetKeyForIds(ids) {
+      const key = (ids || []).map((s) => String(s).toLowerCase()).slice().sort().join(",");
+      for (const name of Object.keys(PARTY_PRESETS)) {
+        if (name === "warriorProbe") continue;
+        const preset = PARTY_PRESETS[name].slice().sort().join(",");
+        if (preset === key) return name;
+      }
+      return null;
+    }
+
+    function classLabel(cls) {
+      const id = String(cls || "");
+      return id ? id.charAt(0).toUpperCase() + id.slice(1) : id;
+    }
+
+    function talentCardPlainText(card) {
+      if (!card || typeof card !== "object") return "";
+      const lines = [];
+      const cost = [];
+      if (card.costAp != null) cost.push(card.costAp + " AP");
+      if (card.costStress) cost.push(card.costStress + " stress");
+      if (card.range != null) cost.push("Range " + card.range);
+      if (card.adv) cost.push("Adv " + card.adv);
+      if (card.aoe && card.aoe.range != null) cost.push("AoE R" + card.aoe.range);
+      if (cost.length) lines.push(cost.join(" · "));
+      if (card.notes) lines.push(String(card.notes));
+      if (card.tiers && typeof card.tiers === "object") {
+        for (const key of Object.keys(card.tiers)) {
+          const t = card.tiers[key] || {};
+          const bits = [];
+          if (t.text) bits.push(String(t.text));
+          if (t.dmg != null) {
+            let dmg = "DMG " + t.dmg;
+            if (t.dmgStat) {
+              const mult = t.dmgStatMult && t.dmgStatMult !== 1 ? t.dmgStatMult + "×" : "";
+              dmg += "+" + mult + t.dmgStat;
+            }
+            bits.push(dmg);
+          }
+          if (t.break != null) bits.push("Break " + t.break + (t.breakStat ? "+" + t.breakStat : ""));
+          if (t.push != null) bits.push("Push " + t.push);
+          if (t.heal != null) bits.push("Heal " + t.heal);
+          if (bits.length) lines.push(String(key).toUpperCase() + " " + bits.join(" · "));
+        }
+      }
+      if (Array.isArray(card.traits)) {
+        for (const tr of card.traits) {
+          if (tr && tr.text) lines.push(String(tr.text));
+        }
+      }
+      return lines.filter(Boolean).join("\n");
+    }
+
+    function talentPresentation(id, stub) {
+      const card =
+        (pack && pack.cards && pack.cards[id]) ||
+        (pack && pack.abilityById && pack.abilityById[id]) ||
+        null;
+      const label = (stub && stub.label) || id;
+      const nameFromLabel = String(label).split("(")[0].split(":")[0].trim();
+      const name = (card && card.name) || nameFromLabel || id;
+      const cardText = card ? talentCardPlainText(card).trim() : "";
+      const xp = stub && stub.xp != null ? " (" + (stub.xp | 0) + " xp)" : "";
+      let rules = label;
+      if (cardText) {
+        const norm = (s) => String(s).replace(/\s+/g, " ").toLowerCase();
+        const cardNorm = norm(cardText);
+        const labelNorm = norm(label);
+        if (cardNorm.indexOf(labelNorm) >= 0) rules = cardText;
+        else if (labelNorm.indexOf(cardNorm) >= 0) rules = label;
+        else rules = label + "\n" + cardText;
+      }
+      return { name, rules, xp };
+    }
+
+    function talentCopyHtml(id, stub) {
+      const copy = talentPresentation(id, stub);
+      return (
+        '<span class="talent-name">' +
+        escapeHtml(copy.name) +
+        escapeHtml(copy.xp) +
+        '</span><span class="talent-rules">' +
+        escapeHtml(copy.rules) +
+        "</span>"
+      );
+    }
+
+    function riftBaseBp(chainId) {
+      const chain = RIFT_CHAINS[chainId];
+      if (!chain) return 0;
+      let sum = 0;
+      for (const fightId of chain.fights) {
+        const sc = SCENARIOS[fightId];
+        if (pack && sc && typeof sc.build === "function") {
+          try {
+            sum += encounterSpentBp(sc.build(pack).enemies) | 0;
+            continue;
+          } catch (_) {
+            /* fall through to authored target */
+          }
+        }
+        sum += (sc && sc.budgetTarget) | 0;
+      }
+      return sum;
+    }
+
+    function riftBpQuote(chainId) {
+      const n = wizardRank === 1 ? Math.max(1, Math.min(4, wizardTalentN | 0)) : 0;
+      const base = riftBaseBp(chainId);
+      const pad = lanePadFromTalents(n, chainId) | 0;
+      const total = effectiveEncounterBp(base, {
+        talentsPerHero: n,
+        chain: chainId,
+      });
+      return { n, base, pad, total };
     }
 
     function talentsSelectedForClass(cls) {
@@ -6559,11 +6708,19 @@
       return n;
     }
 
-    /** Ladder ids for the active party. R1 uses r1LadderFeats (same as the old dropdown). */
+    /** Ladder ids for the active party. R1 uses r1LadderFeats; other presets use mix ladders. */
     function ladderFeatIdsForCurrentParty(n, partyOpt) {
-      const key = typeof partyOpt === "string" ? partyOpt : partySel || "r1";
-      if (key === "r1" || key === "sunday") return r1LadderFeats(n);
-      return mixLadderFeats(key, n);
+      const ids = resolvePartyIds(partyOpt).filter((id) => id !== "warrior");
+      const preset = typeof partyOpt === "string" ? presetKeyForIds(ids) || partyOpt : presetKeyForIds(ids);
+      const raw =
+        preset && preset !== "r1" && preset !== "sunday" && PARTY_PRESETS[preset]
+          ? mixLadderFeats(preset, n)
+          : r1LadderFeats(n);
+      const party = new Set(ids);
+      return raw.filter((id) => {
+        const stub = FEAT_SMOKE_STUBS[id];
+        return stub && stub.classId !== "warrior" && party.has(stub.classId);
+      });
     }
 
     function clampManualToN() {
@@ -6594,9 +6751,12 @@
     }
 
     function loadoutSummary() {
-      if (wizardRank === 0) return "Rank 0 · n=0 · bez talentów";
+      const who = partyClassIds()
+        .map((id) => classLabel(id))
+        .join("/");
+      if (wizardRank === 0) return "Rank 0 · n=0 · bez talentów · " + who;
       const how = wizardTalentSource === "manual" ? "ręcznie" : "drabina";
-      return "Rank 1 · n=" + (wizardTalentN | 0) + " · " + how;
+      return "Rank 1 · n=" + (wizardTalentN | 0) + " · " + how + " · " + who;
     }
 
     function updateSetupChip() {
@@ -6648,9 +6808,7 @@
     function seedManualFromLadder() {
       manualTalentIds.clear();
       const n = Math.max(1, Math.min(4, wizardTalentN | 0));
-      const partyOpt =
-        partySel === "__builder__" ? loadBuilderParty() || "r1" : partySel || "r1";
-      const ids = ladderFeatIdsForCurrentParty(n, partyOpt);
+      const ids = ladderFeatIdsForCurrentParty(n, currentPartyOpt());
       const party = new Set(partyClassIds());
       const counts = {};
       for (const id of ids) {
@@ -6668,35 +6826,29 @@
       const host = document.getElementById("wizard-ladder-preview");
       if (!host) return;
       const n = Math.max(1, Math.min(4, wizardTalentN | 0));
-      const partyOpt =
-        partySel === "__builder__" ? loadBuilderParty() || "r1" : partySel || "r1";
-      const ids = ladderFeatIdsForCurrentParty(n, partyOpt);
+      const ids = ladderFeatIdsForCurrentParty(n, currentPartyOpt());
       const by = {};
       for (const id of ids) {
         const stub = FEAT_SMOKE_STUBS[id];
-        if (!stub) continue;
+        if (!stub || stub.classId === "warrior") continue;
         if (!by[stub.classId]) by[stub.classId] = [];
-        by[stub.classId].push(stub.label || id);
+        by[stub.classId].push({ id, stub });
       }
-      const party = partyClassIds();
-      const partySet = new Set(party);
-      const order = party.concat(Object.keys(by).filter((cls) => !partySet.has(cls)));
-      const labelCls = (cls) => cls.charAt(0).toUpperCase() + cls.slice(1);
+      const order = partyClassIds().filter((cls) => cls !== "warrior");
       let html = "";
       for (const cls of order) {
         const list = by[cls] || [];
         html +=
-          '<div class="ladder-card' +
-          (partySet.has(cls) ? " in-party" : "") +
-          '"><h4>' +
-          escapeHtml(labelCls(cls)) +
-          (partySet.has(cls) ? " · party" : "") +
-          "</h4>";
+          '<div class="ladder-card in-party"><h4>' +
+          escapeHtml(classLabel(cls)) +
+          " · party</h4>";
         if (!list.length) {
           html += "<p>Brak drabiny dla tej klasy.</p>";
         } else {
           html += "<ol>";
-          for (const label of list) html += "<li>" + escapeHtml(label) + "</li>";
+          for (const row of list) {
+            html += "<li>" + talentCopyHtml(row.id, row.stub) + "</li>";
+          }
           html += "</ol>";
         }
         html += "</div>";
@@ -6755,6 +6907,7 @@
       if (wizardRank === 1) {
         return [
           ["rank", "Ranga"],
+          ["party", "Party"],
           ["count", "Liczba"],
           ["talents", "Talenty"],
           ["diff", "Trudność"],
@@ -6762,6 +6915,7 @@
       }
       return [
         ["rank", "Ranga"],
+        ["party", "Party"],
         ["diff", "Trudność"],
       ];
     }
@@ -6773,6 +6927,7 @@
       if (root) root.hidden = false;
       const panels = {
         rank: "wizard-panel-rank",
+        party: "wizard-panel-party",
         count: "wizard-panel-count",
         talents: "wizard-panel-talents",
         diff: "wizard-panel-diff",
@@ -6786,6 +6941,10 @@
         rank: [
           "Ranga",
           "Pierwszy wybór: Rank 0 (bez talentów) albo Rank 1 (z talentami). Pełny rift jest dopiero po tym.",
+        ],
+        party: [
+          "Party",
+          "Cztery klasy na ten rift. Domyślnie R1: Fighter, Brawler, Assassin, Scout. Bez Warrior.",
         ],
         count: [
           "Ile talentów?",
@@ -6836,11 +6995,29 @@
       const resumeLab = document.getElementById("wizard-lab-resume");
       if (resume) resume.hidden = !showResume;
       if (resumeLab) resumeLab.hidden = !showResume;
+      if (step === "party") renderPartySlots();
       if (step === "talents") refreshTalentModeUi();
       if (step === "diff") {
         fillDiffButtons();
         const sum = document.getElementById("wizard-diff-summary");
-        if (sum) sum.textContent = loadoutSummary() + " · start = sala 1 pełnego riftu.";
+        if (sum) {
+          const lanes = [
+            ["Easy", "rift_easy"],
+            ["Medium", "rift_medium"],
+            ["Hard", "rift_hard"],
+          ].map(([name, id]) => {
+            const q = riftBpQuote(id);
+            return name + " " + q.base + "+" + q.pad + "=" + q.total;
+          });
+          const n = wizardRank === 1 ? wizardTalentN | 0 : 0;
+          sum.textContent =
+            loadoutSummary() +
+            " · pad v0.3g dla n=" +
+            n +
+            " (baza + pad = total). " +
+            lanes.join(" · ") +
+            ". Start = sala 1 pełnego riftu.";
+        }
       }
       if (step === "lab") renderLabChoices();
     }
@@ -6856,8 +7033,17 @@
         const chain = RIFT_CHAINS[key];
         const span = btn && btn.querySelector("span");
         if (chain && span) {
+          const q = riftBpQuote(key);
           span.textContent =
-            "Pełny rift · " + chain.fights.length + " sale · " + chain.label;
+            "Pełny rift · " +
+            chain.fights.length +
+            " sale · baza " +
+            q.base +
+            " BP + pad " +
+            q.pad +
+            " = " +
+            q.total +
+            " BP";
         }
       }
     }
@@ -6972,17 +7158,133 @@
     function chooseRank(rank) {
       wizardRank = rank === 0 ? 0 : 1;
       wizardAfterTalents = "diff";
+      wizardPartyReady = false;
       if (wizardRank === 0) {
         wizardTalentN = 0;
         wizardTalentSource = "ladder";
-        wizardTalentsReady = true;
+        wizardTalentsReady = false;
         manualTalentIds.clear();
         renderTalentPicker();
         syncFeatModeControl();
+      } else {
+        wizardTalentsReady = false;
+      }
+      showWizardStep("party");
+    }
+
+    function renderPartySlots() {
+      const host = document.getElementById("wizard-party-slots");
+      const status = document.getElementById("wizard-party-status");
+      if (!host) return;
+      host.innerHTML = "";
+      for (let i = 0; i < 4; i++) {
+        const wrap = document.createElement("label");
+        wrap.className = "wizard-party-slot";
+        wrap.textContent = "Slot " + (i + 1);
+        const sel = document.createElement("select");
+        sel.setAttribute("data-party-slot", String(i));
+        for (const cls of PLAYABLE_CLASSES) {
+          const opt = document.createElement("option");
+          opt.value = cls;
+          opt.textContent = classLabel(cls);
+          if (wizardPartyIds[i] === cls) opt.selected = true;
+          sel.appendChild(opt);
+        }
+        sel.onchange = () => setPartySlot(i, sel.value);
+        wrap.appendChild(sel);
+        host.appendChild(wrap);
+      }
+      const ready = partySelectionReady();
+      if (status) {
+        status.textContent = ready.ok
+          ? partyLabel(wizardPartyIds) + ". Każda klasa raz."
+          : ready.reason;
+      }
+      const next = document.getElementById("wizard-party-next");
+      if (next) next.disabled = !ready.ok;
+    }
+
+    function partySelectionReady() {
+      const ids = wizardPartyIds.slice(0, 4);
+      if (ids.length !== 4 || ids.some((id) => !id || PLAYABLE_CLASSES.indexOf(id) < 0)) {
+        return { ok: false, reason: "Wybierz cztery klasy spoza Warrior." };
+      }
+      if (new Set(ids).size !== 4) {
+        return { ok: false, reason: "Każdy slot musi być inną klasą." };
+      }
+      return { ok: true, reason: "" };
+    }
+
+    function setPartySlot(index, value) {
+      const prev = wizardPartyIds[index];
+      const other = wizardPartyIds.indexOf(value);
+      wizardPartyIds[index] = value;
+      if (other >= 0 && other !== index) wizardPartyIds[other] = prev;
+      renderPartySlots();
+    }
+
+    function dropTalentsOutsideParty() {
+      const party = new Set(partyClassIds());
+      for (const id of Array.from(manualTalentIds)) {
+        const stub = FEAT_SMOKE_STUBS[id];
+        if (!stub || stub.classId === "warrior" || !party.has(stub.classId)) {
+          manualTalentIds.delete(id);
+        }
+      }
+    }
+
+    function applyWizardParty() {
+      wizardPartyIds = wizardPartyIds.filter((id) => id !== "warrior").slice(0, 4);
+      const preset = presetKeyForIds(wizardPartyIds);
+      if (preset && elParty && [...elParty.options].some((o) => o.value === preset)) {
+        partySel = preset;
+        elParty.value = preset;
+        const custom = elParty.querySelector('option[value="__wizard__"]');
+        if (custom) custom.remove();
+      } else {
+        partySel = "__wizard__";
+        if (elParty) {
+          let opt = elParty.querySelector('option[value="__wizard__"]');
+          if (!opt) {
+            opt = document.createElement("option");
+            opt.value = "__wizard__";
+            elParty.appendChild(opt);
+          }
+          opt.textContent = wizardPartyIds.map(classLabel).join(" / ");
+          elParty.value = "__wizard__";
+        }
+      }
+      dropTalentsOutsideParty();
+      const ids = partyClassIds();
+      if (elStart && ids.indexOf(elStart.value) < 0) elStart.value = ids[0] || "fighter";
+    }
+
+    function commitPartyStep() {
+      if (!partySelectionReady().ok) {
+        renderPartySlots();
+        return;
+      }
+      wizardPartyReady = true;
+      applyWizardParty();
+      if (wizardRank === 0) {
+        wizardTalentN = 0;
+        wizardTalentsReady = true;
+        syncFeatModeControl();
+        if (wizardAfterParty === "lab") {
+          wizardAfterParty = "diff";
+          showWizardStep("lab");
+          return;
+        }
         showWizardStep("diff");
         return;
       }
       wizardTalentsReady = false;
+      if (wizardAfterParty === "lab" && wizardTalentN >= 1) {
+        wizardAfterParty = "diff";
+        showWizardStep("talents");
+        return;
+      }
+      wizardAfterParty = "diff";
       showWizardStep("count");
     }
 
@@ -7003,6 +7305,11 @@
             "Najpierw Rank 0 albo Rank 1. Lab używa tego samego n i tych samych talentów.";
         }
         showWizardStep("rank");
+        return;
+      }
+      if (!wizardPartyReady) {
+        wizardAfterParty = "lab";
+        showWizardStep("party");
         return;
       }
       if (wizardRank === 1 && !wizardTalentsReady) {
@@ -7063,7 +7370,11 @@
         };
       }
       const countBack = document.getElementById("wizard-count-back");
-      if (countBack) countBack.onclick = () => showWizardStep("rank");
+      if (countBack) countBack.onclick = () => showWizardStep("party");
+      const partyBack = document.getElementById("wizard-party-back");
+      if (partyBack) partyBack.onclick = () => showWizardStep("rank");
+      const partyNext = document.getElementById("wizard-party-next");
+      if (partyNext) partyNext.onclick = () => commitPartyStep();
       const talentsBack = document.getElementById("wizard-talents-back");
       if (talentsBack) talentsBack.onclick = () => showWizardStep("count");
       const talentsNext = document.getElementById("wizard-talents-next");
@@ -7077,7 +7388,7 @@
       if (talentsLab) talentsLab.onclick = () => commitTalentStep("lab");
       const diffBack = document.getElementById("wizard-diff-back");
       if (diffBack) {
-        diffBack.onclick = () => showWizardStep(wizardRank === 1 ? "talents" : "rank");
+        diffBack.onclick = () => showWizardStep(wizardRank === 1 ? "talents" : "party");
       }
       document.querySelectorAll("[data-rift]").forEach((btn) => {
         btn.onclick = () => beginScenario(btn.getAttribute("data-rift"));
@@ -7108,7 +7419,8 @@
       if (openLab) {
         openLab.onclick = () => {
           if (wizardRank == null) openWizard("rank");
-          else if (wizardRank === 1 && !wizardTalentsReady) openWizard("count");
+          else if (!wizardPartyReady) openWizard("party");
+          else if (wizardRank === 1 && !wizardTalentsReady) openWizard(wizardTalentN >= 1 ? "talents" : "count");
           else openWizard("lab");
         };
       }
@@ -7118,17 +7430,23 @@
     if (elParty) {
       elParty.value = partySel;
       elParty.onchange = () => {
-        partySel = elParty.value || "r1";
-        const ids = resolvePartyIds(
-          partySel === "__builder__" ? loadBuilderParty() || "r1" : partySel
-        );
+        const picked = elParty.value || "r1";
+        if (picked === "__wizard__") partySel = "__wizard__";
+        else partySel = picked;
+        if (picked !== "__builder__" && picked !== "__wizard__" && PARTY_PRESETS[picked]) {
+          wizardPartyIds = PARTY_PRESETS[picked].filter((id) => id !== "warrior").slice(0, 4);
+          wizardPartyReady = true;
+        }
+        const ids = resolvePartyIds(currentPartyOpt());
         if (elStart && ids.indexOf(elStart.value) < 0) {
           elStart.value = ids[0] || "fighter";
         }
         if (wizardOpen && wizardStep === "talents") {
-          if (wizardTalentSource === "ladder") renderLadderPreview();
-          else refreshWizardTalentGate();
+          dropTalentsOutsideParty();
+          renderTalentPicker();
+          refreshTalentModeUi();
         }
+        if (wizardOpen && wizardStep === "party") renderPartySlots();
         if (!wizardOpen) resetEncounter();
       };
     }
@@ -7328,6 +7646,8 @@
       showWizardStep("rank");
     }
     pack = await loadCardPack("./cards/");
+    if (wizardOpen && wizardStep === "talents") refreshTalentModeUi();
+    if (wizardOpen && wizardStep === "diff") showWizardStep("diff");
     if (fromBuilder && elScenario) {
       elScenario.value = "__builder__";
       partySel = "__builder__";
