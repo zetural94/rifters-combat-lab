@@ -11,3 +11,6 @@ jobs:
         with:
           node-version: 22
       - run: node --test tests/*.test.mjs
+      - run: node scripts/check-card-schema.mjs
+      - run: node scripts/lab-qa-pass.mjs
+      - run: node scripts/help-and-minions-check.mjs

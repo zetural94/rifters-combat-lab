@@ -11,6 +11,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { FEAT_SMOKE_STUBS, makeR1Encounter } from "../mc/r1.js";
+import { preserveBrowserAppendix } from "./browser-appendix.mjs";
 import {
   startDeferredEncounter,
   startPickedHeroTurn,
@@ -1212,6 +1213,12 @@ md +=
   "- Passives have no button. Effect is the grant itself (the flag or stat the stub sets).\n";
 
 const outPath = path.join(root, "docs", "TALENT-PLAYTHROUGH.md");
+const previous = fs.existsSync(outPath) ? fs.readFileSync(outPath, "utf8") : "";
+const appendix = preserveBrowserAppendix(previous);
+if (appendix) {
+  if (!md.endsWith("\n")) md += "\n";
+  md += "\n" + appendix;
+}
 fs.mkdirSync(path.dirname(outPath), { recursive: true });
 fs.writeFileSync(outPath, md);
 console.log(

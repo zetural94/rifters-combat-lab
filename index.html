@@ -24,9 +24,9 @@
   </form>
   <p class="err" id="err"></p>
   <script>
-    const HASH = "82db039b15a911c4522cf523450d2954d083cd5290eaf8f97dec453933199aa7";
     const AUTH = "riftersLabAuth";
-    const STAMP = "20260924labqa";
+    const AUTH_OK = "open";
+    const STAMP = "20260924remed";
 
     function decodePack(plain) {
       const view = new DataView(plain);
@@ -122,7 +122,7 @@
         const files = await decryptSeal(await res.arrayBuffer(), password);
         const sw = await controlWorker();
         await deliver(sw, files);
-        sessionStorage.setItem(AUTH, HASH);
+        sessionStorage.setItem(AUTH, AUTH_OK);
         location.href = "sandbox.html";
       } catch (ex) {
         const name = ex && ex.name;

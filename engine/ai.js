@@ -25,12 +25,7 @@ export function isRangedRifter(hero, state) {
     const ab = state.abilityById && state.abilityById[id];
     if (!ab || ab.isAttack === false) continue;
     if (ab.weaponId && parts.length && parts.indexOf(ab.weaponId) < 0) continue;
-    const r =
-      ab.aoe && ab.aoe.range != null
-        ? ab.aoe.range | 0
-        : ab.range != null
-          ? ab.range | 0
-          : 1;
+    const r = ab.range != null ? ab.range | 0 : 1;
     if (r >= 5) return true;
   }
   return false;
@@ -89,6 +84,7 @@ export function sortHeroesByPattern(heroes, state, pattern) {
   return list;
 }
 
+/** Blast radius for Howl positioning. Not the click / cast range. */
 function howlAoeRange(state, howlAction) {
   const ab = howlAction && state.abilityById && state.abilityById[howlAction.abilityId];
   if (ab && ab.aoe && ab.aoe.range != null) return ab.aoe.range | 0;
@@ -1108,12 +1104,7 @@ function heroSpellStrikeRange(actor, state) {
   for (const id of abIds) {
     const ab = state.abilityById && state.abilityById[id];
     if (!ab || ab.isAttack === false) continue;
-    const r =
-      ab.aoe && ab.aoe.range != null
-        ? ab.aoe.range | 0
-        : ab.range != null
-          ? ab.range | 0
-          : 1;
+    const r = ab.range != null ? ab.range | 0 : 1;
     if (r >= 3) strikeRange = Math.max(strikeRange, r);
   }
   return strikeRange;

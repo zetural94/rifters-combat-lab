@@ -82,6 +82,20 @@ export function decodePack(plain) {
   return files;
 }
 
+export function plaintextDigest(files) {
+  return crypto.createHash("sha256").update(encodePack(files)).digest("hex");
+}
+
+export function writeSealManifest(files, encBytes, repo = root) {
+  const manifest = {
+    files: files.length,
+    packSha256: plaintextDigest(files),
+    encSha256: crypto.createHash("sha256").update(encBytes).digest("hex"),
+  };
+  fs.writeFileSync(path.join(repo, "lab.manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
+  return manifest;
+}
+
 export function encryptPack(files, password, opts = {}) {
   if (!password) throw new Error("password required");
   const iterations = opts.iterations || SEAL_ITERATIONS;
@@ -127,11 +141,13 @@ function main() {
   const files = collectPlayableFiles();
   const out = path.join(root, "lab.enc");
   fs.writeFileSync(out, encryptPack(files, password));
-  const back = decryptPack(fs.readFileSync(out), password);
+  const encBytes = fs.readFileSync(out);
+  const back = decryptPack(encBytes, password);
   if (back.length !== files.length) {
     console.error("seal round-trip count mismatch");
     process.exit(1);
   }
+  writeSealManifest(files, encBytes);
   console.log("wrote " + out + " (" + files.length + " files)");
 }
 

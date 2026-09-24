@@ -170,5 +170,8 @@ None.
 - Riposte: Dummy Practice Blow (8) clicks Riposte (−5, 1 stress, 0 AP) then Accept. A Power Swing raw 6 (T1) mitigates to 0 HP and the lab offers the free weapon OA.
 - Hidden Bola: same Practice Blow. Light Armor makes the first reaction free. Dummy STR 1 ≤ Scout DEX 1, so Knockdown lands. RANGE 3 and stress are required.
 - Passives have no button. Effect is the grant itself (the flag or stat the stub sets).
+
+<!-- browser-appendix:start -->
 - Spotter Mark is printed on the token (`Spotter Mark` in the status line) so the mark is visible after the click.
 - Browser (live sandbox, Rank 1 ladder n=4, Lab / Dummy): `train_assassin` vs Dummy offered **Assassin A · Riposte (free · −1 stress · −5)** next to Defend / Catch Breath / Interpose. Clicking it logged `Riposte (−5 · raw 0) · free · −1 stress` and, after Accept on Menacing Glare (0 HP), opened **Riposte · free weapon OA**. `train_scout` offered **Scout A · Hidden Bola (free reaction · −1 stress · −5 · Knockdown)**. After the click, Defend dropped from free reaction to −1 AP (Light Armor free reaction spent). Accept logged Knockdown; the Dummy then Stood.
+<!-- browser-appendix:end -->

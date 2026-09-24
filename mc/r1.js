@@ -16,7 +16,7 @@ import {
   currentActor,
   runEnemyTurns,
   runHeroTurns,
-} from "../engine/index.js?v=20260924labqa";
+} from "../engine/index.js?v=20260924remed";
 import { expandParty, applyArmorStressToHeroSpecs } from "./party.js";
 export {
   HERO_CATALOG,
@@ -736,7 +736,7 @@ export const FEAT_SMOKE_STUBS = {
   "assassin-stealth": {
     xp: 200,
     classId: "assassin",
-    label: "Stealth: 0AP+1stress · 1/round · ST untargetable >R2 · Crit1 first melee",
+    label: "Stealth: 0AP+1stress · 1/round, allowed even after attacking this turn; attacks still break stealth · ST untargetable >R2 · Crit1 first melee",
     apply(actor) {
       actor.hasStealth = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["assassin-stealth"]);
@@ -1529,7 +1529,7 @@ export const RIFT_CHAINS = {
 
 export async function loadCardPack(base = "./cards/") {
   const cards = {};
-  const bust = "v=20260924labqa";
+  const bust = "v=20260924remed";
   await Promise.all(
     CARD_FILES.map(async (n) => {
       const r = await fetch(base + n + ".json?" + bust);
