@@ -1,0 +1,26 @@
+{
+  "kind": "ability",
+  "id": "acolyte-purge-wicked",
+  "name": "Purge the Wicked",
+  "source": "progressAxisDraft Acolyte · smoke Light",
+  "costAp": 2,
+  "costMana": 1,
+  "range": 4,
+  "isAttack": true,
+  "roll": { "stat": "INT", "mode": "power" },
+  "dmgType": "Light",
+  "tiers": {
+    "t1": { "dmg": 6, "dmgType": "Light" },
+    "t2": {
+      "dmg": 10,
+      "dmgType": "Light",
+      "status": { "id": "intimidate", "x": 3 }
+    },
+    "t3": {
+      "dmg": 14,
+      "dmgType": "Light",
+      "status": { "id": "intimidate", "x": 5 }
+    }
+  },
+  "notes": "Draft Light 6/10/14 + Intimidate T2/T3. Upcast Vuln skip."
+}

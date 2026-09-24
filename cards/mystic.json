@@ -1,0 +1,41 @@
+{
+  "kind": "hero",
+  "id": "mystic",
+  "name": "Mystic",
+  "source": "characters.list @ Rifters_15_09_2026.json",
+  "hpMax": 22,
+  "speed": 5,
+  "str": 0,
+  "dex": 1,
+  "int": 1,
+  "stability": 0,
+  "stressMax": 6,
+  "apMax": 3,
+  "mana": "10/10",
+  "armorId": "magic-armor",
+  "activeKit": 0,
+  "weaponOptions": [
+    "pyre-focus",
+    "storm-focus"
+  ],
+  "def": {
+    "Physical": 1,
+    "Fire": 3,
+    "Air": 3,
+    "Water": 2,
+    "Earth": 2,
+    "Lightning": 2,
+    "Dark": 0,
+    "Light": 0,
+    "Toxic": 0
+  },
+  "abilities": [
+    "mystic-pyre-focus-ember",
+    "mystic-storm-focus-spark"
+  ],
+  "hp": "22/22",
+  "stress": "6/6",
+  "recoveries": "3/3",
+  "passive": "Magic Armor: +2 max Stress. Mana = INT × 10. You may spend Stress as Mana. Kits (both): Pyre Focus · Storm Focus. Free Weapon Swap between kits 1/your turn (second swap same turn costs 1 AP).",
+  "notes": "Core: Shove Push 2/3/4 (STR0); Steel CLEANSE 3/4/6 (INT1); Ask ADV 1 T2/T3."
+}

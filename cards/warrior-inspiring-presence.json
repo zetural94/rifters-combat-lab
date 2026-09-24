@@ -1,0 +1,14 @@
+{
+  "kind": "ability",
+  "id": "warrior-inspiring-presence",
+  "name": "Inspiring Presence",
+  "source": "progressAxisDraft Warrior · smoke Focus aura on kill",
+  "costAp": 1,
+  "range": 0,
+  "isAttack": false,
+  "roll": { "stat": "STR", "mode": "flat" },
+  "tiers": {
+    "t1": { "dmg": 0, "extras": [{ "id": "inspireArm", "x": 5 }] }
+  },
+  "notes": "Smoke: arm Focus 5 on allies R2 if you kill this turn."
+}

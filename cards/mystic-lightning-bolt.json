@@ -1,0 +1,18 @@
+{
+  "kind": "ability",
+  "id": "mystic-lightning-bolt",
+  "name": "Lightning Bolt",
+  "source": "progressAxisDraft Mystic · smoke spell table",
+  "costAp": 2,
+  "costMana": 1,
+  "range": 6,
+  "isAttack": true,
+  "roll": { "stat": "INT", "mode": "power" },
+  "dmgType": "Lightning",
+  "tiers": {
+    "t1": { "dmg": 8, "dmgType": "Lightning" },
+    "t2": { "dmg": 12, "break": 3, "dmgType": "Lightning" },
+    "t3": { "dmg": 14, "break": 5, "dmgType": "Lightning" }
+  },
+  "notes": "Draft T1 table 8/12/14 Break T2/T3. Upcast extra target skipped."
+}

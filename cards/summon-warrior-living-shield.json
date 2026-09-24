@@ -1,0 +1,74 @@
+{
+  "kind": "ability",
+  "id": "summon-warrior-living-shield",
+  "name": "Living Shield",
+  "source": "progressAxis Acolyte · 4/5/6×INT · Taunt 1 target R1/2/3 · SHIELD (1/2/3)+INT",
+  "costAp": 1,
+  "costStress": 1,
+  "range": 3,
+  "isAttack": true,
+  "roll": {
+    "stat": "STR",
+    "mode": "power"
+  },
+  "dmgType": "Physical",
+  "tiers": {
+    "t1": {
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 4,
+      "dmgType": "Physical",
+      "aoeMode": "one",
+      "aoeRange": 1,
+      "status": {
+        "id": "taunt",
+        "x": 1
+      },
+      "extras": [
+        {
+          "id": "selfShield",
+          "x": 1,
+          "xStat": "INT"
+        }
+      ]
+    },
+    "t2": {
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 5,
+      "dmgType": "Physical",
+      "aoeMode": "one",
+      "aoeRange": 2,
+      "status": {
+        "id": "taunt",
+        "x": 1
+      },
+      "extras": [
+        {
+          "id": "selfShield",
+          "x": 2,
+          "xStat": "INT"
+        }
+      ]
+    },
+    "t3": {
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 6,
+      "dmgType": "Physical",
+      "aoeMode": "one",
+      "aoeRange": 3,
+      "status": {
+        "id": "taunt",
+        "x": 1
+      },
+      "extras": [
+        {
+          "id": "selfShield",
+          "x": 3,
+          "xStat": "INT"
+        }
+      ]
+    }
+  }
+}

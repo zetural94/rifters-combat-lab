@@ -1,0 +1,45 @@
+{
+  "kind": "ability",
+  "id": "primalist-tide-focus-droplet",
+  "name": "Tide Focus · Droplet",
+  "source": "equipment:tide-focus @ Rifters_15_09_2026.json",
+  "costAp": 1,
+  "range": 5,
+  "isAttack": true,
+  "roll": { "stat": "DEX", "mode": "power" },
+  "dmgType": "Water",
+  "weaponId": "tide-focus",
+  "tiers": {
+    "t1": {
+      "dmg": 3,
+      "dmgType": "Water",
+      "extras": [
+        {
+          "id": "slowOrAllyCleanse",
+          "slow": { "id": "slow", "x": 2, "gate": { "stat": "DEX", "n": 0 } },
+          "cleanse": { "id": "allyCleanse", "x": 2, "range": 5 }
+        }
+      ]
+    },
+    "t2": {
+      "dmg": 5,
+      "dmgType": "Water",
+      "extras": [
+        {
+          "id": "slowOrAllyCleanse",
+          "slow": { "id": "slow", "x": 3, "gate": { "stat": "DEX", "n": 2 } },
+          "cleanse": { "id": "allyCleanse", "x": 2, "range": 5 }
+        }
+      ]
+    },
+    "t3": {
+      "dmg": 7,
+      "dmgType": "Water",
+      "extras": [
+        { "id": "slow", "x": 3, "gate": { "stat": "DEX", "n": 2 } },
+        { "id": "allyCleanse", "x": 3, "range": 5 }
+      ]
+    }
+  },
+  "notes": "Primalist kit1. T1/T2 choose Slow foe or Cleanse ally; T3 both. Tide buff: T2 Slow 3 · gate DEX≤2."
+}

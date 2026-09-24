@@ -1,0 +1,56 @@
+{
+  "kind": "monster",
+  "id": "burning-bear",
+  "name": "Burning Bear",
+  "role": "BRUTE T1",
+  "monsterType": "brute",
+  "tags": [
+    "Melee",
+    "Beast",
+    "Fire",
+    "Brute"
+  ],
+  "source": "combat.monsters Burning Bear @ Rifters_15_09_2026.json",
+  "hpMax": 40,
+  "speed": 4,
+  "str": 2,
+  "dex": 0,
+  "int": 1,
+  "stability": 2,
+  "economy": "slots",
+  "battlePoints": 3,
+  "immuneStatuses": [
+    "burn",
+    "bleed"
+  ],
+  "def": {
+    "Physical": 5,
+    "Fire": 5,
+    "Water": -2
+  },
+  "passive": {
+    "id": "ember-hide",
+    "text": "Immune to Burn and Bleed."
+  },
+  "crit": {
+    "text": "Enemies within RANGE 2: Burn 2",
+    "range": 2,
+    "status": {
+      "id": "burn",
+      "x": 2
+    }
+  },
+  "abilities": [
+    "burning-bear-basic",
+    "burning-bear-maul",
+    "burning-bear-savage-charge"
+  ],
+  "reactions": [],
+  "token": "B",
+  "aiPattern": [
+    "aggro",
+    "highestHp",
+    "melee"
+  ],
+  "notes": "Brute BP=3. HP 40 · Phys/Fire DEF 5 · Ember Swipe 8 Fire · Maul 9 Phys + INT≤1 Taunt · Charge 2/fight · not consecutive 5/8/10 · Crit Burn 2 RANGE 2. Dual basic: AI/GM picks by target DEF. Lock 2026-09-16u."
+}

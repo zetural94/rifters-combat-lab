@@ -1,0 +1,34 @@
+{
+  "kind": "ability",
+  "id": "summon-archer-strike",
+  "name": "Archer · Shot",
+  "source": "progressAxis Acolyte Summon Archer · 7×INT Physical R5",
+  "costAp": 1,
+  "range": 5,
+  "isAttack": true,
+  "roll": {
+    "stat": "DEX",
+    "mode": "power"
+  },
+  "dmgType": "Physical",
+  "tiers": {
+    "t1": {
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 7,
+      "dmgType": "Physical"
+    },
+    "t2": {
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 7,
+      "dmgType": "Physical"
+    },
+    "t3": {
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 7,
+      "dmgType": "Physical"
+    }
+  }
+}

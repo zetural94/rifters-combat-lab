@@ -1,0 +1,24 @@
+{
+  "kind": "ability",
+  "id": "primalist-elemental-spear-strike",
+  "name": "Elemental Spear · Strike",
+  "source": "equipment:elemental-spear @ Rifters_15_09_2026.json",
+  "costAp": 1,
+  "range": 1,
+  "isAttack": true,
+  "roll": { "stat": "STR", "mode": "power" },
+  "dmgType": "Earth",
+  "weaponId": "elemental-spear",
+  "tiers": {
+    "t1": { "dmg": 6, "dmgType": "Earth" },
+    "t2": { "dmg": 7, "dmgType": "Earth" },
+    "t3": { "dmg": 10, "dmgType": "Earth" }
+  },
+  "traits": [
+    {
+      "id": "elementPick",
+      "text": "1/turn, choose this Strike's damage type (Physical or an element)."
+    }
+  ],
+  "notes": "Primalist kit0. Melee STR. Element pick 1/turn (bypass is the kit edge)."
+}

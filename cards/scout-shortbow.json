@@ -1,0 +1,17 @@
+{
+  "kind": "ability",
+  "id": "scout-shortbow-strike",
+  "name": "Shortbow · Strike",
+  "source": "equipment:shortbow @ Rifters_14_09_2026.json",
+  "costAp": 1,
+  "range": 8,
+  "isAttack": true,
+  "roll": { "stat": "DEX", "mode": "power" },
+  "dmgType": "Physical",
+  "weaponId": "shortbow",
+  "tiers": {
+    "t1": { "dmg": 6, "dmgType": "Physical" },
+    "t2": { "dmg": 9, "dmgType": "Physical", "break": 2, "text": "9; Break 2" },
+    "t3": { "dmg": 11, "dmgType": "Physical", "break": 5, "text": "11; Break 5" }
+  }
+}

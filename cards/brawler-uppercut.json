@@ -1,0 +1,20 @@
+{
+  "kind": "ability",
+  "id": "brawler-uppercut",
+  "name": "Uppercut",
+  "source": "progressAxis Brawler · Rifters_18 left · Adv1 + optional stress Adv · T2 Break 2",
+  "costAp": 1,
+  "range": 1,
+  "isAttack": true,
+  "adv": 1,
+  "optionalStressAdv": 1,
+  "roll": { "stat": "STR", "mode": "power" },
+  "useWeapon": true,
+  "dmgType": "Physical",
+  "tiers": {
+    "t1": { "dmg": "WD", "dmgFallback": 6 },
+    "t2": { "dmg": "WD", "dmgFallback": 8, "break": 2 },
+    "t3": { "dmg": "WD", "dmgFallback": 11, "break": 5 }
+  },
+  "notes": "1 AP Adv 1; 1 stress: Adv 1 (optional). WD from kit (Gloves 6/8/11). T2 Break 2; T3 Break 5."
+}

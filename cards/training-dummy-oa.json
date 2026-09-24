@@ -1,0 +1,22 @@
+{
+  "kind": "ability",
+  "id": "training-dummy-oa",
+  "name": "Dummy OA",
+  "source": "Training Dummy · OA",
+  "costAp": 1,
+  "range": 1,
+  "isAttack": true,
+  "roll": { "stat": "none", "mode": "flat" },
+  "dmgType": "Physical",
+  "tiers": {
+    "flat": {
+      "dmg": 5,
+      "dmgType": "Physical",
+      "text": "5 Physical"
+    }
+  },
+  "traits": [
+    { "id": "reaction", "text": "Opportunity Attack — RANGE 1: 5 Physical" }
+  ],
+  "notes": "OA line for leave-R1 / ranged-from-melee talent tests."
+}

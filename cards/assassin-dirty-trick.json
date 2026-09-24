@@ -1,0 +1,33 @@
+{
+  "kind": "ability",
+  "id": "assassin-dirty-trick",
+  "name": "Dirty Trick",
+  "source": "progressAxis Assassin · Rifters_18 left",
+  "costAp": 2,
+  "range": 1,
+  "isAttack": true,
+  "adv": 0,
+  "roll": { "stat": "DEX", "mode": "power" },
+  "useWeapon": true,
+  "dmgType": "Physical",
+  "traits": [{ "id": "crit", "x": 1, "text": "Crit 1" }],
+  "tiers": {
+    "t1": { "dmg": "WD", "dmgFallback": 4 },
+    "t2": {
+      "dmg": "WD",
+      "dmgFallback": 6,
+      "status": {
+        "id": "disarm",
+        "x": 1,
+        "gate": { "stat": "DEX", "vs": "attacker", "nBonus": -1 }
+      }
+    },
+    "t3": {
+      "dmg": "WD",
+      "dmgFallback": 9,
+      "status": { "id": "disarm", "x": 1, "gate": { "stat": "DEX", "vs": "attacker" } },
+      "extras": [{ "id": "regainStress", "x": 1 }]
+    }
+  },
+  "notes": "Left: 2 AP Crit 1; T2 Disarm (DEX≤yours−1) / T3 Disarm + regain 1 stress. WD + type from kit."
+}

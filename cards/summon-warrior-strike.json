@@ -1,0 +1,34 @@
+{
+  "kind": "ability",
+  "id": "summon-warrior-strike",
+  "name": "Warrior · Strike",
+  "source": "progressAxis Acolyte Summon Warrior · 4×INT Physical",
+  "costAp": 1,
+  "range": 1,
+  "isAttack": true,
+  "roll": {
+    "stat": "STR",
+    "mode": "power"
+  },
+  "dmgType": "Physical",
+  "tiers": {
+    "t1": {
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 4,
+      "dmgType": "Physical"
+    },
+    "t2": {
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 4,
+      "dmgType": "Physical"
+    },
+    "t3": {
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 4,
+      "dmgType": "Physical"
+    }
+  }
+}

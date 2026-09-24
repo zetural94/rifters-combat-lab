@@ -1,0 +1,35 @@
+{
+  "kind": "ability",
+  "id": "assassin-flurry-daggers",
+  "name": "Flurry of Daggers",
+  "source": "progressAxis Assassin · Rifters_18 left (2+DEX targets)",
+  "costAp": 2,
+  "costStress": 1,
+  "range": 4,
+  "aoe": { "range": 4, "maxTargets": "2+DEX" },
+  "isAttack": true,
+  "roll": { "stat": "DEX", "mode": "power" },
+  "useWeapon": true,
+  "dmgType": "Physical",
+  "tiers": {
+    "t1": { "dmg": "WD", "dmgFallback": 4, "aoeMode": "all" },
+    "t2": {
+      "dmg": "WD",
+      "dmgStat": "DEX",
+      "dmgFallback": 6,
+      "aoeMode": "all",
+      "status": { "id": "bleed", "x": 2, "gate": { "stat": "STR", "vs": "attacker" } }
+    },
+    "t3": {
+      "dmg": "2WD",
+      "dmgFallback": 18,
+      "aoeMode": "all",
+      "status": {
+        "id": "bleed",
+        "x": 3,
+        "gate": { "stat": "STR", "vs": "attacker", "nBonus": 1 }
+      }
+    }
+  },
+  "notes": "Left: 2 AP + 1 stress, 2+DEX targets R4. WD / WD+DEX+Bleed2 / 2WD (2× this tier)+Bleed3. dmgType from active kit (Stiletto → Toxic)."
+}

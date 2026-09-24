@@ -1,0 +1,39 @@
+{
+  "kind": "monster",
+  "id": "ember-hedgehogs",
+  "name": "Ember Hedgehogs",
+  "role": "HORDE T1",
+  "monsterType": "horde",
+  "tags": [
+    "Ranged",
+    "Beast",
+    "Horde",
+    "Physical"
+  ],
+  "source": "combat.monsters Ember Hedgehogs @ Rifters_15_09_2026.json",
+  "unitHp": 4,
+  "units": 6,
+  "hpMax": 24,
+  "speed": 3,
+  "str": 0,
+  "dex": 0,
+  "int": 1,
+  "stability": 0,
+  "economy": "slots",
+  "battlePoints": 1,
+  "def": {},
+  "passive": {
+    "id": "horde-stack",
+    "text": "Horde stack: X tokens on the board (HP = 4×X). Single-target overflow continues through the shared pool and culls tokens. One activation for the whole stack (simultaneous). Thin them → Spike damage drops with X."
+  },
+  "abilities": [
+    "ember-hedgehogs-spike-shots"
+  ],
+  "reactions": [],
+  "token": "h",
+  "aiPattern": [
+    "ranged",
+    "aggro"
+  ],
+  "notes": "Horde BP=1. Fragile 4×6 (24): Spike 2+X/4+X/7+X (full 8/10/13) then melts. Cannot crit. Lock 2026-09-24."
+}

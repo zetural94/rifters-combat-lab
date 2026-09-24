@@ -1,0 +1,41 @@
+{
+  "kind": "hero",
+  "id": "acolyte",
+  "name": "Acolyte",
+  "source": "characters.list @ Rifters_15_09_2026.json",
+  "hpMax": 24,
+  "speed": 5,
+  "str": 1,
+  "dex": 0,
+  "int": 1,
+  "stability": 1,
+  "stressMax": 6,
+  "apMax": 3,
+  "mana": "10/10",
+  "armorId": "magic-armor",
+  "activeKit": 0,
+  "weaponOptions": [
+    "acolyte-symbol",
+    "hex-knife"
+  ],
+  "def": {
+    "Physical": 1,
+    "Fire": 3,
+    "Air": 3,
+    "Water": 2,
+    "Earth": 2,
+    "Lightning": 2,
+    "Dark": 0,
+    "Light": 0,
+    "Toxic": 0
+  },
+  "abilities": [
+    "acolyte-symbol-strike",
+    "acolyte-hex-knife-strike"
+  ],
+  "hp": "24/24",
+  "stress": "6/6",
+  "recoveries": "3/3",
+  "passive": "Magic Armor: +2 max Stress. Mana = INT × 10. You may spend Stress as Mana. Kits (both): Acolyte Symbol · Hex Knife. Free Weapon Swap between kits 1/your turn (second swap same turn costs 1 AP).",
+  "notes": "Symbol: on hit, support extra to ally R5 (Catch Breath / Cleanse). Core: Shove Push 3/4/5 (STR1); Steel CLEANSE 3/4/6 (INT1)."
+}

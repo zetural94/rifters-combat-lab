@@ -1,0 +1,29 @@
+{
+  "kind": "ability",
+  "id": "acolyte-hex-knife-strike",
+  "name": "Hex Knife · Strike",
+  "source": "equipment:hex-knife @ Rifters_19_09_2026.json",
+  "costAp": 1,
+  "range": 5,
+  "isAttack": true,
+  "roll": { "stat": "INT", "mode": "power" },
+  "dmgType": "Toxic",
+  "weaponId": "hex-knife",
+  "tiers": {
+    "t1": {
+      "dmg": 4,
+      "dmgType": "Toxic"
+    },
+    "t2": {
+      "dmg": 6,
+      "dmgType": "Toxic",
+      "status": { "id": "poison", "x": 2, "gate": { "stat": "INT", "n": 0 } }
+    },
+    "t3": {
+      "dmg": 8,
+      "dmgType": "Toxic",
+      "status": { "id": "poison", "x": 3, "gate": { "stat": "INT", "n": 1 } }
+    }
+  },
+  "notes": "LOCKED: 4 / 6 INT≤0 Poison 2 / 8 INT≤1 Poison 3. RANGE 5 Toxic."
+}

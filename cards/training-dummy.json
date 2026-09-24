@@ -1,0 +1,54 @@
+{
+  "kind": "monster",
+  "id": "training-dummy",
+  "name": "Training Dummy",
+  "role": "TRAINING · talent lab",
+  "monsterType": "brute",
+  "tags": [
+    "Melee",
+    "Training",
+    "Dummy"
+  ],
+  "source": "combat-lab training",
+  "hpMax": 100,
+  "speed": 5,
+  "str": 1,
+  "dex": 0,
+  "int": 0,
+  "stability": 2,
+  "economy": "slots",
+  "battlePoints": 0,
+  "vulnerable": {
+    "Physical": 1
+  },
+  "def": {
+    "Physical": 5,
+    "Fire": 5,
+    "Air": 5,
+    "Water": 5,
+    "Earth": 5,
+    "Lightning": 5,
+    "Dark": 5,
+    "Light": 5,
+    "Toxic": 5
+  },
+  "passive": {
+    "id": "training-post",
+    "text": "Training Dummy — DEF 5 · Spd 5 · HP 100 · starts Vulnerable 1 Physical. Tools: Fear, Power Swing (Eye), Burn 2, basic, OA."
+  },
+  "abilities": [
+    "training-dummy-basic",
+    "training-dummy-power-swing",
+    "training-dummy-menace",
+    "training-dummy-cripple"
+  ],
+  "reactions": [
+    "training-dummy-oa"
+  ],
+  "token": "D",
+  "aiPattern": [
+    "aggro",
+    "melee"
+  ],
+  "notes": "Lab dummy. Vulnerable 1 Phys on spawn. Prefer Menace (Fear) → Power Swing → Ember Slap → Practice Blow."
+}

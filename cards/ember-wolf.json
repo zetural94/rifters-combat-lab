@@ -1,0 +1,47 @@
+{
+  "kind": "monster",
+  "id": "ember-wolf",
+  "name": "Ember Wolf",
+  "role": "STANDARD T1",
+  "monsterType": "standard",
+  "tags": [
+    "Melee",
+    "Beast",
+    "Fire",
+    "Skirmisher",
+    "Wolf"
+  ],
+  "source": "combat.monsters[0] @ Rifters_15_09_2026.json",
+  "hpMax": 18,
+  "speed": 6,
+  "str": 1,
+  "dex": 1,
+  "int": 0,
+  "stability": 0,
+  "economy": "slots",
+  "battlePoints": 2,
+  "def": {
+    "Physical": 3,
+    "Fire": 3
+  },
+  "passive": {
+    "id": "pack-hunter",
+    "text": "Pack Hunter — when adjacent to another Wolf: Power Roll → ADV 1; flat attack (no Power Roll) → +1 DMG.",
+    "when": "adjacentAllyTag:Wolf",
+    "rule": "powerRoll->adv1; flat->bonusDmg1"
+  },
+  "abilities": [
+    "ember-wolf-bite",
+    "ember-wolf-ember-claws"
+  ],
+  "reactions": [
+    "ember-wolf-magma-tail"
+  ],
+  "token": "W",
+  "aiPattern": [
+    "lowestHp",
+    "ranged",
+    "aggro"
+  ],
+  "notes": "Battle Points 2 (Standard pillar). HP 18 · Phys/Fire DEF 3 · Bite 7 · Savage Claws 5/9/11 · OA Magma Tail 8. Pattern: Lowest Current HP → Ranged → Aggro. Weak-Fire band 2026-09-16t."
+}

@@ -1,0 +1,34 @@
+{
+  "kind": "ability",
+  "id": "summon-mage-strike",
+  "name": "Mage · Dark Bolt",
+  "source": "progressAxis Acolyte Summon Mage · 5×INT Dark R4",
+  "costAp": 1,
+  "range": 4,
+  "isAttack": true,
+  "roll": {
+    "stat": "INT",
+    "mode": "power"
+  },
+  "dmgType": "Dark",
+  "tiers": {
+    "t1": {
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 5,
+      "dmgType": "Dark"
+    },
+    "t2": {
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 5,
+      "dmgType": "Dark"
+    },
+    "t3": {
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 5,
+      "dmgType": "Dark"
+    }
+  }
+}

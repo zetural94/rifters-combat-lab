@@ -1,0 +1,30 @@
+{
+  "kind": "ability",
+  "id": "mystic-living-bomb",
+  "name": "Living Bomb",
+  "source": "progressAxisDraft Mystic · smoke mark+Burn",
+  "costAp": 2,
+  "costMana": 2,
+  "range": 5,
+  "isAttack": true,
+  "roll": { "stat": "INT", "mode": "power" },
+  "dmgType": "Fire",
+  "tiers": {
+    "t1": {
+      "dmg": 0,
+      "status": { "id": "burn", "x": 2, "gate": { "stat": "DEX", "vs": "attacker", "nBonus": -1 } },
+      "extras": [{ "id": "livingBomb", "x": 5 }]
+    },
+    "t2": {
+      "dmg": 0,
+      "status": { "id": "burn", "x": 3, "gate": { "stat": "DEX", "vs": "attacker" } },
+      "extras": [{ "id": "livingBomb", "x": 5 }]
+    },
+    "t3": {
+      "dmg": 0,
+      "status": { "id": "burn", "x": 4, "gate": { "stat": "DEX", "vs": "attacker", "nBonus": 1 } },
+      "extras": [{ "id": "livingBomb", "x": 5 }]
+    }
+  },
+  "notes": "On death: 5 Fire R3 (engine livingBomb). Upcast skip."
+}

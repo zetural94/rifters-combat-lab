@@ -1,0 +1,49 @@
+{
+  "kind": "ability",
+  "id": "magma-tortoise-eruption",
+  "name": "Eruption",
+  "source": "Magma Tortoise · Eruption @ Rifters_16_09_2026.html",
+  "costAp": 1,
+  "range": 5,
+  "aoe": {
+    "shape": "cube",
+    "size": 2,
+    "leaveTerrain": {
+      "id": "magma",
+      "difficult": true,
+      "enterDmg": 2,
+      "unpreventable": true,
+      "label": "Magma"
+    }
+  },
+  "isAttack": true,
+  "roll": { "stat": "INT", "mode": "power" },
+  "dmgType": "Fire",
+  "tiers": {
+    "t1": {
+      "dmg": 2,
+      "dmgType": "Fire",
+      "aoeMode": "one",
+      "status": { "id": "burn", "x": 1, "gate": { "stat": "DEX", "n": 0 } },
+      "text": "2 Fire; DEX ≤ 0 Burn 1"
+    },
+    "t2": {
+      "dmg": 4,
+      "dmgType": "Fire",
+      "aoeMode": "all",
+      "status": { "id": "burn", "x": 2, "gate": { "stat": "DEX", "n": 1 } },
+      "text": "4 Fire; DEX ≤ 1 Burn 2"
+    },
+    "t3": {
+      "dmg": 6,
+      "dmgType": "Fire",
+      "aoeMode": "all",
+      "status": { "id": "burn", "x": 3, "gate": { "stat": "DEX", "n": 1 } },
+      "text": "6 Fire; DEX ≤ 1 Burn 3"
+    }
+  },
+  "traits": [
+    { "id": "once-per-fight", "x": 3, "text": "3/fight" }
+  ],
+  "notes": "Solo arena tool · 3/fight · RANGE 5 · 2×2 cube · leaves Magma difficult terrain (enter 2 unprev). PR + INT."
+}

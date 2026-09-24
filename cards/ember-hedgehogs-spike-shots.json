@@ -1,0 +1,35 @@
+{
+  "kind": "ability",
+  "id": "ember-hedgehogs-spike-shots",
+  "name": "Spike Shots",
+  "source": "Ember Hedgehogs · Spike Shots @ Rifters_24_09_2026.json",
+  "costAp": 1,
+  "range": 3,
+  "isAttack": true,
+  "roll": {
+    "stat": "DEX",
+    "mode": "power"
+  },
+  "dmgType": "Physical",
+  "tiers": {
+    "t1": {
+      "dmgPerUnit": 1,
+      "dmgFlat": 2,
+      "dmgType": "Physical",
+      "text": "2+X Physical · RANGE 3"
+    },
+    "t2": {
+      "dmgPerUnit": 1,
+      "dmgFlat": 4,
+      "dmgType": "Physical",
+      "text": "4+X Physical · RANGE 3"
+    },
+    "t3": {
+      "dmgPerUnit": 1,
+      "dmgFlat": 7,
+      "dmgType": "Physical",
+      "text": "7+X Physical · RANGE 3"
+    }
+  },
+  "notes": "X = remaining units. Full stack 8/10/13; melts with X. Power roll DEX. Lock 2026-09-24 Adrian: 2+X/4+X/7+X."
+}

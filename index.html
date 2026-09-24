@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Rifters Combat Lab</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 420px; margin: 4rem auto; padding: 0 1rem; color: #1a1a1a; }
+    input, button { font: inherit; padding: .5rem .7rem; width: 100%; box-sizing: border-box; margin: .35rem 0; }
+    button { cursor: pointer; background: #1a1a1a; color: #fff; border: 0; }
+    .err { color: #a30; min-height: 1.2em; }
+    .hint { color: #666; font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <h1>Rifters Combat Lab</h1>
+  <p class="hint">Wejście chronione hasłem (dostaniesz je od Adriana).</p>
+  <form id="f">
+    <label for="pw">Hasło</label>
+    <input id="pw" type="password" autocomplete="current-password" autofocus required />
+    <button type="submit">Wejdź do sandboxa</button>
+  </form>
+  <p class="err" id="err"></p>
+  <script>
+    const HASH = "82db039b15a911c4522cf523450d2954d083cd5290eaf8f97dec453933199aa7";
+    async function sha256(text) {
+      const data = new TextEncoder().encode(text);
+      const buf = await crypto.subtle.digest("SHA-256", data);
+      return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+    const key = "riftersLabAuth";
+    (async () => {
+      if (sessionStorage.getItem(key) === HASH) {
+        location.replace("sandbox.html");
+        return;
+      }
+      document.getElementById("f").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const err = document.getElementById("err");
+        err.textContent = "";
+        const got = await sha256(document.getElementById("pw").value);
+        if (got !== HASH) {
+          err.textContent = "Złe hasło.";
+          return;
+        }
+        sessionStorage.setItem(key, HASH);
+        location.href = "sandbox.html";
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+{
+  "kind": "ability",
+  "id": "scout-barrage",
+  "name": "Barrage",
+  "source": "progressAxis Scout · Rifters_19",
+  "costAp": 3,
+  "costStress": 1,
+  "range": 8,
+  "aoe": { "range": 8, "maxTargets": "1+DEX" },
+  "isAttack": true,
+  "roll": { "stat": "DEX", "mode": "power" },
+  "useWeapon": true,
+  "dmgType": "Physical",
+  "tiers": {
+    "t1": {
+      "dmg": "WD",
+      "dmgStat": "DEX",
+      "dmgFallback": 7,
+      "aoeMode": "all"
+    },
+    "t2": {
+      "dmg": "WD",
+      "dmgStat": "DEX",
+      "dmgStatMult": 2,
+      "dmgFallback": 11,
+      "aoeMode": "all"
+    },
+    "t3": {
+      "dmg": "WD",
+      "dmgStat": "DEX",
+      "dmgStatMult": 3,
+      "dmgFallback": 14,
+      "aoeMode": "all"
+    }
+  },
+  "notes": "3 AP + 1 stress. max 1+DEX targets. WD+DEX / WD+2×DEX / WD+3×DEX from active kit (Shortbow). Optional MOVE stress not in lab yet."
+}

@@ -1,0 +1,30 @@
+{
+  "kind": "ability",
+  "id": "mystic-pyre-focus-ember",
+  "name": "Pyre Focus · Ember",
+  "source": "equipment:pyre-focus @ Rifters_15_09_2026.json",
+  "costAp": 1,
+  "range": 5,
+  "isAttack": true,
+  "roll": { "stat": "INT", "mode": "power" },
+  "dmgType": "Fire",
+  "weaponId": "pyre-focus",
+  "tiers": {
+    "t1": {
+      "dmg": 4,
+      "dmgType": "Fire",
+      "status": { "id": "burn", "x": 1, "gate": { "stat": "DEX", "n": 0 } }
+    },
+    "t2": {
+      "dmg": 6,
+      "dmgType": "Fire",
+      "status": { "id": "burn", "x": 2, "gate": { "stat": "DEX", "n": 1 } }
+    },
+    "t3": {
+      "dmg": 8,
+      "dmgType": "Fire",
+      "status": { "id": "burn", "x": 4, "gate": { "stat": "DEX", "n": 1 } }
+    }
+  },
+  "notes": "Mystic kit0. RANGE 5 Fire + gated Burn. Printed dmg (element bypass is the kit edge)."
+}

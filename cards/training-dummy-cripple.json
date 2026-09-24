@@ -1,0 +1,26 @@
+{
+  "kind": "ability",
+  "id": "training-dummy-cripple",
+  "name": "Ember Slap",
+  "source": "Training Dummy · special (Burn)",
+  "costAp": 1,
+  "range": 1,
+  "isAttack": true,
+  "roll": { "stat": "none", "mode": "flat" },
+  "dmgType": "Fire",
+  "tiers": {
+    "flat": {
+      "dmg": 6,
+      "dmgType": "Fire",
+      "status": { "id": "burn", "x": 2 },
+      "text": "6 Fire; Burn 2"
+    }
+  },
+  "traits": [
+    {
+      "id": "once-per-round",
+      "text": "1/round — status tool so Burn / Cleanse / Steel can be tested"
+    }
+  ],
+  "notes": "Always applies Burn 2 (no gate). Dummy is the target for hero Disarm tests — this special does not Disarm."
+}

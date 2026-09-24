@@ -1,0 +1,16 @@
+{
+  "kind": "ability",
+  "id": "ember-wolf-magma-tail",
+  "name": "Magma Tail",
+  "source": "combat.monsters Ember Wolf · reaction @ Rifters_16_09_2026.json",
+  "costAp": 1,
+  "range": 1,
+  "isAttack": true,
+  "roll": { "stat": "none", "mode": "flat" },
+  "dmgType": "Fire",
+  "tiers": {
+    "flat": { "dmg": 8, "dmgType": "Fire", "text": "8 Fire" }
+  },
+  "traits": [{ "id": "reaction", "text": "Reaction / OA-style" }],
+  "notes": "Monster reaction line: Magma Tail — 8 Fire. Weak-Fire band 2026-09-16t (9→8)."
+}

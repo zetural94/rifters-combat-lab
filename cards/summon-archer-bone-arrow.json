@@ -1,0 +1,60 @@
+{
+  "kind": "ability",
+  "id": "summon-archer-bone-arrow",
+  "name": "Bone Arrow",
+  "source": "progressAxis Acolyte · 6/8/10×INT · STR≤INT(−1 T1) Bleed",
+  "costAp": 1,
+  "costStress": 1,
+  "range": 5,
+  "isAttack": true,
+  "roll": {
+    "stat": "DEX",
+    "mode": "power"
+  },
+  "dmgType": "Physical",
+  "tiers": {
+    "t1": {
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 6,
+      "dmgType": "Physical",
+      "status": {
+        "id": "bleed",
+        "x": 1,
+        "gate": {
+          "stat": "STR",
+          "vsStat": "INT",
+          "nBonus": -1
+        }
+      }
+    },
+    "t2": {
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 8,
+      "dmgType": "Physical",
+      "status": {
+        "id": "bleed",
+        "x": 1,
+        "gate": {
+          "stat": "STR",
+          "vsStat": "INT"
+        }
+      }
+    },
+    "t3": {
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 10,
+      "dmgType": "Physical",
+      "status": {
+        "id": "bleed",
+        "x": 2,
+        "gate": {
+          "stat": "STR",
+          "vsStat": "INT"
+        }
+      }
+    }
+  }
+}

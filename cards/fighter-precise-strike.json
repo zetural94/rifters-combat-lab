@@ -1,0 +1,43 @@
+{
+  "kind": "ability",
+  "id": "fighter-precise-strike",
+  "name": "Precise Strike",
+  "source": "progressAxis Fighter · Rifters_18 left",
+  "costAp": 2,
+  "costStress": 1,
+  "range": 1,
+  "isAttack": true,
+  "adv": 1,
+  "roll": {
+    "stat": "STR",
+    "mode": "power"
+  },
+  "useWeapon": true,
+  "dmgType": "Physical",
+  "traits": [
+    {
+      "id": "crit",
+      "x": 3,
+      "text": "Crit 3"
+    }
+  ],
+  "tiers": {
+    "t1": {
+      "dmg": "WD",
+      "dmgFallback": 6
+    },
+    "t2": {
+      "dmg": "WD",
+      "dmgFallback": 10,
+      "break": 2,
+      "breakStat": "STR"
+    },
+    "t3": {
+      "dmg": "WD",
+      "dmgFallback": 13,
+      "break": 4,
+      "breakStat": "STR"
+    }
+  },
+  "notes": "2 AP + 1 stress · Adv 1 · Crit 3. WD / WD Break 2+STR / WD Break 4+STR."
+}

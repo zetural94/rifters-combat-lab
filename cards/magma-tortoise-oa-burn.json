@@ -1,0 +1,23 @@
+{
+  "kind": "ability",
+  "id": "magma-tortoise-oa-burn",
+  "name": "Shell Burn",
+  "source": "Magma Tortoise · OA @ Rifters_16_09_2026.html",
+  "costAp": 1,
+  "range": 1,
+  "isAttack": true,
+  "roll": { "stat": "none", "mode": "flat" },
+  "dmgType": "Fire",
+  "tiers": {
+    "flat": {
+      "dmg": 0,
+      "dmgType": "Fire",
+      "status": { "id": "burn", "x": 2 },
+      "text": "Burn 2"
+    }
+  },
+  "traits": [
+    { "id": "reaction", "text": "Opportunity Attack — RANGE 1: Burn 2" }
+  ],
+  "notes": "OA status line — no HP damage."
+}

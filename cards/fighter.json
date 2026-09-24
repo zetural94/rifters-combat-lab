@@ -1,0 +1,43 @@
+{
+  "kind": "hero",
+  "id": "fighter",
+  "name": "Fighter",
+  "source": "characters.list[0] @ Rifters_14_09_2026.json",
+  "hpMax": 30,
+  "speed": 4,
+  "str": 1,
+  "dex": 1,
+  "int": 0,
+  "stability": 3,
+  "stressMax": 3,
+  "apMax": 3,
+  "armorId": "heavy-armor",
+  "activeKit": 0,
+  "weaponOptions": [
+    "heavy-sword",
+    [
+      "longsword",
+      "shield"
+    ]
+  ],
+  "def": {
+    "Physical": 3,
+    "Fire": 2,
+    "Air": 2,
+    "Water": 1,
+    "Earth": 1,
+    "Lightning": 0,
+    "Dark": 0,
+    "Light": 0,
+    "Toxic": 0
+  },
+  "abilities": [
+    "fighter-heavy-sword-strike",
+    "fighter-longsword-strike",
+    "fighter-shield-bash"
+  ],
+  "notes": "Core actions (STR/INT): Shove Push 3/4/5 (STR1); Steel CLEANSE 2/3/5 (INT0); Ask ADV 1 next attack on T2/T3.",
+  "hp": "30/30",
+  "stress": "3/3",
+  "recoveries": "3/3"
+}

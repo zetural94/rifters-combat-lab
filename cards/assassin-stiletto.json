@@ -1,0 +1,27 @@
+{
+  "kind": "ability",
+  "id": "assassin-stiletto-strike",
+  "name": "Stiletto · Strike",
+  "source": "equipment:stiletto @ Rifters_14_09_2026.json",
+  "costAp": 1,
+  "range": 1,
+  "isAttack": true,
+  "roll": { "stat": "DEX", "mode": "power" },
+  "dmgType": "Toxic",
+  "weaponId": "stiletto",
+  "tiers": {
+    "t1": { "dmg": 2, "dmgType": "Toxic" },
+    "t2": {
+      "dmg": 5,
+      "dmgType": "Toxic",
+      "status": { "id": "poison", "x": 2, "gate": { "stat": "INT", "n": 1 } }
+    },
+    "t3": {
+      "dmg": 7,
+      "dmgType": "Toxic",
+      "status": { "id": "poison", "x": 4, "gate": { "stat": "INT", "n": 1 } }
+    }
+  },
+  "traits": [{ "id": "crit", "x": 1, "text": "Crit 1" }],
+  "notes": "Assassin kit1. Crit 1 on weapon (dump EQ / character skill)."
+}

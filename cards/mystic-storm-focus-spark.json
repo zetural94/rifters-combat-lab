@@ -1,0 +1,33 @@
+{
+  "kind": "ability",
+  "id": "mystic-storm-focus-spark",
+  "name": "Storm Focus · Spark",
+  "source": "equipment:storm-focus @ Rifters_15_09_2026.json",
+  "costAp": 1,
+  "range": 5,
+  "isAttack": true,
+  "roll": { "stat": "INT", "mode": "power" },
+  "dmgType": "Lightning",
+  "weaponId": "storm-focus",
+  "tiers": {
+    "t1": {
+      "dmg": 4,
+      "dmgType": "Lightning",
+      "status": { "id": "shock", "x": 2, "gate": { "stat": "DEX", "n": 0 } }
+    },
+    "t2": {
+      "dmg": 6,
+      "dmgType": "Lightning",
+      "status": { "id": "shock", "x": 3, "gate": { "stat": "DEX", "n": 1 } }
+    },
+    "t3": {
+      "dmg": 8,
+      "dmgType": "Lightning",
+      "status": [
+        { "id": "shock", "x": 3, "gate": { "stat": "DEX", "n": 1 } },
+        { "id": "unsteady", "x": 1, "gate": { "stat": "DEX", "n": 1 } }
+      ]
+    }
+  },
+  "notes": "Mystic kit1. Shock: 1×/activation on willing Move. Unsteady on T3."
+}

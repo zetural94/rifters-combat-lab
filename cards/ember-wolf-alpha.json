@@ -1,0 +1,62 @@
+{
+  "kind": "monster",
+  "id": "ember-wolf-alpha",
+  "name": "Ember Wolf Alpha",
+  "role": "BOSS T1",
+  "monsterType": "boss",
+  "bossMode": "leader",
+  "tags": [
+    "Melee",
+    "Beast",
+    "Fire",
+    "Boss",
+    "Leader",
+    "Wolf"
+  ],
+  "source": "combat.monsters Ember Wolf Alpha @ Rifters_15_09_2026.json",
+  "hpMax": 45,
+  "speed": 6,
+  "str": 1,
+  "dex": 2,
+  "int": 1,
+  "stability": 2,
+  "economy": "slots",
+  "bossTurns": 2,
+  "battlePoints": 6,
+  "def": {
+    "Physical": 5,
+    "Fire": 5
+  },
+  "passive": {
+    "id": "pack-hunter",
+    "text": "Pack Hunter — when adjacent to another Wolf: ADV 1 on Power Rolls.",
+    "when": "adjacentAllyTag:Wolf",
+    "rule": "powerRoll->adv1"
+  },
+  "crit": {
+    "text": "Sabertooth: Enemies within RANGE 1: STR ≤ 1 Bleed 1",
+    "range": 1,
+    "status": {
+      "id": "bleed",
+      "x": 1,
+      "gate": {
+        "stat": "STR",
+        "n": 1
+      }
+    }
+  },
+  "abilities": [
+    "ember-wolf-alpha-ember-claws",
+    "ember-wolf-alpha-ember-howl"
+  ],
+  "reactions": [
+    "ember-wolf-alpha-heavy-bite"
+  ],
+  "token": "α",
+  "aiPattern": [
+    "aoe",
+    "ranged",
+    "lowestHp"
+  ],
+  "notes": "Battle Points 6 (Boss · Leader, bossTurns 2). STAT Leader 2,1,1 → STR 1 / DEX 2 / INT 1. HP 45 · Phys/Fire DEF 5 · Ember Claws 5/8/11 · Howl 2/fight · OA Heavy Bite 9. Crit: Sabertooth RANGE 1 STR ≤ 1 Bleed 1. Pattern: AoE → Ranged Rifters → Lowest Current HP. Weak-Fire band 2026-09-16t."
+}

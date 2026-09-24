@@ -1,0 +1,20 @@
+{
+  "kind": "ability",
+  "id": "burning-bear-basic",
+  "name": "Ember Swipe",
+  "source": "Burning Bear · Ember Swipe @ Rifters_16_09_2026",
+  "costAp": 1,
+  "range": 1,
+  "isAttack": true,
+  "roll": { "stat": "none", "mode": "flat" },
+  "dmgType": "Fire",
+  "tiers": {
+    "flat": {
+      "dmg": 8,
+      "dmgType": "Fire",
+      "text": "8 Fire"
+    }
+  },
+  "traits": [],
+  "notes": "Flat Fire workhorse (no crit). Twin: Maul (Phys+Taunt). Weak-Fire band 2026-09-16t; dual-basic 2026-09-16u."
+}

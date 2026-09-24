@@ -1,0 +1,26 @@
+{
+  "kind": "ability",
+  "id": "primalist-frost-shock",
+  "name": "Frost Shock",
+  "source": "progressAxisDraft Primalist · smoke Water control",
+  "costAp": 1,
+  "costMana": 1,
+  "range": 5,
+  "isAttack": true,
+  "roll": { "stat": "INT", "mode": "power" },
+  "dmgType": "Water",
+  "tiers": {
+    "t1": { "dmg": 5, "dmgType": "Water" },
+    "t2": {
+      "dmg": 8,
+      "dmgType": "Water",
+      "status": { "id": "slow", "x": 2, "gate": { "stat": "DEX", "vs": "attacker", "nBonus": -1 } }
+    },
+    "t3": {
+      "dmg": 10,
+      "dmgType": "Water",
+      "status": { "id": "slow", "x": 3, "gate": { "stat": "DEX", "vs": "attacker" } }
+    }
+  },
+  "notes": "Draft Water 5/8/10 + Slow vs DEX≤INT. Upcast Intimidate skipped."
+}

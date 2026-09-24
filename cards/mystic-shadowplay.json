@@ -1,0 +1,37 @@
+{
+  "kind": "ability",
+  "id": "mystic-shadowplay",
+  "name": "Shadowplay",
+  "source": "progressAxisDraft Mystic · smoke Fear AoE",
+  "costAp": 1,
+  "costMana": 1,
+  "range": 3,
+  "aoe": { "range": 3 },
+  "isAttack": true,
+  "roll": { "stat": "INT", "mode": "power" },
+  "dmgType": "Dark",
+  "tiers": {
+    "t1": {
+      "dmg": 0,
+      "aoeMode": "all",
+      "status": { "id": "fear", "x": 1 },
+      "extras": [{ "id": "shadowplayMark", "x": 1 }]
+    },
+    "t2": {
+      "dmg": 0,
+      "aoeMode": "all",
+      "status": { "id": "fear", "x": 1 },
+      "extras": [{ "id": "shadowplayMark", "x": 1 }]
+    },
+    "t3": {
+      "dmg": 0,
+      "aoeMode": "all",
+      "status": [
+        { "id": "fear", "x": 1 },
+        { "id": "intimidate", "x": 5 }
+      ],
+      "extras": [{ "id": "shadowplayMark", "x": 1 }]
+    }
+  },
+  "notes": "Smoke: AoE around caster (ally-source skip). Adv1 vs feared rest of fight."
+}

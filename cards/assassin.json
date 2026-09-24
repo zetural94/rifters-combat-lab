@@ -1,0 +1,41 @@
+{
+  "kind": "hero",
+  "id": "assassin",
+  "name": "Assassin",
+  "source": "characters.list @ Rifters_14_09_2026.json",
+  "hpMax": 22,
+  "speed": 6,
+  "str": 0,
+  "dex": 1,
+  "int": 1,
+  "stability": 0,
+  "stressMax": 4,
+  "apMax": 3,
+  "armorId": "light-armor",
+  "activeKit": 0,
+  "weaponOptions": [
+    "dual-daggers",
+    "stiletto"
+  ],
+  "def": {
+    "Physical": 1,
+    "Fire": 2,
+    "Air": 2,
+    "Water": 2,
+    "Earth": 2,
+    "Lightning": 0,
+    "Dark": 0,
+    "Light": 0,
+    "Toxic": 0
+  },
+  "abilities": [
+    "assassin-dual-daggers-strike",
+    "assassin-dual-daggers-twin-strike",
+    "assassin-stiletto-strike"
+  ],
+  "hp": "22/22",
+  "stress": "4/4",
+  "recoveries": "3/3",
+  "passive": "Light Armor: 1 reaction costs 0 AP. Kits (both): Dual Daggers · Stiletto. Free Weapon Swap between kits 1/your turn (second swap same turn costs 1 AP). Dual Daggers: Crit 1. Stiletto: Crit 1. Flurry 1/round (extra rushed Strike, 0 AP). Twin Strike = 2 AP.",
+  "notes": "Core actions (STR/INT): Shove Push 2/3/4 (STR0); Steel CLEANSE 3/4/6 (INT1); Ask ADV 1 next attack on T2/T3."
+}

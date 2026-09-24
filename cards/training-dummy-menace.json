@@ -1,0 +1,30 @@
+{
+  "kind": "ability",
+  "id": "training-dummy-menace",
+  "name": "Menacing Glare",
+  "source": "Training Dummy · Fear tool",
+  "costAp": 1,
+  "range": 1,
+  "isAttack": true,
+  "roll": {
+    "stat": "none",
+    "mode": "flat"
+  },
+  "dmgType": "Physical",
+  "tiers": {
+    "flat": {
+      "dmg": 0,
+      "status": {
+        "id": "fear"
+      },
+      "text": "Fear (Courage should ignore)"
+    }
+  },
+  "traits": [
+    {
+      "id": "once-per-round",
+      "text": "1/round — Fear lab for Courage"
+    }
+  ],
+  "notes": "Applies Fear. With Courage / aura, attacker should ignore Fear DISADV."
+}

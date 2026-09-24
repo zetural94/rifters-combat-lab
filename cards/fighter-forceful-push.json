@@ -1,0 +1,62 @@
+{
+  "kind": "ability",
+  "id": "fighter-forceful-push",
+  "name": "Forceful Push",
+  "source": "progressAxis Fighter · Rifters_18 left",
+  "costAp": 2,
+  "costStress": 1,
+  "range": 1,
+  "isAttack": true,
+  "kitModes": ["2h", "weapon+shield"],
+  "roll": {
+    "stat": "STR",
+    "mode": "power"
+  },
+  "useWeapon": true,
+  "dmgType": "Physical",
+  "tiers": {
+    "t1": {
+      "dmg": "WD",
+      "dmgFallback": 6,
+      "extras": [
+        {
+          "id": "push",
+          "x": 2,
+          "xStat": "STR"
+        }
+      ]
+    },
+    "t2": {
+      "dmg": "WD",
+      "dmgBonus": 3,
+      "dmgFallback": 13,
+      "extras": [
+        {
+          "id": "push",
+          "x": 3,
+          "xStat": "STR"
+        }
+      ]
+    },
+    "t3": {
+      "dmg": "WD",
+      "dmgBonus": 5,
+      "dmgFallback": 18,
+      "extras": [
+        {
+          "id": "push",
+          "x": 4,
+          "xStat": "STR"
+        }
+      ],
+      "status": {
+        "id": "knockdown",
+        "gate": {
+          "stat": "STR",
+          "vs": "attacker"
+        }
+      }
+    }
+  },
+  "notes": "2 AP + 1 stress. WD; Push 2+STR / WD+3; Push 3+STR / WD+5; Push 4+STR + KD vs YOUR STR."
+}

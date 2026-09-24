@@ -1,0 +1,52 @@
+{
+  "kind": "monster",
+  "id": "magma-tortoise",
+  "name": "Magma Tortoise",
+  "role": "BOSS T1 · Solo",
+  "monsterType": "boss",
+  "bossMode": "solo",
+  "tags": ["Melee", "Beast", "Fire", "Boss", "Solo", "Tortoise"],
+  "source": "combat.monsters Magma Tortoise @ Rifters_16_09_2026.html",
+  "hpMax": 80,
+  "speed": 0,
+  "size": 2,
+  "str": 2,
+  "dex": 1,
+  "int": 2,
+  "stability": 3,
+  "economy": "slots",
+  "bossTurns": 4,
+  "battlePoints": 11,
+  "immuneStatuses": ["burn"],
+  "def": {
+    "Physical": 6,
+    "Fire": 6,
+    "Water": -3,
+    "Earth": 3,
+    "Air": 3
+  },
+  "bloodied": {
+    "speedMod": 6,
+    "stabilityMod": -3,
+    "defMod": { "Physical": -2, "Fire": -2 }
+  },
+  "passive": {
+    "id": "living-shell",
+    "text": "Living Shell — Immune to Burn. While Bloodied: Phys/Fire DEF −2, Stability −3, Speed +6; Magma Claws unlock."
+  },
+  "crit": {
+    "text": "Enemies within RANGE 1: Burn 2",
+    "range": 1,
+    "status": { "id": "burn", "x": 2 }
+  },
+  "abilities": [
+    "magma-tortoise-spikes",
+    "magma-tortoise-hot-steam",
+    "magma-tortoise-eruption",
+    "magma-tortoise-magma-claws"
+  ],
+  "reactions": ["magma-tortoise-oa-burn"],
+  "token": "T",
+  "aiPattern": ["aoe", "ranged", "highestHp"],
+  "notes": "Solo Boss Rank D · BP=11 · bossTurns 4 · STAT STR2/DEX1/INT2 · size 2×2. Speed 0 → Bloodied Speed 6. Magma Spikes R8 · Hot Steam 1/round (uncapped fight) · Eruption 3/fight 2×2 cube + magma terrain · Bloodied Claws · OA Burn 2. Pattern: AoE → Ranged → Highest HP. Lock 2026-09-16."
+}

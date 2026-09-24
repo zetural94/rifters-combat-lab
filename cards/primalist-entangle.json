@@ -1,0 +1,34 @@
+{
+  "kind": "ability",
+  "id": "primalist-entangle",
+  "name": "Entangle",
+  "source": "progressAxisDraft Primalist · smoke Earth control",
+  "costAp": 2,
+  "costMana": 2,
+  "range": 5,
+  "aoe": { "range": 2 },
+  "isAttack": true,
+  "roll": { "stat": "INT", "mode": "power" },
+  "dmgType": "Earth",
+  "tiers": {
+    "t1": {
+      "dmg": 4,
+      "aoeMode": "all",
+      "dmgType": "Earth",
+      "status": { "id": "slow", "x": 1, "gate": { "stat": "STR", "vs": "attacker", "nBonus": -1 } }
+    },
+    "t2": {
+      "dmg": 8,
+      "aoeMode": "all",
+      "dmgType": "Earth",
+      "status": { "id": "restrain", "gate": { "stat": "STR", "vs": "attacker" } }
+    },
+    "t3": {
+      "dmg": 10,
+      "aoeMode": "all",
+      "dmgType": "Earth",
+      "status": { "id": "restrain", "gate": { "stat": "STR", "vs": "attacker", "nBonus": 1 } }
+    }
+  },
+  "notes": "Draft Earth 4/8/10 + Slow/Restrain vs STR≤INT."
+}

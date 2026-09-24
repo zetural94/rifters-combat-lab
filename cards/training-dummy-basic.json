@@ -1,0 +1,20 @@
+{
+  "kind": "ability",
+  "id": "training-dummy-basic",
+  "name": "Practice Blow",
+  "source": "Training Dummy · basic",
+  "costAp": 1,
+  "range": 1,
+  "isAttack": true,
+  "roll": { "stat": "none", "mode": "flat" },
+  "dmgType": "Physical",
+  "tiers": {
+    "flat": {
+      "dmg": 8,
+      "dmgType": "Physical",
+      "text": "8 Physical"
+    }
+  },
+  "traits": [],
+  "notes": "Flat workhorse. Training dummy basic."
+}

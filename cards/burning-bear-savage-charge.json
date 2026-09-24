@@ -1,0 +1,57 @@
+{
+  "kind": "ability",
+  "id": "burning-bear-savage-charge",
+  "name": "Savage Charge",
+  "source": "Burning Bear · Savage Charge @ Rifters_16_09_2026",
+  "costAp": 1,
+  "range": 6,
+  "isAttack": true,
+  "roll": { "stat": "STR", "mode": "power" },
+  "dmgType": "Fire",
+  "tiers": {
+    "t1": {
+      "dmg": 5,
+      "dmgType": "Fire",
+      "extras": [
+        { "id": "approach", "x": 4 },
+        { "id": "push", "x": 2 }
+      ],
+      "text": "Move 4; 5 Fire; Push 2"
+    },
+    "t2": {
+      "dmg": 8,
+      "dmgType": "Fire",
+      "extras": [
+        { "id": "approach", "x": 5 },
+        { "id": "push", "x": 3 }
+      ],
+      "text": "Move 5; 8 Fire; Push 3"
+    },
+    "t3": {
+      "dmg": 10,
+      "dmgType": "Fire",
+      "extras": [
+        { "id": "approach", "x": 6 },
+        { "id": "push", "x": 4 }
+      ],
+      "text": "Move 6; 10 Fire; Push 4"
+    }
+  },
+  "traits": [
+    {
+      "id": "once-per-fight",
+      "x": 2,
+      "text": "2/fight"
+    },
+    {
+      "id": "not-consecutive",
+      "x": 1,
+      "text": "not consecutive"
+    },
+    {
+      "id": "meleeCharge",
+      "text": "Melee charge (approach) — does not trigger ranged OA"
+    }
+  ],
+  "notes": "2/fight Brute spike, not consecutive. Charge reach R6 then approach — melee, not ranged OA. Lock 2026-09-16u: 5/8/10."
+}

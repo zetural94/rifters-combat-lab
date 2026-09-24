@@ -1,0 +1,36 @@
+{
+  "kind": "ability",
+  "id": "acolyte-toxic-cloud",
+  "name": "Toxic Cloud",
+  "source": "progressAxisDraft Acolyte · smoke hazard AoE",
+  "costAp": 2,
+  "costMana": 2,
+  "range": 4,
+  "aoe": { "range": 3 },
+  "isAttack": true,
+  "roll": { "stat": "INT", "mode": "power" },
+  "dmgType": "Toxic",
+  "tiers": {
+    "t1": {
+      "dmg": 4,
+      "aoeMode": "all",
+      "dmgType": "Toxic",
+      "extras": [{ "id": "toxicCloud", "x": 4 }]
+    },
+    "t2": {
+      "dmg": 4,
+      "aoeMode": "all",
+      "dmgType": "Toxic",
+      "status": { "id": "poison", "x": 2, "gate": { "stat": "INT", "vs": "attacker" } },
+      "extras": [{ "id": "toxicCloud", "x": 4 }]
+    },
+    "t3": {
+      "dmg": 4,
+      "aoeMode": "all",
+      "dmgType": "Toxic",
+      "status": { "id": "poison", "x": 2, "gate": { "stat": "INT", "vs": "attacker" } },
+      "extras": [{ "id": "toxicCloud", "x": 4 }]
+    }
+  },
+  "notes": "Smoke: instant 4 Toxic + paint enter hazard 4 Toxic. Cloud persist via hazards."
+}

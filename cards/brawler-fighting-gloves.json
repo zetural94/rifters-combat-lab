@@ -1,0 +1,18 @@
+{
+  "kind": "ability",
+  "id": "brawler-fighting-gloves-strike",
+  "name": "Fighting Gloves · Strike",
+  "source": "equipment:fighting-gloves @ Rifters_19_09_2026",
+  "costAp": 1,
+  "range": 1,
+  "isAttack": true,
+  "roll": { "stat": "STR", "mode": "power" },
+  "dmgType": "Physical",
+  "weaponId": "fighting-gloves",
+  "tiers": {
+    "t1": { "dmg": 6, "dmgType": "Physical" },
+    "t2": { "dmg": 8, "dmgType": "Physical", "extras": [{ "id": "push", "x": 2 }] },
+    "t3": { "dmg": 11, "dmgType": "Physical", "extras": [{ "id": "push", "x": 3 }] }
+  },
+  "notes": "LOCKED: 6 / 8 Push 2 / 11 Push 3. Push via forced.js (Stability)."
+}

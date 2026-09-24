@@ -1,0 +1,36 @@
+{
+  "kind": "ability",
+  "id": "acolyte-symbol-strike",
+  "name": "Acolyte Symbol · Strike",
+  "source": "equipment:acolyte-symbol @ Rifters_15_09_2026.json",
+  "costAp": 1,
+  "range": 5,
+  "isAttack": true,
+  "roll": { "stat": "INT", "mode": "power" },
+  "dmgType": "Light",
+  "weaponId": "acolyte-symbol",
+  "tiers": {
+    "t1": {
+      "dmg": 3,
+      "dmgType": "Light",
+      "extras": [{ "id": "allyCatchBreath", "x": 0, "range": 5 }]
+    },
+    "t2": {
+      "dmg": 5,
+      "dmgType": "Light",
+      "extras": [{ "id": "allyCatchBreath", "x": 2, "range": 5, "orCleanse": 2 }]
+    },
+    "t3": {
+      "dmg": 7,
+      "dmgType": "Light",
+      "extras": [{ "id": "allyCatchBreath", "x": 5, "range": 5, "orCleanse": 3 }]
+    }
+  },
+  "traits": [
+    {
+      "id": "supportStrike",
+      "text": "On hit, apply the support extra to an ally within RANGE 5."
+    }
+  ],
+  "notes": "Acolyte kit0. Support: Catch Breath (+X) or Cleanse X."
+}

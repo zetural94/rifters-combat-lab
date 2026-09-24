@@ -1,0 +1,37 @@
+{
+  "kind": "ability",
+  "id": "summon-elemental-strike",
+  "name": "Elemental · Bolt",
+  "source": "progressAxis Primalist Summon Elemental · 4×INT EARTH/FIRE/LIGHTNING/WATER R5",
+  "costAp": 1,
+  "range": 5,
+  "isAttack": true,
+  "roll": { "stat": "INT", "mode": "power" },
+  "dmgType": "Fire",
+  "tiers": {
+    "t1": {
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 4,
+      "dmgType": "Fire"
+    },
+    "t2": {
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 4,
+      "dmgType": "Fire"
+    },
+    "t3": {
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 4,
+      "dmgType": "Fire"
+    }
+  },
+  "traits": [
+    {
+      "id": "elementPick",
+      "text": "Choose damage type: Earth / Fire / Lightning / Water."
+    }
+  ]
+}

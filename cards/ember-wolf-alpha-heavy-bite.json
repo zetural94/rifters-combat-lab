@@ -1,0 +1,16 @@
+{
+  "kind": "ability",
+  "id": "ember-wolf-alpha-heavy-bite",
+  "name": "Heavy Bite",
+  "source": "Ember Wolf Alpha · OA @ Rifters_14_09_2026.json",
+  "costAp": 1,
+  "range": 1,
+  "isAttack": true,
+  "roll": { "stat": "none", "mode": "flat" },
+  "dmgType": "Physical",
+  "tiers": {
+    "flat": { "dmg": 9, "dmgType": "Physical", "text": "9 Physical" }
+  },
+  "traits": [{ "id": "reaction", "text": "Opportunity Attack — Heavy Bite: 9 Physical" }],
+  "notes": "Monster OA line."
+}

@@ -1,0 +1,27 @@
+{
+  "kind": "ability",
+  "id": "assassin-expose-weakness",
+  "name": "Expose Weakness",
+  "source": "progressAxis Assassin · Rifters_18 left (Vuln 1+DEX / 3+DEX)",
+  "costAp": 2,
+  "costStress": 1,
+  "range": 1,
+  "isAttack": true,
+  "roll": { "stat": "DEX", "mode": "power" },
+  "useWeapon": true,
+  "dmgType": "Physical",
+  "tiers": {
+    "t1": { "dmg": "2WD", "dmgBonus": -2, "dmgFallback": 6 },
+    "t2": {
+      "dmg": "2WD",
+      "dmgFallback": 12,
+      "extras": [{ "id": "vulnerable", "x": 1, "xStat": "DEX" }]
+    },
+    "t3": {
+      "dmg": "2WD",
+      "dmgFallback": 18,
+      "extras": [{ "id": "vulnerable", "x": 3, "xStat": "DEX" }]
+    }
+  },
+  "notes": "Left: 2 AP + 1 stress; T2 Vuln 1+DEX / T3 Vuln 3+DEX for active weapon damage type."
+}

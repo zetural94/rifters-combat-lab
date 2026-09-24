@@ -1,0 +1,32 @@
+{
+  "kind": "ability",
+  "id": "summon-elemental-shield",
+  "name": "Elemental Shield",
+  "source": "progressAxis Primalist · 1 stress R4 · chosen target +INT elem DEF EOTF",
+  "costAp": 1,
+  "costStress": 1,
+  "range": 4,
+  "isAttack": false,
+  "roll": { "stat": "INT", "mode": "flat" },
+  "dmgType": "Fire",
+  "tiers": {
+    "flat": {
+      "dmg": 0,
+      "extras": [
+        {
+          "id": "allyElemDef",
+          "x": 0,
+          "xStat": "INT",
+          "dmgType": "Fire"
+        }
+      ]
+    }
+  },
+  "traits": [
+    {
+      "id": "elementPick",
+      "text": "Choose DEF type: Earth / Fire / Lightning / Water."
+    }
+  ],
+  "notes": "COMPLETE: +INT to chosen elemental DEF on supportAllyId (or nearest ally / self)."
+}

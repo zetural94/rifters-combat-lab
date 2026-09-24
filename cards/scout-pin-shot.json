@@ -1,0 +1,33 @@
+{
+  "kind": "ability",
+  "id": "scout-pin-shot",
+  "name": "Pin Shot",
+  "source": "progressAxis Scout · Rifters_18 left",
+  "costAp": 1,
+  "costStress": 1,
+  "range": 8,
+  "isAttack": true,
+  "roll": { "stat": "DEX", "mode": "power" },
+  "useWeapon": true,
+  "optionalStressAdv": 1,
+  "dmgType": "Physical",
+  "weaponId": "shortbow",
+  "tiers": {
+    "t1": {
+      "dmg": "WD",
+      "dmgFallback": 6,
+      "status": { "id": "slow", "x": 1, "gate": { "stat": "DEX", "vs": "attacker" } }
+    },
+    "t2": {
+      "dmg": "WD",
+      "dmgFallback": 9,
+      "status": { "id": "slow", "x": 2, "gate": { "stat": "DEX", "vs": "attacker" } }
+    },
+    "t3": {
+      "dmg": "WD",
+      "dmgFallback": 11,
+      "status": { "id": "knockdown", "x": 1, "gate": { "stat": "DEX", "vs": "attacker" } }
+    }
+  },
+  "notes": "1 AP + 1 stress; optional extra 1 stress → Adv 1. WD Shortbow 6/9/11. Slow 1/2 / Knockdown gated DEX≤yours."
+}

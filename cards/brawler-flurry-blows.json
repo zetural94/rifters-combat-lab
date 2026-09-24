@@ -1,0 +1,38 @@
+{
+  "kind": "ability",
+  "id": "brawler-flurry-blows",
+  "name": "Flurry of Blows",
+  "source": "progressAxis Brawler · Rifters_19",
+  "costAp": 3,
+  "costStress": 1,
+  "range": 1,
+  "isAttack": true,
+  "roll": { "stat": "STR", "mode": "power" },
+  "useWeapon": true,
+  "dmgType": "Physical",
+  "traits": [
+    {
+      "id": "halfCleave",
+      "stressCost": 1,
+      "text": "1 stress: hit additional RANGE 1 foe for half total DMG"
+    }
+  ],
+  "tiers": {
+    "t1": {
+      "dmg": "2WD",
+      "dmgStat": "STR",
+      "dmgFallback": 13
+    },
+    "t2": {
+      "dmg": "2WD",
+      "dmgStat": "STR",
+      "dmgStatMult": 2,
+      "dmgFallback": 18
+    },
+    "t3": {
+      "dmg": "3WD",
+      "dmgFallback": 33
+    }
+  },
+  "notes": "3 AP + 1 stress. 2WD+STR / 2WD+2×STR / 3WD from active kit (Gloves 6/8/11 → 13/18/33 @ STR1). Half cleave optional."
+}

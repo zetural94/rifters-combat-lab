@@ -1,0 +1,31 @@
+{
+  "kind": "ability",
+  "id": "acolyte-enfeeble",
+  "name": "Enfeeble",
+  "source": "progressAxisDraft Acolyte · smoke Intimidate AoE",
+  "costAp": 1,
+  "costMana": 1,
+  "range": 4,
+  "aoe": { "range": 4 },
+  "isAttack": true,
+  "roll": { "stat": "INT", "mode": "power" },
+  "dmgType": "Physical",
+  "tiers": {
+    "t1": {
+      "dmg": 0,
+      "aoeMode": "all",
+      "status": { "id": "intimidate", "x": 3 }
+    },
+    "t2": {
+      "dmg": 0,
+      "aoeMode": "all",
+      "status": { "id": "intimidate", "x": 3 }
+    },
+    "t3": {
+      "dmg": 0,
+      "aoeMode": "all",
+      "status": { "id": "intimidate", "x": 3 }
+    }
+  },
+  "notes": "Draft: 1 AP + 1 mana, AoE R4 Intimidate 3 all. Smoke flat X=3 all tiers."
+}

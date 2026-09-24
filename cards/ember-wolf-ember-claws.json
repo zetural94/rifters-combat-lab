@@ -1,0 +1,39 @@
+{
+  "kind": "ability",
+  "id": "ember-wolf-ember-claws",
+  "name": "Savage Claws",
+  "source": "combat.monsters Ember Wolf · Savage Claws @ Rifters_16_09_2026.json",
+  "costAp": 1,
+  "range": 1,
+  "isAttack": true,
+  "roll": { "stat": "STR", "mode": "power" },
+  "dmgType": "Fire",
+  "tiers": {
+    "t1": {
+      "dmg": 5,
+      "dmgType": "Fire",
+      "status": { "id": "bleed", "x": 1, "gate": { "stat": "STR", "n": 0 } },
+      "text": "5 Fire + STR ≤ 0 Bleed 1"
+    },
+    "t2": {
+      "dmg": 9,
+      "dmgType": "Fire",
+      "status": { "id": "bleed", "x": 1, "gate": { "stat": "STR", "n": 0 } },
+      "text": "9 Fire + STR ≤ 0 Bleed 1"
+    },
+    "t3": {
+      "dmg": 11,
+      "dmgType": "Fire",
+      "status": { "id": "bleed", "x": 2, "gate": { "stat": "STR", "n": 1 } },
+      "text": "11 Fire + STR ≤ 1 Bleed 2"
+    }
+  },
+  "traits": [
+    {
+      "id": "bloodied-only",
+      "text": "When Bloodied (below 1/2 hp)",
+      "require": { "selfBloodied": true }
+    }
+  ],
+  "notes": "Standard Bloodied special — Power Roll + STR. Weak-Fire band 2026-09-16t (6/10/12→5/9/11)."
+}
