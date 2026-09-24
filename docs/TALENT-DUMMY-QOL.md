@@ -1,6 +1,6 @@
 # Rank-1 talent dummy QoL audit
 
-Scope: every `FEAT_SMOKE_STUBS` talent except Warrior, one at a time on `train_<class>` (two copies of that class vs the Training Dummy). Damage numbers use `resolveAbilityTierDamage` — the same helper a strike uses.
+Scope: every `FEAT_SMOKE_STUBS` talent, one at a time on `train_<class>` (two copies of that class vs the Training Dummy). Damage numbers use `resolveAbilityTierDamage` — the same helper a strike uses.
 
 Counts: **56 OK**, **0 issues**, **56 checked**.
 

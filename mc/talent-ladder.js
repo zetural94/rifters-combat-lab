@@ -261,33 +261,6 @@ export const MIX_LADDER_PICKS = {
       "acolyte-bless",
     ],
   },
-  /** T2 draft probe — usage only; out of XP↔BP pad calib. */
-  warriorProbe: {
-    warrior: [
-      "warrior-diving-slash",
-      "warrior-furious-blows",
-      "warrior-fast-footwork",
-      "warrior-inspiring-presence",
-    ],
-    brawler: [
-      "brawler-uppercut",
-      "brawler-flurry-blows",
-      "brawler-full-contact",
-      "brawler-martial-artist",
-    ],
-    assassin: [
-      "assassin-shadow-dash",
-      "assassin-riposte",
-      "assassin-stealth",
-      "assassin-dirty-trick",
-    ],
-    scout: [
-      "scout-hidden-bola",
-      "scout-ranger",
-      "scout-pin-shot",
-      "scout-barrage",
-    ],
-  },
 };
 
 /** Full class talent package for 1v1 training (sandbox train_*). */
@@ -304,12 +277,12 @@ export const TRAIN_CLASS_FEATS = {
   ],
 };
 
-/** Feats for a train_<class> scenario (every Rank-1 stub for that class, no Warrior). */
+/** Feats for a train_<class> scenario (every Rank-1 stub for that class). */
 export function trainClassFeats(classId) {
   const cls = String(classId || "")
     .replace(/^train_/, "")
     .toLowerCase();
-  if (!cls || cls === "warrior") return null;
+  if (!cls) return null;
   const fromStubs = Object.keys(FEAT_SMOKE_STUBS).filter((id) => {
     const stub = FEAT_SMOKE_STUBS[id];
     return stub && stub.classId === cls;

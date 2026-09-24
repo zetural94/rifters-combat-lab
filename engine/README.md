@@ -2,7 +2,7 @@
 
 Pure ES modules. No `fs`, no Node-only APIs. Same kernel for sandbox + Monte Carlo.
 
-The full rules canon is **not in this repository** (no `RULES-CANON.md` on the Pages tree). Lab behavior that is written down here lives in [../docs/](../docs/): [HELP-AND-MINIONS.md](../docs/HELP-AND-MINIONS.md), [LAB-QA-PASS.md](../docs/LAB-QA-PASS.md). Card numbers come from [../cards/](../cards/) (printed EQ / monster values), not a Mechanika band table.
+The full rules canon is **not in this repository** (no `RULES-CANON.md` on the Pages tree). Lab behavior that is written down here lives in [../docs/](../docs/): [HELP-AND-MINIONS.md](../docs/HELP-AND-MINIONS.md), [LAB-QA-PASS.md](../docs/LAB-QA-PASS.md). Card numbers come from [../cards/](../cards/) (printed EQ / monster values), not a Mechanika band table. resolved: Warrior removed for now — there is no Warrior hero class in this tree. The Acolyte summon Summon Warrior stays.
 
 ```
 rng.js        → seeded RNG

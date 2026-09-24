@@ -420,8 +420,7 @@ function logWoundIfAny(state, target, dmgResult) {
     target.name +
       " Wound " +
       (target.wounds | 0) +
-      ((target.wounds | 0) >= 5 ? " — Dead" : " — Dying") +
-      (dmgResult.warMachineStress ? " · War Machine +1 Stress" : "")
+      ((target.wounds | 0) >= 5 ? " — Dead" : " — Dying")
   );
 }
 
@@ -1172,16 +1171,6 @@ export function applyAction(state, action) {
     return { ok: true, result: r };
   }
 
-  if (action.type === "inspiringPresence") {
-    if (!actor.hasInspiringPresence) return { ok: false, reason: "no-feat" };
-    if (actor.inspireArmed) return { ok: false, reason: "already" };
-    if (!payAp(actor, 1)) return { ok: false, reason: "no-ap" };
-    actor.inspireArmed = true;
-    actor.inspireFocus = 5;
-    pushLog(state, actor.name + " Inspiring Presence (−1 AP · Focus 5 on kill R2)");
-    return { ok: true };
-  }
-
   if (action.type === "askQuestion") {
     const r = resolveAskQuestion(actor, {
       rng: state.rng,
@@ -1360,17 +1349,16 @@ export function applyAction(state, action) {
     return { ok: true, result: { moveLeft: actor.moveBudget | 0 } };
   }
 
-  if (action.type === "move" || action.type === "carefulStep" || action.type === "martialStep" || action.type === "vigilantStep" || action.type === "footworkStep") {
+  if (action.type === "move" || action.type === "carefulStep" || action.type === "martialStep" || action.type === "vigilantStep") {
     const martial = action.type === "martialStep";
     const vigilant = action.type === "vigilantStep";
-    const footwork = action.type === "footworkStep";
     const r = resolveMove({
       actor,
       dest: action.dest,
       actors: state.actors,
-      careful: action.type === "carefulStep" || martial || vigilant || footwork,
-      maxSteps: martial ? 2 : vigilant || footwork ? 1 : undefined,
-      skipAp: martial || vigilant || footwork || !!action.skipAp,
+      careful: action.type === "carefulStep" || martial || vigilant,
+      maxSteps: martial ? 2 : vigilant ? 1 : undefined,
+      skipAp: martial || vigilant || !!action.skipAp,
       chase: !!action.chase,
       asChase: !!action.chase,
       rng: state.rng,
@@ -1393,18 +1381,12 @@ export function applyAction(state, action) {
     if (vigilant) {
       actor.vigilantMoveReady = false;
     }
-    if (footwork) {
-      actor.footworkUsedThisTurn = true;
-      actor.footworkMoveReady = false;
-    }
     const pendingOas = r.pendingOas || [];
     pushLog(
       state,
       actor.name +
         (martial
           ? " Martial Step"
-          : footwork
-            ? " Footwork Step"
           : vigilant
             ? " Vigilant Step"
           : action.type === "carefulStep"
@@ -1690,7 +1672,6 @@ export function applyAction(state, action) {
     if (r.weaponmasterClear) msg += " · Weaponmaster clear stress";
     if (r.primalInstinctAdv) msg += " · Primal Instinct ADV1";
     if (r.courageFearIgnore) msg += " · Courage ignore Fear";
-    if (r.rendBleed) msg += " · Rend Bleed " + r.rendBleed;
     if (r.critRiders === false && r.critBlockedBySteel) msg += " · onCrit blocked";
     if (r.cardCritHits && r.cardCritHits.length) {
       msg += " · Crit aura ×" + r.cardCritHits.length;
@@ -1698,13 +1679,11 @@ export function applyAction(state, action) {
     if (r.forced && r.forced.length) {
       const modes = [];
       let fullContactNote = 0;
-      let solidStanceNote = 0;
       for (const f of r.forced) {
         const m = (f && f.mode) || "push";
         const label = m === "pull" ? "Pull" : m === "slide" ? "Slide" : "Push";
         if (!modes.includes(label)) modes.push(label);
         if (f && f.fullContactPush) fullContactNote = f.fullContactPush | 0;
-        if (f && f.solidStanceNote) solidStanceNote = f.solidStanceNote | 0;
         if (f && f.collision) {
           const c = f.collision;
           const forcedName = target ? target.name : label;
@@ -1740,13 +1719,6 @@ export function applyAction(state, action) {
       }
       msg += " · " + modes.join("/");
       if (fullContactNote) msg += " · Full Contact +" + fullContactNote;
-      if (solidStanceNote) {
-        msg +=
-          " · Solid Stance " + (solidStanceNote > 0 ? "+" : "") + solidStanceNote;
-      }
-    }
-    if (r.dmgResult && r.dmgResult.warMachineStress) {
-      msg += " · War Machine +1 Stress";
     }
     pushLog(state, msg);
     logWoundIfAny(state, target, r.dmgResult);

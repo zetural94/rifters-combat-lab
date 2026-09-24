@@ -1300,16 +1300,6 @@ export function chooseHeroAction(state, policy = "smart") {
     actor.martialMoveReady = false;
   }
 
-  // Fast Footwork: MOVE 1 safe after hit
-  if (actor.footworkMoveReady && !actor.footworkUsedThisTurn) {
-    const step = legal.find((a) => a.type === "footworkStep");
-    if (step && step.cells && step.cells.length) {
-      const dest = pickMartialStepDest(actor, step.cells, foes, preferred);
-      if (dest) return { type: "footworkStep", dest };
-    }
-    actor.footworkMoveReady = false;
-  }
-
   // Vigilant: free MOVE 1 after OA — always take it if any cell exists
   if (actor.vigilantMoveReady) {
     const step = legal.find((a) => a.type === "vigilantStep");
@@ -1413,26 +1403,6 @@ export function chooseHeroAction(state, policy = "smart") {
           return enrichHeroStrike(state, actor, {
             type: "strike",
             abilityId: blows.abilityId,
-            targetId: preferred.id,
-          });
-        }
-      }
-      if (actor.furiousBlows && (actor.ap | 0) >= 3) {
-        const fur = earlyStrikes.find((s) => /furious-blows/i.test(s.abilityId || ""));
-        if (fur && fur.targets && fur.targets.indexOf(preferred.id) >= 0) {
-          return enrichHeroStrike(state, actor, {
-            type: "strike",
-            abilityId: fur.abilityId,
-            targetId: preferred.id,
-          });
-        }
-      }
-      if (actor.divingSlash && (actor.ap | 0) >= 1) {
-        const dive = earlyStrikes.find((s) => /diving-slash/i.test(s.abilityId || ""));
-        if (dive && dive.targets && dive.targets.indexOf(preferred.id) >= 0) {
-          return enrichHeroStrike(state, actor, {
-            type: "strike",
-            abilityId: dive.abilityId,
             targetId: preferred.id,
           });
         }
@@ -1981,18 +1951,6 @@ export function chooseHeroAction(state, policy = "smart") {
   if (false && actor.hasBarkskin) {
     const bk = legal.find((a) => a.type === "barkskin");
     if (bk) return { type: "barkskin", targetId: actor.id };
-  }
-
-  // Inspiring Presence: arm early
-  if (
-    (policy === "smart" || policy === "mixKits") &&
-    actor.hasInspiringPresence &&
-    !actor.inspireArmed &&
-    (actor.ap | 0) >= 2 &&
-    (actor.attacksThisTurn | 0) === 0
-  ) {
-    const ip = legal.find((a) => a.type === "inspiringPresence");
-    if (ip) return { type: "inspiringPresence" };
   }
 
   // Stealth: free 0 AP + 1 stress · 1/round · threat-gated (no idle spam)

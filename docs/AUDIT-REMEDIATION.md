@@ -10,7 +10,7 @@ Pages URL: https://zetural94.github.io/rifters-combat-lab/
 
 - **Pages gate.** `index.html` decrypts `lab.enc` (AES-256-GCM, PBKDF2-SHA256, 120000 iterations) and only then hands sandbox, `engine/*`, `mc/*`, and `cards/*` to a service worker in memory. `sandbox.html` does not import the engine until that session exists. `_config.yml` tells Jekyll not to publish plaintext `engine/`, `cards/`, `mc/`, or `sandbox.html` (`.nojekyll` removed so that exclude applies). `robots.txt` and `noindex` are set. Direct requests for those paths 404 on a Jekyll publish; wrong password stays on the gate.
 - **Local server.** `serve.py` is in the repo again. It binds `127.0.0.1`, reflects CORS only for localhost origins (never `*`), caps POST bodies, and writes logs only for loopback clients (or `X-Lab-Token` when `LAB_TOKEN` is set). No `log_kpi` import. `ODPAL.md` matches this and also documents `npx serve`.
-- **Cards.** `cards/card.schema.json` covers engine fields `xStat`, `xStatMult`, `breakStat`, `maxTargets`, gate `n`, and status `x`. `scripts/check-card-schema.mjs` walks the schema (required, types, enums, patterns, `oneOf`, `additionalProperties`) instead of a top-level key list. **82 / 82** card files pass. No card bodies were invented.
+- **Cards.** `cards/card.schema.json` covers engine fields `xStat`, `xStatMult`, `breakStat`, `maxTargets`, gate `n`, and status `x`. `scripts/check-card-schema.mjs` walks the schema (required, types, enums, patterns, `oneOf`, `additionalProperties`) instead of a top-level key list. **78 / 78** card files pass after the Warrior hero cards were removed. No card bodies were invented.
 - **Tests.** `node --test tests/*.test.mjs` covers schema, reactPrompt gates, playSummons handoff, puppeteer path, seal, cast range, and the monster-special rule. `.github/workflows/test.yml` also runs `scripts/check-card-schema.mjs`, `scripts/lab-qa-pass.mjs`, and `scripts/help-and-minions-check.mjs`. Puppeteer UI scripts stay manual. They resolve `puppeteer-core` from `PUPPETEER_CORE`, `PUPPETEER_RUN`, or `os.tmpdir()/puppeteer-run`.
 - **Cache bust.** HTML and card fetches use `20260924remed`.
 - **Docs.** README, ODPAL, and `engine/README.md` name this root as the Pages source. The dead `RULES-CANON.md` link in the engine readme (and the sandbox header) now points at `docs/` that actually exist. Soft bands and stairs v0.3g are unchanged. Help stays a lower-d10 reroll.
@@ -20,10 +20,11 @@ Pages URL: https://zetural94.github.io/rifters-combat-lab/
 | Check | Result |
 | --- | --- |
 | `node --test tests/*.test.mjs` | 22 pass |
-| `scripts/check-card-schema.mjs` | 82 pass, 0 fail |
+| `scripts/check-card-schema.mjs` | 78 pass, 0 fail |
 | `scripts/lab-qa-pass.mjs` | 50 OK, 0 fail |
 | `scripts/help-and-minions-check.mjs` | exit 0 |
-| Sealed files in `lab.enc` | 111 |
+| Playable files (`collectPlayableFiles`) | 107 |
+| Sealed files in `lab.enc` | 107 |
 | Card schema failures left | 0 |
 
 The earlier “63 tests” figure does not match this repo. `lab-qa-pass.mjs` reports 50 checks. The new unit file is separate. Nothing was padded to 63.
@@ -34,7 +35,7 @@ Adrian chose to keep this repository **public**. A private repo is not the remai
 
 The designer password was **not rotated**. The published gate no longer contains its unsalted SHA-256. After a successful decrypt, the session flag is `open`, not a hash. Wrong password still stays on the gate.
 
-Click / primary-target range is `ability.range`. `aoe.range` and tier `aoeRange` are blast radius only. Builder, verify, smoke, and `mc.html` links are gone from the sandbox chrome. Stealth stays 1/round and is allowed even after attacking this turn; attacks still break stealth. Assassin ladder, Scout ladder, and Rank 0 Warrior were not redesigned.
+Click / primary-target range is `ability.range`. `aoe.range` and tier `aoeRange` are blast radius only. Builder, verify, smoke, and `mc.html` links are gone from the sandbox chrome. Stealth stays 1/round and is allowed even after attacking this turn; attacks still break stealth. Assassin ladder and Scout ladder were not redesigned. D-03: resolved: Warrior removed for now. The Acolyte summon Summon Warrior stays.
 
 Any change to `sandbox.html`, `engine/`, `mc/`, or `cards/` must run `scripts/seal-lab.mjs` and commit `lab.enc` plus `lab.manifest.json` in the same commit. See `ODPAL.md`. The seal test checks magic, size, the Jekyll exclude list, and that manifest against the tree. It does not put the password in CI.
 

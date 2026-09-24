@@ -11,7 +11,7 @@ import {
   r1LadderFeatsVariant,
 } from "./talent-ladder.js";
 
-/** T1 balance classes (exclude warrior T2 draft). */
+/** T1 balance classes. */
 export const CLASS_ORDER = [
   "fighter",
   "brawler",
@@ -26,7 +26,7 @@ const DEFAULT_PARTY = ["fighter", "brawler", "assassin", "scout"];
 
 /**
  * All FEAT_SMOKE_STUBS keys grouped by stub.classId (or id prefix).
- * Includes warrior if present in stubs; callers usually iterate CLASS_ORDER.
+ * Callers usually iterate CLASS_ORDER.
  */
 export function talentPoolFromStubs() {
   const by = {};
@@ -126,7 +126,7 @@ export function featPackageForTalent(talentId, n = 4, variant = "A") {
     }
     out.push(...slice);
   }
-  // Warrior / non-CLASS_ORDER: still force the one talent if focus outside CLASS_ORDER
+  // Focus outside CLASS_ORDER: still force that one talent.
   if (!CLASS_ORDER.includes(focus)) {
     if (!out.includes(talentId)) out.push(talentId);
   }
