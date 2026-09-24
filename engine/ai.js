@@ -1150,6 +1150,21 @@ function pickMoveForHero(actor, legal, foes, state) {
   if (!move || !move.cells || !move.cells.length) return null;
   // Approach until preferred is in strike range — do not dive to melee
   const prefD0 = preferred ? chebyshev(actor, preferred) : 99;
+  const inOwnCloud = !!(actor.toxicCloud && cellInToxicCloud(actor.x, actor.y, state));
+  if (inOwnCloud && move && move.cells && move.cells.length) {
+    const outside = move.cells.filter((c) => !cellInToxicCloud(c.x, c.y, state));
+    const pool = outside.length ? outside : [];
+    if (pool.length) {
+      const ranked = pool
+        .map((c) => {
+          const prefD = preferred ? chebyshev(c, preferred) : 99;
+          const inBand = prefD >= 2 && prefD <= strikeRange;
+          return { c, score: (inBand ? 0 : 10 + Math.abs(prefD - 4)) + foes.filter((f) => inRange(c, f, 1)).length * 4 };
+        })
+        .sort((a, b) => a.score - b.score);
+      return { type: "move", dest: ranked[0].c };
+    }
+  }
   if (preferred && prefD0 <= strikeRange) return null;
 
   const ranked = move.cells
@@ -1424,14 +1439,14 @@ function pickToxicAction(state, actor, legal, foes) {
     if (tox.targets.indexOf(f.id) < 0) continue;
     const enemies = blastCount(f, foes, 3);
     const allies = blastCount(f, heroes, 3);
-    const score = enemies * 3 - allies * 5;
+    const score = enemies * 3 - allies * 3;
     if (score > bestScore) {
       bestScore = score;
       best = f;
     }
   }
-  const minHits = foes.length >= 2 ? 2 : 1;
-  if (!best || blastCount(best, foes, 3) < minHits) return null;
+  // A persistent cloud on one body still ticks all fight. Skip only when allies outweigh the blast.
+  if (!best || bestScore <= 0) return null;
   return {
     type: "strike",
     abilityId: tox.abilityId,
@@ -1439,6 +1454,61 @@ function pickToxicAction(state, actor, legal, foes) {
     targets: [best.id],
     upcast: canPayMana(actor, 3),
   };
+}
+
+/**
+ * Toxic Cloud is Range 4. Symbol/Hex are Range 5, so the caster used to stand
+ * one step short and never paint the zone. Step into Range 4 of the best anchor.
+ */
+function pickToxicApproach(state, actor, legal, foes) {
+  if (!actor.toxicCloud || (actor.ap | 0) < 2 || !canPayMana(actor, 2)) return null;
+  if ((actor.attacksThisTurn | 0) !== 0) return null;
+  const existing = findCloud(state, actor.id);
+  if (
+    existing &&
+    blastCount({ x: existing.ax, y: existing.ay }, foes, existing.radius | 0 || 3) >= 1
+  ) {
+    return null;
+  }
+  const heroes = (state.actors || []).filter(
+    (a) => a && a.side === "hero" && !a.dead && (a.hp | 0) > 0
+  );
+  let best = null;
+  let bestScore = 0;
+  for (const f of foes) {
+    const score = blastCount(f, foes, 3) * 3 - blastCount(f, heroes, 3) * 3;
+    if (score > bestScore) {
+      bestScore = score;
+      best = f;
+    }
+  }
+  if (!best || chebyshev(actor, best) <= 4) return null;
+  const move = legal.find((a) => a.type === "move");
+  const careful = legal.find((a) => a.type === "carefulStep");
+  const cells = [].concat((careful && careful.cells) || [], (move && move.cells) || []);
+  if (!cells.length) return null;
+  let pick = null;
+  let pickScore = 1e9;
+  const seen = new Set();
+  for (const c of cells) {
+    const key = (c.x | 0) + "," + (c.y | 0);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const d = chebyshev(c, best);
+    const inside = d <= 3;
+    const score = (d <= 4 ? 0 : 20 + d) + (inside ? 8 : 0) + foes.filter((f) => inRange(c, f, 1)).length * 3;
+    if (score < pickScore) {
+      pickScore = score;
+      pick = c;
+    }
+  }
+  if (!pick || chebyshev(pick, best) >= chebyshev(actor, best)) return null;
+  const onCareful =
+    careful &&
+    careful.cells &&
+    careful.cells.some((c) => (c.x | 0) === (pick.x | 0) && (c.y | 0) === (pick.y | 0));
+  if (onCareful) return { type: "carefulStep", dest: pick };
+  return { type: "move", dest: pick };
 }
 
 /** Living Bomb: mark the foe most likely to die beside another body. */
@@ -1908,6 +1978,12 @@ export function chooseHeroAction(state, policy = "smart") {
       );
       if (hurt) return { type: "healingWater", targetId: hurt.id };
     }
+  }
+
+  // Walk into Toxic Cloud range before Symbol/Hex spend the turn one step short.
+  if (policy === "smart" || policy === "mixKits" || policy === "defend1") {
+    const toxStep = pickToxicApproach(state, actor, legal, foes);
+    if (toxStep) return toxStep;
   }
 
   // Bought mana combat feats before Magic Shield / Bless burn the pool

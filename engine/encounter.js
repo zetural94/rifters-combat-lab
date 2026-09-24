@@ -969,6 +969,7 @@ export function applyAction(state, action) {
         ((r.pay && r.pay.stress) ? " −" + r.pay.stress + " stress" : "") +
         ") · PR thresholds −1"
     );
+    noteTalent(state, { kind: "bargain", actorId: actor.id });
     return { ok: true, result: r };
   }
 
