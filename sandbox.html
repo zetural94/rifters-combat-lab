@@ -319,6 +319,11 @@
       font-size: 11px;
       margin-top: 4px;
     }
+    #inspect .insp-weapon .w-kits {
+      color: #d7c48a;
+      font-size: 11px;
+      margin-top: 4px;
+    }
     #inspect .insp-def {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -1048,6 +1053,12 @@
       resolveAbilityTierDamage,
       critPassiveBonusDmg,
     } from "./engine/index.js?v=20260919gate";
+    import {
+      isWeaponDmgToken,
+      kitIndexesForAbility,
+      previewTierDamage,
+      previewTierTriplet,
+    } from "./engine/abilityPreview.js?v=20260924wd";
     import { loadCardPack, SCENARIOS, RIFT_CHAINS, makeR1Encounter, resolvePartyIds, FEAT_SMOKE_STUBS, lanePadFromTalents, effectiveEncounterBp, encounterSpentBp, PARTY_PRESETS, partyLabel } from "./mc/r1.js?v=20260919gate";
     import { r1LadderFeats, trainClassFeats, mixLadderFeats } from "./mc/talent-ladder.js?v=20260919gate";
     import {
@@ -2464,26 +2475,132 @@
       render();
     }
 
-    function formatTierLine(tierKey, effect) {
+    function abilityByIdNow() {
+      return (state && state.abilityById) || (pack && pack.abilityById) || {};
+    }
+
+    function statVal(actor, name) {
+      if (!actor || !name) return 0;
+      const k = String(name).toUpperCase();
+      if (k === "STR") return actor.str | 0;
+      if (k === "DEX") return actor.dex | 0;
+      if (k === "INT") return actor.int | 0;
+      return 0;
+    }
+
+    function prettyKitName(ref) {
+      return kitLabel(ref)
+        .split(/\s*\+\s*/)
+        .map((part) =>
+          part
+            .split(/[-\s]+/)
+            .filter(Boolean)
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(" ")
+        )
+        .join(" + ");
+    }
+
+    function classPreviewActor(classId) {
+      const card = pack && pack.cards && pack.cards[classId];
+      if (!card) return null;
+      return {
+        side: "hero",
+        str: card.str | 0,
+        dex: card.dex | 0,
+        int: card.int | 0,
+        weaponOptions: card.weaponOptions || [],
+        activeKit: card.activeKit == null ? 0 : card.activeKit | 0,
+        abilityIds: card.abilities || [],
+      };
+    }
+
+    /** Both (or the only legal) kits: "Fighting Gloves 6/8/11 (active) · Quarterstaff 7/9/11". */
+    function wdKitSummary(ab, actor) {
+      if (!ab || !ab.useWeapon || !actor) return "";
+      const opts = actor.weaponOptions || [];
+      const indexes = kitIndexesForAbility(actor, ab);
+      if (!indexes.length) return "";
+      const byId = abilityByIdNow();
+      const active = actor.activeKit | 0;
+      return indexes
+        .map((i) => {
+          const nums = previewTierTriplet(ab, actor, i, byId).map((n) =>
+            n == null ? "—" : String(n)
+          );
+          const name = opts[i] != null ? prettyKitName(opts[i]) : "Kit " + (i + 1);
+          return name + " " + nums.join("/") + (i === active ? " (active)" : "");
+        })
+        .join(" · ");
+    }
+
+    function rawWdLabel(effect) {
+      let s = String(effect.dmg);
+      if (effect.dmgBonus) {
+        const b = effect.dmgBonus | 0;
+        s += (b >= 0 ? "+" : "") + b;
+      }
+      if (effect.dmgStat) {
+        const mult = (effect.dmgStatMult | 0) > 1 ? (effect.dmgStatMult | 0) + "×" : "";
+        s += "+" + mult + String(effect.dmgStat).toUpperCase();
+      }
+      return s;
+    }
+
+    function formatTierLine(tierKey, effect, ctx) {
       if (!effect) return "";
+      const actor = ctx && ctx.actor;
+      const ability = ctx && ctx.ability;
       const bits = [];
       if (effect.dmg != null) {
-        let dmgLabel =
-          effect.dmg === "WD" || effect.dmg === "2WD"
-            ? String(effect.dmg)
-            : String(effect.dmg | 0);
-        if (effect.dmgBonus) dmgLabel += "+" + (effect.dmgBonus | 0);
-        if (effect.dmgStat) dmgLabel += "+" + String(effect.dmgStat).toUpperCase();
-        bits.push(dmgLabel + (effect.dmgType ? " " + effect.dmgType : ""));
+        const wd = isWeaponDmgToken(effect.dmg);
+        let dmgLabel = null;
+        let resolved = null;
+        if (wd && ability && actor) {
+          const kitIndex =
+            ctx && ctx.kitIndex != null ? ctx.kitIndex | 0 : actor.activeKit | 0;
+          resolved = previewTierDamage(
+            ability,
+            effect,
+            actor,
+            kitIndex,
+            abilityByIdNow()
+          );
+        }
+        if (resolved != null) dmgLabel = String(resolved);
+        else if (wd) dmgLabel = rawWdLabel(effect);
+        else {
+          const numericZero =
+            !effect.dmgStat &&
+            (effect.dmgBonus == null || (effect.dmgBonus | 0) === 0) &&
+            (Number(effect.dmg) || 0) === 0;
+          const hasOther = !!(effect.status || effect.extras || effect.text || effect.break);
+          if (!(numericZero && hasOther)) {
+            dmgLabel = String(effect.dmg | 0);
+            if (effect.dmgBonus) dmgLabel += "+" + (effect.dmgBonus | 0);
+            if (effect.dmgStat) dmgLabel += "+" + String(effect.dmgStat).toUpperCase();
+          }
+        }
+        if (dmgLabel != null) bits.push(dmgLabel + (effect.dmgType ? " " + effect.dmgType : ""));
       }
-      if (effect.break) bits.push("BREAK " + (effect.break | 0));
+      if (effect.break) {
+        let br = effect.break | 0;
+        if (effect.breakStat && actor) br += statVal(actor, effect.breakStat);
+        bits.push("BREAK " + br);
+      }
       const sts = effect.status
         ? Array.isArray(effect.status)
           ? effect.status
           : [effect.status]
         : [];
-      for (const st of sts) {
-        if (!st || !st.id) continue;
+      for (const st0 of sts) {
+        if (!st0 || !st0.id) continue;
+        const st = Object.assign({}, st0);
+        if (st.xStat && actor) {
+          st.x =
+            (st.x | 0) +
+            statVal(actor, st.xStat) * Math.max(1, (st.xStatMult | 0) || 1);
+        }
         let s = formatStatusTag(st) || st.id + (st.x != null ? " " + st.x : "");
         if (st.gate && st.gate.stat != null) s += " " + formatGateLabel(st.gate);
         bits.push(s);
@@ -2510,14 +2627,31 @@
           const cx = (ex.cleanse && ex.cleanse.x) | 0 || (ex.x | 0);
           bits.push("choose: Slow " + sx + " or ally Cleanse " + cx);
         } else if (ex.id === "vulnerable") {
+          let vx = ex.x | 0;
+          if (ex.xStat && actor) {
+            vx += statVal(actor, ex.xStat) * Math.max(1, (ex.xStatMult | 0) || 1);
+          }
           bits.push(
             "Vulnerable " +
-              (ex.x | 0) +
-              (ex.xStat ? "+" + String(ex.xStat).toUpperCase() : "") +
+              vx +
               (ex.dmgType ? " (" + ex.dmgType + ")" : "")
           );
         } else if (ex.id === "push" || ex.id === "pull" || ex.id === "slide") {
-          bits.push(ex.id + " " + (ex.x | 0));
+          let spaces = ex.x | 0;
+          if (ex.xStat && actor) {
+            spaces += statVal(actor, ex.xStat) * Math.max(1, (ex.xStatMult | 0) || 1);
+          }
+          bits.push(ex.id + " " + spaces);
+        } else if (ex.id === "grappleFocus") {
+          bits.push("Adv " + ((ex.x | 0) || 1) + " vs restrained");
+        } else if (ex.id === "regainStress") {
+          bits.push("regain " + ((ex.x | 0) || 1) + " stress");
+        } else if (ex.id === "livingBomb") {
+          bits.push("on death " + ((ex.x | 0) || 5) + " Fire R3");
+        } else if (ex.id === "shadowplayMark") {
+          bits.push("Adv vs feared");
+        } else if (ex.id === "toxicCloud") {
+          bits.push("toxic hazard " + ((ex.x | 0) || 4));
         } else if (ex.id === "slow" || /^(burn|bleed|poison)/i.test(ex.id)) {
           let s = ex.id + (ex.x != null ? " " + (ex.x | 0) : "");
           if (ex.gate && ex.gate.stat != null) s += " " + formatGateLabel(ex.gate);
@@ -2547,6 +2681,9 @@
     function formatAbilityCard(ab, opts) {
       if (!ab) return "";
       const active = opts && opts.active;
+      const actor = opts && opts.actor;
+      const kitIndex = opts && opts.kitIndex != null ? opts.kitIndex | 0 : null;
+      const tierCtx = { ability: ab, actor, kitIndex };
       let html =
         '<div class="insp-weapon' +
         (active ? " active" : "") +
@@ -2560,17 +2697,28 @@
       if (ab.optionalStressAdv) meta.push("+" + (ab.optionalStressAdv | 0) + " stress: Adv 1");
       if (ab.range != null) meta.push("R" + (ab.range | 0));
       if (ab.aoe && ab.aoe.range != null) meta.push("AoE R" + (ab.aoe.range | 0));
-      if (ab.aoe && ab.aoe.maxTargets != null) meta.push("max " + ab.aoe.maxTargets);
+      if (ab.aoe && ab.aoe.maxTargets != null) {
+        const cap = actor ? resolveMaxTargets(ab, actor) : null;
+        meta.push(cap != null ? "max " + cap : "max " + ab.aoe.maxTargets);
+      }
       if (ab.dmgType) meta.push(ab.dmgType);
-      if (ab.useWeapon) meta.push("WD");
+      if (ab.useWeapon) {
+        const kits = (actor && actor.weaponOptions) || [];
+        const i = kitIndex != null ? kitIndex : actor ? actor.activeKit | 0 : -1;
+        meta.push(i >= 0 && kits[i] != null ? prettyKitName(kits[i]) : "weapon");
+      }
       if (ab.roll && ab.roll.stat) meta.push("+" + ab.roll.stat);
       if (ab.roll && ab.roll.mode) meta.push(ab.roll.mode);
       if (meta.length) html += '<div class="w-meta">' + escapeHtml(meta.join(" · ")) + "</div>";
       const tiers = ab.tiers || {};
       for (const key of ["t1", "t2", "t3"]) {
-        if (tiers[key]) html += formatTierLine(key, tiers[key]);
+        if (tiers[key]) html += formatTierLine(key, tiers[key], tierCtx);
       }
-      if (ab.flat) html += formatTierLine("flat", ab.flat);
+      if (ab.flat) html += formatTierLine("flat", ab.flat, tierCtx);
+      const kitLine = wdKitSummary(ab, actor);
+      if (kitLine && kitIndexesForAbility(actor, ab).length >= 2) {
+        html += '<div class="w-kits">' + escapeHtml(kitLine) + "</div>";
+      }
       const traits = (ab.traits || [])
         .map((t) => t.text || t.id + (t.x != null ? " " + t.x : ""))
         .filter(Boolean);
@@ -2611,21 +2759,23 @@
           if (!kitAbs.length) {
             html += '<div class="insp-row">No abilities for this kit in the pack.</div>';
           } else {
-            for (const ab of kitAbs) html += formatAbilityCard(ab, { active: i === active });
+            for (const ab of kitAbs) {
+              html += formatAbilityCard(ab, { active: i === active, actor: a, kitIndex: i });
+            }
           }
         }
       } else {
         html += '<div class="insp-row" style="margin-top:8px"><b>Attacks / tools</b></div>';
         for (const id of ids) {
           const ab = byId[id];
-          if (ab) html += formatAbilityCard(ab, { active: false });
+          if (ab) html += formatAbilityCard(ab, { active: false, actor: a });
           else html += '<div class="insp-row">' + escapeHtml(id) + "</div>";
         }
         if (reactIds.length) {
           html += '<div class="insp-row" style="margin-top:8px"><b>Reactions / OA</b></div>';
           for (const id of reactIds) {
             const ab = byId[id];
-            if (ab) html += formatAbilityCard(ab, { active: false });
+            if (ab) html += formatAbilityCard(ab, { active: false, actor: a });
             else html += '<div class="insp-row">' + escapeHtml(id) + "</div>";
           }
         }
@@ -3639,8 +3789,12 @@
             "Out of range R" +
             a.range +
             ". First Move onto a highlighted cell closer to the foe, then this attack.";
+          const abLive =
+            (state.abilityById && state.abilityById[a.abilityId]) || null;
+          const kitBit = wdKitSummary(abLive, cur);
           btn(
             a.label +
+              (kitBit ? " · " + kitBit : "") +
               rLabel +
               " (" +
               a.apCost +
@@ -3650,14 +3804,14 @@
             {
               primary: !out,
               disabled: out,
-              title: selfAoe
-                ? a.label + " — no target; radius from Power Roll"
-                : out
-                  ? whyOut
-                  : a.label + " · range R" + a.range,
+              title: kitBit
+                ? kitBit
+                : selfAoe
+                  ? a.label + " — no target; radius from Power Roll"
+                  : out
+                    ? whyOut
+                    : a.label + " · range R" + a.range,
               onclick: () => {
-                const abLive =
-                  (state.abilityById && state.abilityById[a.abilityId]) || null;
                 const isSelfAoe = selfAoe || !!(abLive && abLive.selfAoe);
                 if (isSelfAoe) {
                   pending = {
@@ -3699,7 +3853,7 @@
             }
           );
           if (!out && a.canAim) {
-            btn(a.label + " + Aim · R" + a.range + " (" + a.apCost + " AP)", {
+            btn(a.label + (kitBit ? " · " + kitBit : "") + " + Aim · R" + a.range + " (" + a.apCost + " AP)", {
               free: true,
               onclick: () => {
                 pending = {
@@ -6597,31 +6751,50 @@
       return id ? id.charAt(0).toUpperCase() + id.slice(1) : id;
     }
 
-    function talentCardPlainText(card) {
+    function talentCardPlainText(card, stub) {
       if (!card || typeof card !== "object") return "";
       const lines = [];
       const cost = [];
+      const actor = classPreviewActor(stub && stub.classId);
+      const byId = abilityByIdNow();
       if (card.costAp != null) cost.push(card.costAp + " AP");
       if (card.costStress) cost.push(card.costStress + " stress");
       if (card.range != null) cost.push("Range " + card.range);
       if (card.adv) cost.push("Adv " + card.adv);
       if (card.aoe && card.aoe.range != null) cost.push("AoE R" + card.aoe.range);
       if (cost.length) lines.push(cost.join(" · "));
+      if (card.useWeapon && actor) {
+        const kits = wdKitSummary(card, actor);
+        if (kits) lines.push(kits);
+      }
       if (card.notes) lines.push(String(card.notes));
       if (card.tiers && typeof card.tiers === "object") {
+        const kitIndex = actor ? actor.activeKit | 0 : 0;
         for (const key of Object.keys(card.tiers)) {
           const t = card.tiers[key] || {};
           const bits = [];
           if (t.text) bits.push(String(t.text));
           if (t.dmg != null) {
-            let dmg = "DMG " + t.dmg;
-            if (t.dmgStat) {
-              const mult = t.dmgStatMult && t.dmgStatMult !== 1 ? t.dmgStatMult + "×" : "";
-              dmg += "+" + mult + t.dmgStat;
+            const resolved =
+              actor && isWeaponDmgToken(t.dmg)
+                ? previewTierDamage(card, t, actor, kitIndex, byId)
+                : null;
+            if (resolved != null) {
+              bits.push("DMG " + resolved);
+            } else {
+              let dmg = "DMG " + t.dmg;
+              if (t.dmgStat) {
+                const mult = t.dmgStatMult && t.dmgStatMult !== 1 ? t.dmgStatMult + "×" : "";
+                dmg += "+" + mult + t.dmgStat;
+              }
+              bits.push(dmg);
             }
-            bits.push(dmg);
           }
-          if (t.break != null) bits.push("Break " + t.break + (t.breakStat ? "+" + t.breakStat : ""));
+          if (t.break != null) {
+            let br = t.break | 0;
+            if (t.breakStat && actor) br += statVal(actor, t.breakStat);
+            bits.push("Break " + br);
+          }
           if (t.push != null) bits.push("Push " + t.push);
           if (t.heal != null) bits.push("Heal " + t.heal);
           if (bits.length) lines.push(String(key).toUpperCase() + " " + bits.join(" · "));
@@ -6643,7 +6816,7 @@
       const label = (stub && stub.label) || id;
       const nameFromLabel = String(label).split("(")[0].split(":")[0].trim();
       const name = (card && card.name) || nameFromLabel || id;
-      const cardText = card ? talentCardPlainText(card).trim() : "";
+      const cardText = card ? talentCardPlainText(card, stub).trim() : "";
       const xp = stub && stub.xp != null ? " (" + (stub.xp | 0) + " xp)" : "";
       let rules = label;
       if (cardText) {
