@@ -45,7 +45,7 @@ Shield Bash is unchanged: `3 / 5 / 7` plus Taunt. It is not a WD talent.
 - **OK** `acolyte-summon-mage` — fires Summon · Mage
 - **OK** `acolyte-summon-warrior` — fires Summon · Warrior
 - **OK** `acolyte-systems-bargain` — fires System's Bargain
-- **OK** `acolyte-toxic-cloud` — flat 4/4/4; fires kit 1 T1 raw 4
+- **OK** `acolyte-toxic-cloud` — flat 0/0/0; fires kit 1 T1 raw 0
 
 ### Assassin
 

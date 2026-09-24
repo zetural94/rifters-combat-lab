@@ -21,13 +21,13 @@
     "t2": {
       "dmg": "WD",
       "dmgFallback": 9,
-      "status": { "id": "slow", "x": 2, "gate": { "stat": "DEX", "vs": "attacker" } }
+      "status": { "id": "slow", "x": 2 }
     },
     "t3": {
       "dmg": "WD",
       "dmgFallback": 11,
-      "status": { "id": "knockdown", "x": 1, "gate": { "stat": "DEX", "vs": "attacker" } }
+      "status": { "id": "knockdown", "x": 1 }
     }
   },
-  "notes": "1 AP + 1 stress; optional extra 1 stress → Adv 1. WD Shortbow 6/9/11. Slow 1/2 / Knockdown gated DEX≤yours."
+  "notes": "1 AP + 1 stress, weapon roll. Optional extra 1 stress → Adv 1. ≤11: WD and DEX≤YOUR DEX Slow 1. 12–16: WD Slow 2. 17+: WD Knockdown."
 }

@@ -169,12 +169,12 @@ function enemiesInOaReach(mover, others, reach) {
   );
 }
 
-function applyFootprintHazards(actor, hazards, prevAnchor, nextAnchor, hazardEvents) {
+function applyFootprintHazards(actor, hazards, prevAnchor, nextAnchor, hazardEvents, actors) {
   const prev = new Set(footprintKeys(atAnchor(actor, prevAnchor)));
   for (const c of footprintCells(atAnchor(actor, nextAnchor))) {
     const k = c.x + "," + c.y;
     if (prev.has(k)) continue;
-    const hz = applyHazardEnter(actor, hazards, c.x, c.y);
+    const hz = applyHazardEnter(actor, hazards, c.x, c.y, actors);
     if (hz > 0) hazardEvents.push({ x: c.x, y: c.y, dmg: hz });
   }
 }
@@ -351,7 +351,7 @@ export function resolveMove(opts) {
         oaEvents.push({ from: oaAttacker.id, result: hit, stackKey });
         if (actor.dead || (actor.hp | 0) <= 0) break;
       }
-      applyFootprintHazards(actor, hazards, pos, next, hazardEvents);
+      applyFootprintHazards(actor, hazards, pos, next, hazardEvents, opts.actors);
       pos = next;
       if (actor.dead || (actor.hp | 0) <= 0) break;
     }
@@ -359,7 +359,7 @@ export function resolveMove(opts) {
     let pos = atAnchor(actor, actor.x, actor.y);
     for (const step of path) {
       const next = atAnchor(actor, step);
-      applyFootprintHazards(actor, hazards, pos, next, hazardEvents);
+      applyFootprintHazards(actor, hazards, pos, next, hazardEvents, opts.actors);
       pos = next;
       if (actor.dead || (actor.hp | 0) <= 0) break;
     }

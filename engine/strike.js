@@ -28,12 +28,14 @@ import {
   tryPayReaction,
   canReact,
   hasWeaponEquipped,
+  applyGrappleLock,
 } from "./turn.js";
 import { activateDefend } from "./damage.js";
 import { applyPush, applyPull, applySlide, applyForcedMove } from "./forced.js";
 import { cubeCellsIncluding, leaveTerrainHazards, cellKey } from "./terrain.js";
 import { syncBloodiedShell } from "./actor.js";
-import { consumeSpotterAttackBonus, spendMana, tryRiposte, tryHiddenBola } from "./feats.js";
+import { consumeSpotterAttackBonus, spendMana, tryRiposte, tryHiddenBola, systemsBargainT1Damage } from "./feats.js";
+import { paintToxicCloud } from "./clouds.js";
 
 function isBloodied(actor) {
   return (actor.hp | 0) <= Math.floor((actor.hpMax | 0) / 2);
@@ -546,6 +548,43 @@ export function tryDefendReaction(target, opts = {}) {
   return { ok: true, pay };
 }
 
+/** Ally within cast range who covers `tgt` and the most enemies in the blast. */
+function resolveAllySource(atk, tgt, ctx, ab) {
+  const actors = ctx.actors || [];
+  if (ctx.sourceAllyId) {
+    const picked = actors.find((a) => a && a.id === ctx.sourceAllyId);
+    if (picked) return picked;
+  }
+  const range = ab.range != null ? ab.range | 0 : 3;
+  const blast = (ab.aoe && ab.aoe.range != null ? ab.aoe.range : 3) | 0;
+  const allies = actors.filter(
+    (a) =>
+      a &&
+      a.side === atk.side &&
+      !a.dead &&
+      (a.hp | 0) > 0 &&
+      (a === atk || inRange(atk, a, range))
+  );
+  let best = atk;
+  let bestScore = -1;
+  for (const al of allies.length ? allies : [atk]) {
+    let n = 0;
+    let covers = !tgt;
+    for (const o of actors) {
+      if (!o || o.side === atk.side || o.dead || (o.hp | 0) <= 0) continue;
+      if (!inRange(al, o, blast)) continue;
+      n += 1;
+      if (tgt && o.id === tgt.id) covers = true;
+    }
+    const score = (covers ? 100 : 0) + n * 10 + (al !== atk ? 1 : 0);
+    if (score > bestScore) {
+      bestScore = score;
+      best = al;
+    }
+  }
+  return best;
+}
+
 /**
  * @param {object} ctx
  */
@@ -565,7 +604,23 @@ export function resolveStrike(ctx) {
 
   const range = ab.range != null ? ab.range | 0 : 1;
   const actorsField = ctx.actors || ctx.allies || [];
-  if (!selfAoe) {
+  // Shadowplay: choose an ally as the fear source. Blast is AoE around that ally,
+  // not around the caster. Cast range is the range to the ally (self is always legal).
+  let aoeOrigin = atk;
+  if (ab.allySource && !selfAoe) {
+    aoeOrigin = resolveAllySource(atk, tgt, ctx, ab);
+    const blast = (ab.aoe && ab.aoe.range != null ? ab.aoe.range : 3) | 0;
+    const sourceOk =
+      aoeOrigin &&
+      aoeOrigin.side === atk.side &&
+      !aoeOrigin.dead &&
+      (aoeOrigin.hp | 0) > 0 &&
+      (aoeOrigin === atk || inRange(atk, aoeOrigin, range));
+    const tgtOk = !tgt || (aoeOrigin && inRange(aoeOrigin, tgt, blast));
+    if (!sourceOk || !tgtOk) return { ok: false, reason: "out-of-range" };
+    ctx._aoeOrigin = aoeOrigin;
+    ctx._fearSourceId = aoeOrigin.id;
+  } else if (!selfAoe) {
     const inReach = atk.hordeStackId
       ? actorsField.some(
           (m) =>
@@ -641,7 +696,8 @@ export function resolveStrike(ctx) {
     if ((atk.stress | 0) < totalStress) return { ok: false, reason: "no-stress" };
     atk.stress = (atk.stress | 0) - totalStress;
   }
-  const manaCost = ab.costMana != null ? ab.costMana | 0 : ab.manaCost | 0;
+  let manaCost = ab.costMana != null ? ab.costMana | 0 : ab.manaCost | 0;
+  if (ctx.upcast && (ab.upcastMana | 0) > 0) manaCost += ab.upcastMana | 0;
   if (!ctx.skipAp && !ctx.dryRun && !monster && manaCost > 0) {
     const pay = spendMana(atk, manaCost);
     if (!pay.ok) return { ok: false, reason: "no-mana" };
@@ -919,8 +975,12 @@ export function resolveStrike(ctx) {
     primalInstinctAdv = 1;
     pushMod("+", 1, "Primal Instinct");
   }
-  // Grapple focus: Adv 1 vs restrained target
-  if (isAttack && tgt && tgt.st && tgt.st.restrain && tgt.grappleFocus) {
+  // Grapple: T2/T3 Adv 1 vs the locked target; T2 also Adv 1 vs the grappler.
+  if (isAttack && tgt && tgt.grappleLock && tgt.grappleLock.advVsTarget) {
+    adv += 1;
+    pushMod("+", 1, "Grapple");
+  }
+  if (isAttack && tgt && tgt.grappleHold && tgt.grappleHold.advVsSelf) {
     adv += 1;
     pushMod("+", 1, "Grapple");
   }
@@ -1053,9 +1113,13 @@ export function resolveStrike(ctx) {
       }
     }
     effect = pickTierEffect(ab, tier, "power");
-    // System's Bargain: T1 outcomes cost 5 unpreventable
+    // System's Bargain: a T1 costs 3 × YOUR TIER unpreventable.
     if (!ctx.dryRun && atk.systemsBargain && tier === 1) {
-      applyDamage(atk, 5, { unpreventable: true, skipBleed: true });
+      applyDamage(atk, systemsBargainT1Damage(atk), {
+        unpreventable: true,
+        skipBleed: true,
+        actors: ctx.actors || actorsField,
+      });
     }
   }
 
@@ -1158,8 +1222,9 @@ export function resolveStrike(ctx) {
     (spotter.breakBonus | 0) +
     feralBreak;
 
-  // Collect AoE targets (blast around caster, or cube including primary target)
+  // Collect AoE targets (blast around caster, ally source, or cube including primary target)
   const aoe = ab.aoe || {};
+  if (ctx._aoeOrigin) aoeOrigin = ctx._aoeOrigin;
   const aoeShape = aoe.shape || (aoe.range != null || aoe.size != null || effect.aoeRange != null ? (aoe.shape || "blast") : null);
   // Tier may shrink AoE (Intimidating Shout Range 1/2/3 by tier).
   const aoeR =
@@ -1192,7 +1257,7 @@ export function resolveStrike(ctx) {
       if (aoeShape === "cube") {
         if (!aoeCellSet.has(cellKey(other.x, other.y))) continue;
       } else if (aoeR != null) {
-        if (!inRange(atk, other, aoeR)) continue;
+        if (!inRange(aoeOrigin, other, aoeR)) continue;
       } else continue;
       aoeTargetIds.push(other.id);
     }
@@ -1439,7 +1504,7 @@ export function resolveStrike(ctx) {
           if (aoeShape === "cube") {
             if (!aoeCellSet || !aoeCellSet.has(cellKey(other.x, other.y))) continue;
           } else if (aoeR != null) {
-            if (!inRange(atk, other, aoeR) && !(multiPick && other.hordeStackId)) continue;
+            if (!inRange(aoeOrigin, other, aoeR) && !(multiPick && other.hordeStackId)) continue;
           } else continue;
           candidates.push(other);
         }
@@ -1450,7 +1515,7 @@ export function resolveStrike(ctx) {
           if (aoeShape === "cube") {
             if (!aoeCellSet || !aoeCellSet.has(cellKey(other.x, other.y))) continue;
           } else if (aoeR != null) {
-            if (!inRange(atk, other, aoeR)) continue;
+            if (!inRange(aoeOrigin, other, aoeR)) continue;
           } else continue;
           candidates.push(other);
         }
@@ -1672,29 +1737,27 @@ export function resolveStrike(ctx) {
       } else if (ex.id === "taunt") {
         applyStatus(tgt, { id: "taunt" }, { sourceId: atk.id, sourceActor: atk });
       } else if (ex.id === "grappleFocus") {
+        // Duration and Adv live on grappleLock / grappleHold (applied once below).
         tgt.grappleFocus = true;
       } else if (ex.id === "livingBomb") {
-        tgt.livingBomb = { dmg: Math.max(1, ex.x | 0 || 5), fromId: atk.id, range: 3 };
+        const INT = Math.max(0, atk.int | 0);
+        const up = ctx.upcast ? 2 * INT : 0;
+        tgt.livingBomb = {
+          dmg: 8 + INT + up,
+          fromId: atk.id,
+          range: 3,
+          upcast: !!ctx.upcast,
+          traceState: ctx.state || null,
+        };
       } else if (ex.id === "shadowplayMark") {
         atk.shadowplayFearAdv = true;
       } else if (ex.id === "toxicCloud") {
         const stRef = ctx.state || null;
-        if (stRef) {
-          const cells = [];
-          const r = 3;
-          for (let dx = -r; dx <= r; dx++) {
-            for (let dy = -r; dy <= r; dy++) {
-              if (Math.max(Math.abs(dx), Math.abs(dy)) > r) continue;
-              cells.push({ x: (tgt.x | 0) + dx, y: (tgt.y | 0) + dy });
-            }
-          }
-          leaveTerrainHazards(stRef, cells, {
-            id: "toxic-" + atk.id,
-            difficult: false,
-            enterDmg: Math.max(1, ex.x | 0 || 4),
-            unpreventable: false,
-            dmgType: "Toxic",
-            label: "Toxic Cloud",
+        const anchor = tgt || atk;
+        if (stRef && anchor) {
+          paintToxicCloud(stRef, atk, anchor, {
+            radius: (ab.aoe && ab.aoe.range != null ? ab.aoe.range : 3) | 0,
+            upcast: !!ctx.upcast,
           });
         }
       } else if (ex.id === "selfShield") {
@@ -1848,6 +1911,34 @@ export function resolveStrike(ctx) {
   if (!selfAoe && tgt) {
     applyExtrasList(extrasFrom(effect));
     if (critRiders) applyExtrasList(onCritExtrasForStrike(ab, atk, ctx));
+  }
+  if (!ctx.dryRun && ab.id === "brawler-grapple" && tgt) {
+    applyGrappleLock(atk, tgt, tier, ctx.actors || []);
+  }
+  if (!ctx.dryRun && ctx._fearSourceId) {
+    const feared = [];
+    const tookFear = (list) => (list || []).some((s) => s && String(s.id).toLowerCase() === "fear");
+    if (tgt && tookFear(statuses)) feared.push(tgt);
+    for (const hit of aoeHits) {
+      if (!tookFear(hit.statuses)) continue;
+      const other = (ctx.actors || []).find((a) => a && a.id === hit.id);
+      if (other) feared.push(other);
+    }
+    for (const foe of feared) {
+      if (foe.st) foe.st.fearSource = ctx._fearSourceId;
+    }
+    if (ctx.upcast) {
+      const intimidateX = 2 * Math.max(0, atk.int | 0);
+      if (intimidateX > 0) {
+        for (const foe of feared) {
+          applyStatus(
+            foe,
+            { id: "intimidate", x: intimidateX },
+            { sourceId: atk.id, sourceActor: atk }
+          );
+        }
+      }
+    }
   }
 
   if (isAttack && !ctx.asReaction) noteAttack(atk);

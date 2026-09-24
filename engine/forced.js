@@ -260,7 +260,7 @@ export function applyForcedMove(opts) {
     for (const c of footprintCells(target)) {
       const k = c.x + "," + c.y;
       if (prevKeys.has(k)) continue;
-      applyHazardEnter(target, opts.hazards, c.x, c.y);
+      applyHazardEnter(target, opts.hazards, c.x, c.y, opts.actors);
     }
   }
 

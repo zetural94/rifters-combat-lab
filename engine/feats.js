@@ -6,6 +6,7 @@ import { applyDamage } from "./damage.js";
 import { leaveTerrainHazards, cellKey, objectBlockKeys } from "./terrain.js";
 import { spendAp, tryPayReaction } from "./turn.js";
 import { applyStatus, cleanse } from "./status.js";
+import { noteTalent } from "./talentTrace.js";
 
 /** Mana first; overflow from Stress (caster passive). */
 export function spendMana(actor, cost) {
@@ -28,6 +29,12 @@ export function spendMana(actor, cost) {
 export function canPayMana(actor, cost) {
   const need = Math.max(0, cost | 0);
   return (actor.mana | 0) + (actor.stress | 0) >= need;
+}
+
+/** T1 backlash: 3 × YOUR TIER unpreventable. Rank-1 lab tier defaults to 1. */
+export function systemsBargainT1Damage(actor) {
+  const tier = Math.max(1, (actor && ((actor.tier | 0) || (actor.rank | 0))) || 1);
+  return 3 * tier;
 }
 
 /** System's Bargain activate: 2 AP + 2 mana, 1/fight. */
@@ -554,6 +561,12 @@ export function tryRiposte(defender, incomingRaw, opts = {}) {
   defender.stress = (defender.stress | 0) - 1;
   const reduce = 5 * Math.max(0, defender.dex | 0);
   const next = Math.max(0, (incomingRaw | 0) - reduce);
+  noteTalent(opts.state, {
+    kind: "riposte",
+    actorId: defender.id,
+    reduce,
+    zeroed: next <= 0,
+  });
   return { ok: true, reduce, raw: next, oa: next <= 0, pay: { ok: true, apCost: 0 } };
 }
 

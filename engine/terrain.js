@@ -3,6 +3,7 @@
  * Hazards: difficult terrain + optional enter damage (Magma Tortoise Eruption).
  */
 import { applyDamage } from "./damage.js";
+import { applyStatus } from "./status.js";
 
 const MATERIAL_HP = { wood: 4, stone: 6, steel: 10 };
 
@@ -183,15 +184,22 @@ export function leaveTerrainHazards(state, cells, spec) {
  * Apply enter-contact hazard damage (willing Move or forced).
  * @returns {number} damage dealt
  */
-export function applyHazardEnter(actor, hazards, x, y) {
+export function applyHazardEnter(actor, hazards, x, y, actors) {
   if (!actor || actor.dead) return 0;
   const h = hazardMap(hazards).get(cellKey(x, y));
-  if (!h || !(h.enterDmg > 0)) return 0;
-  applyDamage(actor, h.enterDmg | 0, {
-    unpreventable: h.unpreventable !== false,
-    dmgType: h.dmgType || "unpreventable",
-    isDot: true,
-    skipBleed: true,
-  });
+  if (!h || (!(h.enterDmg > 0) && !((h.poison | 0) > 0))) return 0;
+  if (h.enterDmg > 0) {
+    applyDamage(actor, h.enterDmg | 0, {
+      unpreventable: h.unpreventable !== false,
+      dmgType: h.dmgType || "unpreventable",
+      isDot: !h.cloudId,
+      skipBleed: true,
+      actors: actors || null,
+    });
+  }
+  // Toxic Cloud: INT ≤ the caster's INT at cast time → Poison 2, stacks with the DoT rule.
+  if ((h.poison | 0) > 0 && (actor.int | 0) <= (h.gateInt | 0)) {
+    applyStatus(actor, { id: "poison", x: h.poison | 0 }, { sourceId: h.ownerId || null });
+  }
   return h.enterDmg | 0;
 }

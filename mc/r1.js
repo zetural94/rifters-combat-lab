@@ -589,7 +589,7 @@ export const FEAT_SMOKE_STUBS = {
   "scout-pin-shot": {
     xp: 150,
     classId: "scout",
-    label: "Pin Shot (2 AP WD · Slow/Knockdown vs DEX≤yours)",
+    label: "Pin Shot (1 AP + 1 stress · WD · Slow 1 gated / Slow 2 / Knockdown)",
     apply(actor) {
       actor.pinShot = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["scout-pin-shot"]);
@@ -803,7 +803,7 @@ export const FEAT_SMOKE_STUBS = {
   "mystic-living-bomb": {
     xp: 250,
     classId: "mystic",
-    label: "Living Bomb (2AP+2mana · Burn · death 5 Fire R3)",
+    label: "Living Bomb (2AP+2mana · Burn DEX≤INT · death 8+INT Fire R3)",
     apply(actor) {
       actor.livingBombFeat = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["mystic-living-bomb"]);
@@ -2021,7 +2021,12 @@ export function playRift(pack, seed, opts = {}) {
       talentCounts: opts.talentCounts,
     });
     totalBp += (state.encounterBudget && state.encounterBudget.spent) || 0;
+    if (opts.traceTalents) {
+      state.traceTalents = true;
+      state.talentTrace = [];
+    }
     const summary = playFight(state, policy);
+    if (state.talentTrace) summary.talentTrace = state.talentTrace;
     // Per-fight drop from resources entering this encounter (not from full 12)
     summary.recDrop = Math.max(0, recBefore - (summary.recLeft | 0));
     fights.push({

@@ -26,6 +26,18 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+/** Hit-test click fails when the wizard button is below the viewport. */
+async function domClick(page, sel) {
+  const ok = await page.evaluate((s) => {
+    const el = document.querySelector(s);
+    if (!el) return false;
+    el.click();
+    return true;
+  }, sel);
+  if (!ok) throw new Error("missing " + sel);
+  await sleep(120);
+}
+
 async function readUi(page) {
   return page.evaluate(() => {
     const kids = [...document.querySelectorAll("#actions > *")];
@@ -437,22 +449,20 @@ async function exercise(page, button) {
 async function bootClass(page, classId, first) {
   if (first) {
     await page.waitForSelector("#wizard-rank-1", { timeout: 20000 });
-    await page.click("#wizard-rank-1");
+    await domClick(page, "#wizard-rank-1");
     await page.waitForSelector("#wizard-party-next", { timeout: 10000 });
-    await page.click("#wizard-party-next");
+    await domClick(page, "#wizard-party-next");
     await page.waitForSelector('[data-talent-n="4"]', { timeout: 10000 });
-    await page.click('[data-talent-n="4"]');
+    await domClick(page, '[data-talent-n="4"]');
     await page.waitForSelector("#wizard-talents-lab", { timeout: 10000 });
-    await page.click("#wizard-talents-lab");
+    await domClick(page, "#wizard-talents-lab");
   } else {
     const open = await page.$("#btn-open-lab");
-    if (open) await open.click();
-    else {
-      await page.evaluate(() => {
-        const b = document.getElementById("btn-change-setup");
-        if (b) b.click();
-      });
-    }
+    const openHidden = open
+      ? await open.evaluate((el) => !!el.hidden || el.offsetParent === null)
+      : true;
+    if (open && !openHidden) await domClick(page, "#btn-open-lab");
+    else await domClick(page, "#btn-change-setup");
     await page.waitForSelector("#lab-choice-host button", { timeout: 10000 });
   }
   await page.waitForSelector("#lab-choice-host button", { timeout: 20000 });
@@ -475,7 +485,7 @@ async function bootClass(page, classId, first) {
     { timeout: 20000 },
     classId
   );
-  await page.click("#btn-start");
+  await domClick(page, "#btn-start");
   await page.waitForFunction(() => /pick a hero|Who acts|AP /.test(document.getElementById("status").textContent || ""), {
     timeout: 10000,
   });

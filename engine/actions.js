@@ -681,6 +681,33 @@ export function legalActions(state, actor, abilityById) {
       // Click / primary-target range is ability.range.
       // aoe.range and tier aoeRange are blast radius only (resolveStrike).
       const range = ab.range != null ? ab.range | 0 : 1;
+      if (ab.allySource) {
+        const blast = (ab.aoe && ab.aoe.range != null ? ab.aoe.range : range) | 0;
+        const sources = actors.filter(
+          (a) =>
+            a &&
+            a.side === actor.side &&
+            !a.dead &&
+            (a.hp | 0) > 0 &&
+            (a === actor || inRange(actor, a, range))
+        );
+        const targets = foesAll.filter((f) => sources.some((s) => inRange(s, f, blast)));
+        actions.push({
+          type: "strike",
+          label: ab.name,
+          apCost: monster ? 0 : cost,
+          slot: monster ? "action" : null,
+          stressCost: (!monster || actor.summon) && stressNeed > 0 ? stressNeed : 0,
+          abilityId: ab.id,
+          targets: targets.map((t) => t.id),
+          noTargets: !targets.length,
+          selfAoe: false,
+          allySource: true,
+          range,
+          canAim: false,
+        });
+        continue;
+      }
       // selfAoe / AoE: include stealthed (area still hits). Single-target: foes (R2 gate).
       const pool =
         selfAoe ||
