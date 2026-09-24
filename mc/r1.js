@@ -943,90 +943,6 @@ export const FEAT_SMOKE_STUBS = {
       actor.featSmoke = (actor.featSmoke || []).concat(["primalist-summon-elemental"]);
     },
   },
-  "warrior-fast-footwork": {
-    xp: 150,
-    classId: "warrior",
-    label: "Fast Footwork: unflankable · MOVE 1 after hit",
-    apply(actor) {
-      actor.fastFootwork = true;
-      actor.unflankable = true;
-      actor.featSmoke = (actor.featSmoke || []).concat(["warrior-fast-footwork"]);
-    },
-  },
-  "warrior-diving-slash": {
-    xp: 250,
-    classId: "warrior",
-    label: "Diving Slash (1 AP · approach + Focus next)",
-    apply(actor) {
-      actor.divingSlash = true;
-      actor.featSmoke = (actor.featSmoke || []).concat(["warrior-diving-slash"]);
-      if (!actor.abilityIds) actor.abilityIds = [];
-      if (actor.abilityIds.indexOf("warrior-diving-slash") < 0) {
-        actor.abilityIds = actor.abilityIds.concat(["warrior-diving-slash"]);
-      }
-    },
-  },
-  "warrior-solid-stance": {
-    xp: 150,
-    classId: "warrior",
-    label: "Solid stance: +2 Push / −2 when pushed",
-    apply(actor) {
-      actor.solidStance = true;
-      actor.featSmoke = (actor.featSmoke || []).concat(["warrior-solid-stance"]);
-    },
-  },
-  "warrior-inspiring-presence": {
-    xp: 150,
-    classId: "warrior",
-    label: "Inspiring Presence: 1 AP · kill → Focus 5 R2",
-    apply(actor) {
-      actor.hasInspiringPresence = true;
-      actor.featSmoke = (actor.featSmoke || []).concat(["warrior-inspiring-presence"]);
-    },
-  },
-  "warrior-furious-blows": {
-    xp: 250,
-    classId: "warrior",
-    label: "Furious Blows (3 AP · twin smoke)",
-    apply(actor) {
-      actor.furiousBlows = true;
-      actor.featSmoke = (actor.featSmoke || []).concat(["warrior-furious-blows"]);
-      if (!actor.abilityIds) actor.abilityIds = [];
-      if (actor.abilityIds.indexOf("warrior-furious-blows") < 0) {
-        actor.abilityIds = actor.abilityIds.concat(["warrior-furious-blows"]);
-      }
-    },
-  },
-  "warrior-war-machine": {
-    xp: 150,
-    classId: "warrior",
-    label: "War Machine: +2 max Stress · Wound → +1 Stress",
-    apply(actor) {
-      actor.warMachine = true;
-      actor.stressMax = (actor.stressMax | 0) + 2;
-      actor.stress = Math.min(actor.stressMax, (actor.stress | 0) + 2);
-      actor.featSmoke = (actor.featSmoke || []).concat(["warrior-war-machine"]);
-    },
-  },
-  "warrior-rend": {
-    xp: 150,
-    classId: "warrior",
-    label: "Rend: melee hit for 0 → Bleed 5 on attacker",
-    apply(actor) {
-      actor.rend = true;
-      actor.rendBleed = 5;
-      actor.featSmoke = (actor.featSmoke || []).concat(["warrior-rend"]);
-    },
-  },
-  "warrior-test-of-might": {
-    xp: 250,
-    classId: "warrior",
-    label: "Test of Might [stub meta]: projectile contest (N/A lab)",
-    apply(actor) {
-      actor.testOfMight = true;
-      actor.featSmoke = (actor.featSmoke || []).concat(["warrior-test-of-might"]);
-    },
-  },
 };
 
 export function featSmokeXp(feats) {
@@ -1069,10 +985,6 @@ const CARD_FILES = [
   "fighter-precise-strike",
   "fighter-intimidating-shout",
   "fighter-forceful-push",
-  "warrior",
-  "warrior-diving-slash",
-  "warrior-furious-blows",
-  "warrior-inspiring-presence",
   "brawler",
   "brawler-fighting-gloves",
   "brawler-quarterstaff",
@@ -1859,7 +1771,6 @@ export function heroClassKey(h) {
     "primalist",
     "assassin",
     "scout",
-    "warrior",
   ];
   for (const id of ids) {
     if (raw === id || raw.startsWith(id + "-") || raw.startsWith(id + "_")) return id;

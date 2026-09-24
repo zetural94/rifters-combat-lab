@@ -119,7 +119,6 @@ export function isFlanking(self, ally, target) {
 
 /** Any living ally opposite to target → flanking (CRIT 1 on attacks). */
 export function hasFlank(self, allies, target) {
-  if (target && target.unflankable) return false;
   for (const a of allies || []) {
     if (!a || a === self || a.dead || a.hp <= 0) continue;
     if (isFlanking(self, a, target)) return true;

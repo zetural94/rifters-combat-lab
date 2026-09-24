@@ -562,8 +562,9 @@ function sectionRankParty() {
   );
   record(
     "4",
-    "Warrior absent from playable picker set",
-    !Object.keys(FEAT_SMOKE_STUBS).some((id) => id.indexOf("warrior-") === 0 && false) || true,
+    "Warrior hero absent from cards and stubs",
+    !pack.cards.warrior &&
+      !Object.keys(FEAT_SMOKE_STUBS).some((id) => id.indexOf("warrior-") === 0),
     "picker classes are fighter/brawler/assassin/scout/mystic/acolyte/primalist"
   );
 }

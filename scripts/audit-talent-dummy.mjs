@@ -1,5 +1,5 @@
 /**
- * Rank-1 talent dummy audit (FEAT_SMOKE_STUBS except Warrior).
+ * Rank-1 talent dummy audit (every FEAT_SMOKE_STUBS talent).
  * Walks each talent on train_<class> vs the training dummy:
  * grant, whether a clickable action fires, and WD preview numbers.
  *
@@ -235,7 +235,7 @@ try {
 
 for (const id of Object.keys(FEAT_SMOKE_STUBS).sort()) {
   const stub = FEAT_SMOKE_STUBS[id];
-  if (!stub || stub.classId === "warrior" || !CLASS_ORDER.includes(stub.classId)) continue;
+  if (!stub || !CLASS_ORDER.includes(stub.classId)) continue;
   const card = pack.abilityById[id] || null;
   const row = {
     id,
@@ -457,7 +457,7 @@ const wdRows = rows.filter((r) => r.wd.length);
 
 let md = "";
 md += "# Rank-1 talent dummy QoL audit\n\n";
-md += "Scope: every `FEAT_SMOKE_STUBS` talent except Warrior, one at a time on `train_<class>` (two copies of that class vs the Training Dummy). Damage numbers use `resolveAbilityTierDamage` — the same helper a strike uses.\n\n";
+md += "Scope: every `FEAT_SMOKE_STUBS` talent, one at a time on `train_<class>` (two copies of that class vs the Training Dummy). Damage numbers use `resolveAbilityTierDamage` — the same helper a strike uses.\n\n";
 md += "Counts: **" + ok.length + " OK**, **" + issues.length + " issues**, **" + rows.length + " checked**.\n\n";
 if (assertError) {
   md += "Preview assertions failed: `" + assertError.message + "`\n\n";

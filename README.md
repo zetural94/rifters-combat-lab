@@ -2,6 +2,8 @@
 
 This repository **root** is the playable source of truth for GitHub Pages. Pages builds from `main` `/`. There is no second tree here: no `Rifters_*` dump and no `_inbox`.
 
+resolved: Warrior removed for now. The Warrior hero class is out of the combat lab. The Acolyte summon Summon Warrior stays.
+
 Soft bands (locked): Easy 0–4 · Medium 0–6 · Hard 4–10. Soft/BP stairs stay at v0.3g. Help stays a reroll of the lower d10.
 
 ## Pages share link

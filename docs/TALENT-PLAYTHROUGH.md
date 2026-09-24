@@ -1,6 +1,6 @@
 # Rank-1 Dummy talent playthrough
 
-Scope: every `FEAT_SMOKE_STUBS` talent except Warrior, one at a time on `train_<class>` (two copies of that class vs the Training Dummy). Each pressable ability is resolved through the engine the lab calls. Riposte and Hidden Bola use `engine/reactPrompt.js`, which is what the reaction window buttons call.
+Scope: every `FEAT_SMOKE_STUBS` talent, one at a time on `train_<class>` (two copies of that class vs the Training Dummy). Each pressable ability is resolved through the engine the lab calls. Riposte and Hidden Bola use `engine/reactPrompt.js`, which is what the reaction window buttons call.
 
 Talents: **56 OK**, **0 FAIL**, **56 checked**.
 

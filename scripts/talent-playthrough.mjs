@@ -1,5 +1,5 @@
 /**
- * Full Rank-1 Dummy playthrough (FEAT_SMOKE_STUBS except Warrior).
+ * Full Rank-1 Dummy playthrough (every FEAT_SMOKE_STUBS talent).
  * For each talent the designer can press, checks:
  * numbers, confirm/prompt, AP/stress, bonus stress, targeting, effect.
  * Riposte and Hidden Bola go through the same reaction helpers the lab UI calls.
@@ -971,7 +971,7 @@ const rows = [];
 
 for (const id of Object.keys(FEAT_SMOKE_STUBS).sort()) {
   const stub = FEAT_SMOKE_STUBS[id];
-  if (!stub || stub.classId === "warrior" || !CLASS_ORDER.includes(stub.classId)) continue;
+  if (!stub || !CLASS_ORDER.includes(stub.classId)) continue;
   const card = pack.abilityById[id] || null;
   const row = blankRow(id, stub.classId, stub.label);
   try {
@@ -1126,7 +1126,7 @@ function cell(row, key) {
 let md = "";
 md += "# Rank-1 Dummy talent playthrough\n\n";
 md +=
-  "Scope: every `FEAT_SMOKE_STUBS` talent except Warrior, one at a time on `train_<class>` (two copies of that class vs the Training Dummy). Each pressable ability is resolved through the engine the lab calls. Riposte and Hidden Bola use `engine/reactPrompt.js`, which is what the reaction window buttons call.\n\n";
+  "Scope: every `FEAT_SMOKE_STUBS` talent, one at a time on `train_<class>` (two copies of that class vs the Training Dummy). Each pressable ability is resolved through the engine the lab calls. Riposte and Hidden Bola use `engine/reactPrompt.js`, which is what the reaction window buttons call.\n\n";
 md +=
   "Talents: **" +
   talentTally.ok +

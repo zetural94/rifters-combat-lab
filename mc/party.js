@@ -10,7 +10,6 @@ export const HERO_CATALOG = [
   { id: "primalist", label: "Primalist" },
   { id: "assassin", label: "Assassin" },
   { id: "scout", label: "Scout" },
-  { id: "warrior", label: "Warrior (T2 draft)" },
 ];
 
 /** Preset id → 4 hero card ids. */
@@ -19,7 +18,6 @@ export const PARTY_PRESETS = {
   casters: ["mystic", "acolyte", "primalist", "scout"],
   frontline: ["fighter", "brawler", "primalist", "acolyte"],
   glass: ["assassin", "scout", "mystic", "acolyte"],
-  warriorProbe: ["warrior", "brawler", "assassin", "scout"],
 };
 
 export const PARTY_PRESET_LABELS = {
@@ -27,7 +25,6 @@ export const PARTY_PRESET_LABELS = {
   casters: "Casters — Mystic / Acolyte / Primalist / Scout",
   frontline: "Frontline — Fighter / Brawler / Primalist / Acolyte",
   glass: "Glass — Assassin / Scout / Mystic / Acolyte",
-  warriorProbe: "Warrior probe — Warrior / Brawler / Assassin / Scout",
 };
 
 /** Default spawn spots (left half). */
@@ -52,7 +49,7 @@ export function resolvePartyIds(party) {
   let raw = String(party || "r1");
   if (raw.toLowerCase() === "sunday") raw = "r1";
   const keyLower = raw.toLowerCase();
-  // Preserve camelCase preset keys (warriorProbe); also accept lowercase aliases.
+  // Also accept a case-insensitive preset key.
   if (PARTY_PRESETS[raw]) return PARTY_PRESETS[raw].slice();
   const alias = Object.keys(PARTY_PRESETS).find((k) => k.toLowerCase() === keyLower);
   if (alias) return PARTY_PRESETS[alias].slice();

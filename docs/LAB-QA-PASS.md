@@ -14,7 +14,7 @@ Combined **83 OK, 0 FAIL.**
 - Rift rooms were built with the room id (`bear_w4`, `w1`, …). Pad only applies to `rift_easy` / `rift_medium` / `rift_hard`, so every room showed pad 0. The lab now passes that room's share from `splitPadBpAcrossFights` (`padBpAdd`) and the rift id as `chain`. Title and status show `BP spent (base+pad)` and `rift base+pad=total`.
 - Roster and status show Wounds, and Dying / Dead when those states are true. Defeat is still wounds ≥ 5 on every hero. Dying (0 HP, wounds under 5) is not defeat.
 - Bless, Blink, Barkskin, and Healing Water upcast buttons called the base action. The click now sends `upcast: true`.
-- Vigilant / Martial artist / Fast Footwork safe steps are move buttons and map clicks. They were legal in the engine and missing from the move list.
+- Vigilant / Martial artist safe steps are move buttons and map clicks. They were legal in the engine and missing from the move list.
 - Foe inspect splits Basics and Specials with `isMonsterSpecialAbility`. Specials are tagged, and tagged blocked when that foe has Disarm or Silence.
 - Auto-play on the opening kit prompt could apply Weapon Swap. That action is illegal until a kit is chosen, so the tick never left “wybierz kit” (Hard room, Scout, round 2). The tick now picks a kit first.
 
@@ -90,11 +90,11 @@ Engine: Flurry 2 AP + 1 stress (AP 3→1, stress 4→3) and both targets in one 
 | Check | Evidence | Result |
 | --- | --- | --- |
 | Rank 0 path | Steps are Ranga, Party, Trudność. No Talenty step. Diff `Rank 0 · n=0 · bez talentów · Fighter/Mystic/Acolyte/Primalist`. Pad 0: Easy 27, Medium 30, Hard 34 | OK |
-| Class picker | fighter, brawler, assassin, scout, mystic, acolyte, primalist. No Warrior | OK |
+| Class picker | fighter, brawler, assassin, scout, mystic, acolyte, primalist. resolved: Warrior removed for now | OK |
 | Rank 0 fight | Easy 4× Wolf. Hero buttons for all four. Hint includes Rank 0 | OK |
 | Rank 1 mixed | Assassin / Mystic / Primalist / Scout, ladder n=1, not a `train_X` pair. All four on the roster with shadow-dash, blink, healing-water, hidden-bola | OK |
 
-Engine Rank 0: those four classes are eligible and Fighter still has Heavy Sword · Strike with no talents. A manual mix of Fighter, Scout, Mystic, and Primalist equips one talent each and does not insert Warrior.
+Engine Rank 0: those four classes are eligible and Fighter still has Heavy Sword · Strike with no talents. A manual mix of Fighter, Scout, Mystic, and Primalist equips one talent each. resolved: Warrior removed for now.
 
 ## 5) Silence, Disarm, specials on live foes
 

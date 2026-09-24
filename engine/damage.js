@@ -145,11 +145,6 @@ function commitHp(target, toHp, absorbedShield, afterDefHint, opts = {}) {
     }
     // Already dying: further damaging hits → Wound (RULES-CANON / Mechanika)
     target.wounds = (target.wounds | 0) + 1;
-    let warMachineStress = 0;
-    if (target.warMachine && (target.stress | 0) < (target.stressMax | 0)) {
-      target.stress = Math.min(target.stressMax | 0, (target.stress | 0) + 1);
-      warMachineStress = 1;
-    }
     if ((target.wounds | 0) >= 5) {
       target.dead = true;
       target.alive = false;
@@ -160,7 +155,6 @@ function commitHp(target, toHp, absorbedShield, afterDefHint, opts = {}) {
       absorbedShield,
       afterDef: afterDefHint,
       wound: true,
-      warMachineStress,
     };
   }
 
@@ -168,13 +162,8 @@ function commitHp(target, toHp, absorbedShield, afterDefHint, opts = {}) {
   const wasBloodied = before > 0 && before <= thrBefore;
 
   target.hp = Math.max(0, before - toHp);
-  let warMachineStress = 0;
   if (target.hp <= 0) {
     target.wounds = (target.wounds | 0) + 1;
-    if (target.warMachine) {
-      target.stress = Math.min(target.stressMax | 0, (target.stress | 0) + 1);
-      warMachineStress = 1;
-    }
     target.down = true;
     // Monsters + summons: 0 HP = out (no Dying track). Heroes: Dying until 5 Wounds.
     if (target.side === "enemy" || target.summon || (target.wounds | 0) >= 5) {
@@ -245,7 +234,6 @@ function commitHp(target, toHp, absorbedShield, afterDefHint, opts = {}) {
     absorbedShield,
     afterDef: afterDefHint,
   };
-  if (warMachineStress) out.warMachineStress = warMachineStress;
   return out;
 }
 

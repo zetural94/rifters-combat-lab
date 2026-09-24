@@ -120,9 +120,6 @@ export function noteAttack(actor) {
   if (actor.martialArtist && !actor.martialMoveUsedThisTurn) {
     actor.martialMoveReady = true;
   }
-  if (actor.fastFootwork && !actor.footworkUsedThisTurn) {
-    actor.footworkMoveReady = true;
-  }
 }
 
 export function noteMoved(actor) {
@@ -208,8 +205,6 @@ export function beginTurn(actor, opts = {}) {
   actor.movedThisTurn = false;
   actor.martialMoveReady = false;
   actor.martialMoveUsedThisTurn = false;
-  actor.footworkMoveReady = false;
-  actor.footworkUsedThisTurn = false;
   actor.shadowDashUsedThisTurn = false;
   actor.magicShieldUsedThisTurn = false;
   actor.blessUsedThisTurn = false;

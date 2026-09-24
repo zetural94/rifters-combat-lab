@@ -276,27 +276,14 @@ export function applyForcedMove(opts) {
 
 /** Push target away from pusher. */
 export function applyPush(pusher, target, spaces, opts = {}) {
-  let sp = spaces | 0;
-  let solidStanceNote = 0;
-  if (pusher && pusher.solidStance) {
-    sp += 2;
-    solidStanceNote += 2;
-  }
-  if (target && target.solidStance) {
-    const before = sp;
-    sp = Math.max(0, sp - 2);
-    if (before !== sp) solidStanceNote -= 2;
-  }
-  const fr = applyForcedMove(
+  return applyForcedMove(
     Object.assign({}, opts, {
       source: pusher,
       target,
-      spaces: sp,
+      spaces: spaces | 0,
       mode: "push",
     })
   );
-  if (solidStanceNote) fr.solidStanceNote = solidStanceNote;
-  return fr;
 }
 
 /** Pull target toward puller. */

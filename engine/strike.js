@@ -1341,7 +1341,6 @@ export function resolveStrike(ctx) {
     !!(ab.aoe && (aoeShape || aoeR != null) && ab.aoe.maxTargets == null);
 
   let dmgResult = { dealt: 0 };
-  let rendBleed = 0;
   const statuses = [];
   const statusesBlocked = [];
   if (!selfAoe && tgt) {
@@ -1354,39 +1353,6 @@ export function resolveStrike(ctx) {
       // Single-target overflow: cull the struck pawn first (not rear tokens).
       preferRemoveIds: tgt && tgt.id ? [tgt.id] : null,
     });
-    // Rend: melee hit dealt 0 → Bleed 5 on attacker
-    if (
-      !ctx.dryRun &&
-      isAttack &&
-      tgt.rend &&
-      (ab.range | 0) <= 1 &&
-      dmgResult &&
-      (dmgResult.dealt | 0) === 0
-    ) {
-      const rx = tgt.rendBleed | 0 || 5;
-      applyStatus(atk, { id: "bleed", x: rx }, {
-        sourceId: tgt.id,
-        sourceActor: tgt,
-      });
-      rendBleed = rx;
-    }
-    // Inspiring Presence: on kill, Focus to allies R2
-    if (
-      !ctx.dryRun &&
-      isAttack &&
-      atk.inspireArmed &&
-      (tgt.dead || (tgt.hp | 0) <= 0) &&
-      Array.isArray(ctx.actors)
-    ) {
-      const focus = atk.inspireFocus | 0 || 5;
-      for (const ally of ctx.actors) {
-        if (!ally || ally.side !== atk.side || ally.dead) continue;
-        if (!inRange(atk, ally, 2)) continue;
-        if (!ally.nextAttack) ally.nextAttack = { break: 0, critX: 0, adv: 0, disadv: 0 };
-        ally.nextAttack.bonusDmg = (ally.nextAttack.bonusDmg | 0) + focus;
-      }
-      atk.inspireArmed = false;
-    }
     // Riposte OA when final HP damage is 0 (Defend + Riposte combo counts).
     if (
       !ctx.dryRun &&
@@ -1612,7 +1578,6 @@ export function resolveStrike(ctx) {
   const forced = [];
   const pendingPushes = [];
   const supportEvents = [];
-  let solidStanceNote = 0;
   function applyExtrasList(list) {
     for (const ex of list) {
       if (!ex || !ex.id) continue;
@@ -1660,16 +1625,12 @@ export function resolveStrike(ctx) {
           spaces += fc.pushBonus | 0;
           fullContactPush = fc.pushBonus | 0;
         }
-        // Solid Stance distance is applied in applyPush/applyForcedMove — only tag here.
-        if (atk.solidStance) solidStanceNote = (solidStanceNote | 0) + 2;
-        if (tgt.solidStance) solidStanceNote = (solidStanceNote | 0) - 2;
         if (ctx.askPush && !ctx.pushDir && !ctx.dryRun) {
           pendingPushes.push({
             targetId: tgt.id,
             spaces,
             fromId: atk.id,
             fullContactPush,
-            solidStanceNote,
           });
           continue;
         }
@@ -1685,7 +1646,6 @@ export function resolveStrike(ctx) {
             })
           );
           if (fullContactPush) fr.fullContactPush = fullContactPush;
-          if (solidStanceNote) fr.solidStanceNote = solidStanceNote;
           forced.push(fr);
           continue;
         }
@@ -1694,7 +1654,6 @@ export function resolveStrike(ctx) {
           if (slideDir.dx || slideDir.dy) {
             const fr = applySlide(atk, tgt, spaces, Object.assign({}, fxOpts, slideDir));
             if (fullContactPush) fr.fullContactPush = fullContactPush;
-            if (solidStanceNote) fr.solidStanceNote = solidStanceNote;
             forced.push(fr);
             continue;
           }
@@ -1702,7 +1661,6 @@ export function resolveStrike(ctx) {
         {
           const fr = applyPush(atk, tgt, spaces, fxOpts);
           if (fullContactPush) fr.fullContactPush = fullContactPush;
-          if (solidStanceNote) fr.solidStanceNote = solidStanceNote;
           forced.push(fr);
         }
       } else if (ex.id === "pull") {
@@ -1988,8 +1946,6 @@ export function resolveStrike(ctx) {
     weaponmasterClear,
     primalInstinctAdv,
     courageFearIgnore,
-    rendBleed,
-    solidStanceNote,
     cardCritHits,
     disadv,
     adv,
