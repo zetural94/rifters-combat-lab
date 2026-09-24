@@ -16,7 +16,7 @@ import {
   currentActor,
   runEnemyTurns,
   runHeroTurns,
-} from "../engine/index.js?v=20260915n";
+} from "../engine/index.js?v=20260924labqa";
 import { expandParty, applyArmorStressToHeroSpecs } from "./party.js";
 export {
   HERO_CATALOG,
@@ -1529,7 +1529,7 @@ export const RIFT_CHAINS = {
 
 export async function loadCardPack(base = "./cards/") {
   const cards = {};
-  const bust = "v=20260918shout1";
+  const bust = "v=20260924labqa";
   await Promise.all(
     CARD_FILES.map(async (n) => {
       const r = await fetch(base + n + ".json?" + bust);
