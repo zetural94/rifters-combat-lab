@@ -2,6 +2,7 @@
 <html lang="pl">
 <head>
   <meta charset="utf-8" />
+  <meta name="robots" content="noindex, nofollow"/>
   <title>Combat Lab — R1 W1</title>
   <style>
     :root {
@@ -793,7 +794,7 @@
         <dt>Careful Step</dt><dd>always 1 AP → up to 3 spaces, no OA.</dd>
       </dl>
     </details>
-    <span class="meta"><a href="builder.html" style="color:var(--muted)">builder</a> · <a href="verify.html" style="color:var(--muted)">verify</a> · <a href="smoke.html" style="color:var(--muted)">smoke</a> · <a href="mc.html" style="color:var(--muted)">mc</a> · <a href="RULES-CANON.md" style="color:var(--muted)">canon</a> · <a href="RULES-CANON.md#12-lab-play-clarifications-sandbox-2026-09-14" style="color:var(--muted)">lab notes §12</a></span>
+    <span class="meta"><a href="builder.html" style="color:var(--muted)">builder</a> · <a href="verify.html" style="color:var(--muted)">verify</a> · <a href="smoke.html" style="color:var(--muted)">smoke</a> · <a href="mc.html" style="color:var(--muted)">mc</a> · <a href="docs/HELP-AND-MINIONS.md" style="color:var(--muted)">help / minions</a> · <a href="docs/LAB-QA-PASS.md" style="color:var(--muted)">lab notes</a></span>
     <span id="log-status" class="meta"></span>
   </header>
   <div id="start-wizard" class="start-wizard" role="dialog" aria-modal="true" aria-labelledby="wizard-title">
@@ -999,22 +1000,23 @@
       <div id="inspect"></div>
     </section>
   </main>
-  <script>
-(async function () {
-  const HASH = "82db039b15a911c4522cf523450d2954d083cd5290eaf8f97dec453933199aa7";
-  const key = "riftersLabAuth";
-  async function sha256(text) {
-    const data = new TextEncoder().encode(text);
-    const buf = await crypto.subtle.digest("SHA-256", data);
-    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
-  }
-  if (sessionStorage.getItem(key) !== HASH) {
-    location.replace("index.html");
-  }
-})();
-</script>
-<script type="module">
-    import {
+  <script type="module">
+    const HASH = "82db039b15a911c4522cf523450d2954d083cd5290eaf8f97dec453933199aa7";
+    const AUTH_KEY = "riftersLabAuth";
+    if (sessionStorage.getItem(AUTH_KEY) !== HASH) {
+      location.replace("index.html");
+    } else {
+      await startLab();
+    }
+
+    async function startLab() {
+    const V = "20260924labqa";
+    const engine = await import("./engine/index.js?v=" + V);
+    const preview = await import("./engine/abilityPreview.js?v=" + V);
+    const r1 = await import("./mc/r1.js?v=" + V);
+    const ladder = await import("./mc/talent-ladder.js?v=" + V);
+    const builder = await import("./mc/builder.js?v=" + V);
+    const {
       listLegal,
       applyAction,
       currentActor,
@@ -1059,21 +1061,21 @@
       reconcileMitigationTarget,
       riposteOfferFromResolution,
       isMonsterSpecialAbility,
-    } from "./engine/index.js?v=20260924qa";
-    import {
+    } = engine;
+    const {
       isWeaponDmgToken,
       kitIndexesForAbility,
       previewTierDamage,
       previewTierTriplet,
-    } from "./engine/abilityPreview.js?v=20260924help";
-    import { loadCardPack, SCENARIOS, RIFT_CHAINS, makeR1Encounter, resolvePartyIds, FEAT_SMOKE_STUBS, lanePadFromTalents, effectiveEncounterBp, encounterSpentBp, PARTY_PRESETS, partyLabel, resolvePadBp, splitPadBpAcrossFights, isSoloPadSkipScenario } from "./mc/r1.js?v=20260924qa";
-    import { r1LadderFeats, trainClassFeats, mixLadderFeats } from "./mc/talent-ladder.js?v=20260924help";
-    import {
+    } = preview;
+    const { loadCardPack, SCENARIOS, RIFT_CHAINS, makeR1Encounter, resolvePartyIds, FEAT_SMOKE_STUBS, lanePadFromTalents, effectiveEncounterBp, encounterSpentBp, PARTY_PRESETS, partyLabel, resolvePadBp, splitPadBpAcrossFights, isSoloPadSkipScenario } = r1;
+    const { r1LadderFeats, trainClassFeats, mixLadderFeats } = ladder;
+    const {
       loadBuilderRoster,
       loadBuilderParty,
       rosterSpentBp,
       budgetSummary,
-    } from "./mc/builder.js?v=20260918train2";
+    } = builder;
 
     const W = 12;
     const H = 8;
@@ -8402,6 +8404,7 @@
       beginScenario(queued);
     } else if (!wizardComplete) {
       if (elStatus) elStatus.textContent = "Wybierz rangę";
+    }
     }
   </script>
 </body>

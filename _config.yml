@@ -1,0 +1,19 @@
+title: Rifters Combat Lab
+markdown: kramdown
+exclude:
+  - engine
+  - cards
+  - mc
+  - scripts
+  - tests
+  - sandbox.html
+  - serve.py
+  - logs
+  - node_modules
+  - vendor
+  - Gemfile
+  - Gemfile.lock
+include:
+  - lab.enc
+  - sw.js
+  - robots.txt

@@ -5,7 +5,9 @@
  */
 import fs from "fs";
 import path from "path";
-import puppeteer from "/tmp/puppeteer-run/node_modules/puppeteer-core/lib/esm/puppeteer/puppeteer-core.js";
+import { loadPuppeteer } from "./load-puppeteer.mjs";
+
+const puppeteer = await loadPuppeteer();
 import { FEAT_SMOKE_STUBS } from "../mc/r1.js";
 import { trainClassFeats } from "../mc/talent-ladder.js";
 

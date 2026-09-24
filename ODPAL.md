@@ -1,59 +1,73 @@
 # Rifters combat lab — odpalanie (designer)
 
-Potrzebujesz tylko **Pythona 3** (Windows / macOS / Linux). Node nie jest potrzebny do sandboxa.
+Źródło prawdy to **ten katalog** (root repozytorium, to samo co GitHub Pages z `main` `/`). Nie ma tu drugiego drzewa `Rifters_*` ani `_inbox`.
 
-## 1. Rozpakuj archiwum
+Potrzebujesz **Pythona 3** albo Node (`npx serve`). Hasło jest to samo co na Pages (dostajesz je od Adriana, nie jest w tym pliku).
 
-Wejdź do tego folderu (tu jest `serve.py` i `sandbox.html`).
+## 1. Wejdź do tego folderu
+
+Tu są `sandbox.html`, `serve.py`, `lab.enc` i `index.html`.
 
 ## 2. Start serwera
 
-Windows (PowerShell / cmd):
-
-```bash
-py -3 serve.py
-```
-
-macOS / Linux:
+Python (logi walki, tylko localhost):
 
 ```bash
 python3 serve.py
 ```
 
-W konsoli zobaczysz adres, zwykle:
+Windows:
 
-`http://127.0.0.1:8765/sandbox.html`
+```bash
+py -3 serve.py
+```
 
-Otwórz go w przeglądarce (Chrome / Edge / Firefox).
+Albo sam statyczny serwer, bez `/api/sandbox-log`:
 
-**Nie otwieraj `sandbox.html` jako pliku z dysku** — przeglądarka zablokuje karty i silnik.
+```bash
+npx --yes serve . -l 8765
+```
 
-## 3. Soft-bandy (cel ran)
+Adres: `http://127.0.0.1:8765/`
+
+Wpisz hasło na stronie wejścia. Sandbox ładuje się dopiero po odszyfrowaniu.
+
+**Nie otwieraj `sandbox.html` jako pliku z dysku** — przeglądarka zablokuje moduły.
+
+`serve.py` słucha na `127.0.0.1` (nie na `0.0.0.0`). CORS tylko dla `localhost` / `127.0.0.1`. POST do logów ma limit rozmiaru. Zapis do `logs/` z innego adresu jest odrzucany, dopóki nie ustawisz `LAB_TOKEN` i nagłówka `X-Lab-Token`.
+
+## 3. Wspólna sieć (opcjonalnie)
+
+```bash
+set HOST=0.0.0.0
+set LAB_TOKEN=twoj-token
+py -3 serve.py
+```
+
+Potem na drugim komputerze: `http://<IP-tego-PC>:8765/`. Zapis logów z LAN wymaga nagłówka `X-Lab-Token`.
+
+## 4. Soft-bandy (cel ran)
 
 - Easy **0–4**
 - Medium **0–6**
 - Hard **4–10**
 
-Kartka MG (BP + Soft): `logs/campaign/MG-BP-budzet.html`
+Schody Soft/BP zostają przy v0.3g. Help to przerzut niższego d10.
 
-## 4. Wspólna sieć (opcjonalnie)
+Kartki kampanii (`logs/campaign/`) **nie ma w tym repo**.
 
-Jeśli jeden komputer serwuje, a drugi tylko klika:
+## 5. Testy i gaty
+
+Do grania niepotrzebne:
 
 ```bash
-set HOST=0.0.0.0
-py -3 serve.py
+node --test tests/*.test.mjs
 ```
-
-Potem na drugim PC: `http://<IP-tego-PC>:8765/sandbox.html`.
-
-## 5. Gaty Soft / coverage
-
-To skrypty Node — do ręcznego grania niepotrzebne. Jak będą potrzebne, dopytaj Adriana.
 
 ## Problemy
 
-- Port zajęty → zamknij stary proces albo `set PORT=8766`
-- Pusta strona → wchodź przez `http://127.0.0.1:8765/...`, nie z Explorera
+- Port zajęty → zamknij stary proces albo `PORT=8766 python3 serve.py`
+- Pusta strona → wchodź przez `http://127.0.0.1:8765/`, nie z menedżera plików
+- „Złe hasło” → to hasło designera; nie zostało obrócone w tej poprawce
 
 Paczka labów, sync **2026-09-24**.

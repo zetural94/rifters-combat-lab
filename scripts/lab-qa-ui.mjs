@@ -5,7 +5,9 @@
  */
 import fs from "fs";
 import path from "path";
-import puppeteer from "/tmp/puppeteer-run/node_modules/puppeteer-core/lib/esm/puppeteer/puppeteer-core.js";
+import { loadPuppeteer } from "./load-puppeteer.mjs";
+
+const puppeteer = await loadPuppeteer();
 
 const HASH = "82db039b15a911c4522cf523450d2954d083cd5290eaf8f97dec453933199aa7";
 const BASE = process.env.LAB_URL || "http://127.0.0.1:8765/sandbox.html";
