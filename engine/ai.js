@@ -1439,7 +1439,7 @@ function pickToxicAction(state, actor, legal, foes) {
     if (tox.targets.indexOf(f.id) < 0) continue;
     const enemies = blastCount(f, foes, 3);
     const allies = blastCount(f, heroes, 3);
-    const score = enemies * 3 - allies * 3;
+    const score = enemies * 3 - allies * 5;
     if (score > bestScore) {
       bestScore = score;
       best = f;
@@ -1476,7 +1476,7 @@ function pickToxicApproach(state, actor, legal, foes) {
   let best = null;
   let bestScore = 0;
   for (const f of foes) {
-    const score = blastCount(f, foes, 3) * 3 - blastCount(f, heroes, 3) * 3;
+    const score = blastCount(f, foes, 3) * 3 - blastCount(f, heroes, 3) * 5;
     if (score > bestScore) {
       bestScore = score;
       best = f;
