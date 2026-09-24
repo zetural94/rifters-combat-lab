@@ -1058,14 +1058,15 @@
       commitMitigationChoice,
       reconcileMitigationTarget,
       riposteOfferFromResolution,
-    } from "./engine/index.js?v=20260924help";
+      isMonsterSpecialAbility,
+    } from "./engine/index.js?v=20260924qa";
     import {
       isWeaponDmgToken,
       kitIndexesForAbility,
       previewTierDamage,
       previewTierTriplet,
     } from "./engine/abilityPreview.js?v=20260924help";
-    import { loadCardPack, SCENARIOS, RIFT_CHAINS, makeR1Encounter, resolvePartyIds, FEAT_SMOKE_STUBS, lanePadFromTalents, effectiveEncounterBp, encounterSpentBp, PARTY_PRESETS, partyLabel } from "./mc/r1.js?v=20260924help";
+    import { loadCardPack, SCENARIOS, RIFT_CHAINS, makeR1Encounter, resolvePartyIds, FEAT_SMOKE_STUBS, lanePadFromTalents, effectiveEncounterBp, encounterSpentBp, PARTY_PRESETS, partyLabel, resolvePadBp, splitPadBpAcrossFights, isSoloPadSkipScenario } from "./mc/r1.js?v=20260924qa";
     import { r1LadderFeats, trainClassFeats, mixLadderFeats } from "./mc/talent-ladder.js?v=20260924help";
     import {
       loadBuilderRoster,
@@ -1430,9 +1431,15 @@
           next: "Click a <b>highlighted enemy</b> on the map.",
         };
       }
-      if (p === "move" || p === "carefulStep") {
+      if (
+        p === "move" ||
+        p === "carefulStep" ||
+        p === "martialStep" ||
+        p === "vigilantStep" ||
+        p === "footworkStep"
+      ) {
         return {
-          badge: "Stage 3/4 · Move",
+          badge: p === "vigilantStep" ? "Vigilant · MOVE 1" : "Stage 3/4 · Move",
           next: "Click a <b>highlighted cell</b> on the map.",
         };
       }
@@ -2142,6 +2149,27 @@
         featSmoke,
         talentsPerHero,
       };
+      // Rift pad is a pool split across rooms (playRift), not a full add on the
+      // room id. Room ids like bear_w4 are not a lane, so resolvePadBp would be 0.
+      if (riftId && RIFT_CHAINS[riftId]) {
+        const chain = RIFT_CHAINS[riftId];
+        const nPad =
+          wizardRank === 0
+            ? 0
+            : wizardRank === 1
+              ? Math.max(1, Math.min(4, wizardTalentN | 0))
+              : talentsPerHero;
+        const totalPad = resolvePadBp({
+          talentsPerHero: nPad,
+          chain: riftId,
+          partySize: 4,
+        });
+        const shares = splitPadBpAcrossFights(totalPad, chain.fights.length, {
+          skip: chain.fights.map((id) => isSoloPadSkipScenario(id)),
+        });
+        encounterOpts.padBpAdd = shares[riftRoomIndex] | 0;
+        encounterOpts.chain = riftId;
+      }
       let setupHint =
         "Setup: click unit → cell. Brushes = terrain. Then Start fight.";
       if (wizardRank === 0 || wizardRank === 1 || (featSmoke && featSmoke.length)) {
@@ -2204,6 +2232,21 @@
           if (c.recoveries != null) h.recoveries = c.recoveries | 0;
           if (c.wounds != null) h.wounds = c.wounds | 0;
           if (c.stress != null) h.stress = c.stress | 0;
+        }
+      }
+      if (state && state.encounterBudget && titleLabel) {
+        const b = state.encounterBudget;
+        titleLabel +=
+          " · room BP " +
+          (b.spent | 0) +
+          " (base " +
+          (b.baseSpent | 0) +
+          " + pad " +
+          (b.padBp | 0) +
+          ")";
+        if (riftId && RIFT_CHAINS[riftId]) {
+          const q = riftBpQuote(riftId);
+          titleLabel += " · rift " + q.base + "+" + q.pad + "=" + q.total + " BP";
         }
       }
       inspectId = startActorId;
@@ -2445,7 +2488,17 @@
           a.hp +
           "/" +
           a.hpMax +
-          " HP · " +
+          " HP" +
+          (a.side === "hero" && !a.summon
+            ? " · Wounds " +
+              (a.wounds | 0) +
+              (a.dead || (a.wounds | 0) >= 5
+                ? " Dead"
+                : (a.hp | 0) <= 0
+                  ? " Dying"
+                  : "")
+            : "") +
+          " · " +
           (a.economy === "slots" || a.side === "enemy"
             ? "Mv " +
               (a.moveLeft | 0) +
@@ -2737,6 +2790,7 @@
         (active ? " active" : "") +
         '"><div class="w-title">' +
         escapeHtml(ab.name || ab.id) +
+        (opts && opts.tag ? " · " + escapeHtml(opts.tag) : "") +
         (active ? " · active" : "") +
         "</div>";
       const meta = [];
@@ -2813,11 +2867,49 @@
           }
         }
       } else {
-        html += '<div class="insp-row" style="margin-top:8px"><b>Attacks / tools</b></div>';
+        const basics = [];
+        const specials = [];
+        const missing = [];
         for (const id of ids) {
           const ab = byId[id];
-          if (ab) html += formatAbilityCard(ab, { active: false, actor: a });
-          else html += '<div class="insp-row">' + escapeHtml(id) + "</div>";
+          if (!ab) {
+            missing.push(id);
+            continue;
+          }
+          if (isMonsterSpecialAbility(ab)) specials.push(ab);
+          else basics.push(ab);
+        }
+        const blocked =
+          !!(a.st && (a.st.disarm || a.st.silence));
+        const blockWhy =
+          a.st && a.st.disarm && a.st.silence
+            ? "Disarm + Silence"
+            : a.st && a.st.disarm
+              ? "Disarm"
+              : a.st && a.st.silence
+                ? "Silence"
+                : "";
+        html += '<div class="insp-row" style="margin-top:8px"><b>Basics</b></div>';
+        if (!basics.length) html += '<div class="insp-row">—</div>';
+        for (const ab of basics) {
+          html += formatAbilityCard(ab, { active: false, actor: a, tag: "basic" });
+        }
+        html +=
+          '<div class="insp-row" style="margin-top:8px"><b>Specials</b>' +
+          (blocked ? " · blocked by " + escapeHtml(blockWhy) : " · legal unless Disarm/Silence") +
+          "</div>";
+        if (!specials.length && !missing.length) {
+          html += '<div class="insp-row">No special on this card.</div>';
+        }
+        for (const ab of specials) {
+          html += formatAbilityCard(ab, {
+            active: false,
+            actor: a,
+            tag: blocked ? "special · blocked" : "special",
+          });
+        }
+        for (const id of missing) {
+          html += '<div class="insp-row">' + escapeHtml(id) + " · missing from pack</div>";
         }
         if (reactIds.length) {
           html += '<div class="insp-row" style="margin-top:8px"><b>Reactions / OA</b></div>';
@@ -3800,7 +3892,13 @@
       const legal = listLegal(state);
       const attacks = legal.filter((a) => a.type === "strike");
       const moves = legal.filter(
-        (a) => a.type === "move" || a.type === "carefulStep" || a.type === "stand"
+        (a) =>
+          a.type === "move" ||
+          a.type === "carefulStep" ||
+          a.type === "stand" ||
+          a.type === "martialStep" ||
+          a.type === "vigilantStep" ||
+          a.type === "footworkStep"
       );
       const feats = legal.filter((a) => a.type === "aim");
       const freeActs = legal.filter(
@@ -3880,7 +3978,7 @@
               primary: true,
               title: actionLabel(a) + " — click a highlighted cell to teleport there.",
               onclick: () => {
-                pending = { type: a.type, cells: a.cells };
+                pending = { type: a.type, cells: a.cells, upcast: !!a.upcast };
                 elHint.textContent =
                   "Click a highlighted cell (" + actionLabel(a) + ").";
                 render();
@@ -3893,7 +3991,7 @@
               disabled: out,
               title: actionLabel(a) + " — click a highlighted token to target it.",
               onclick: () => {
-                pending = { type: a.type, targets: a.targets };
+                pending = { type: a.type, targets: a.targets, upcast: !!a.upcast };
                 elHint.textContent =
                   "Target: click a highlighted unit (" + actionLabel(a) + ").";
                 render();
@@ -3912,7 +4010,7 @@
               primary: true,
               onclick: () => {
                 pending = null;
-                doAction({ type: a.type });
+                doAction({ type: a.type, upcast: !!a.upcast });
               },
             });
           }
@@ -4227,7 +4325,8 @@
             RIFT_CHAINS[riftId].fights.length +
             " · "
           : "") +
-        scenario;
+        scenario +
+        bpStatusSuffix();
       updateStageBanner();
       syncStartButton();
       renderGrid();
@@ -4237,6 +4336,35 @@
       renderLog();
       renderActions();
       scheduleLogFlush(false);
+    }
+
+    function bpStatusSuffix() {
+      if (!state || !state.encounterBudget) return "";
+      const b = state.encounterBudget;
+      let s =
+        " · BP " +
+        (b.spent | 0) +
+        " (base " +
+        (b.baseSpent | 0) +
+        "+pad " +
+        (b.padBp | 0) +
+        ")";
+      if (riftId && RIFT_CHAINS[riftId]) {
+        const q = riftBpQuote(riftId);
+        s += " · rift " + q.base + "+" + q.pad + "=" + q.total;
+      }
+      const heroes = (state.actors || []).filter((h) => h && h.side === "hero" && !h.summon);
+      if (heroes.length) {
+        const wounds = heroes.reduce((n, h) => n + (h.wounds | 0), 0);
+        const dead = heroes.filter((h) => h.dead || (h.wounds | 0) >= 5).length;
+        const dying = heroes.filter(
+          (h) => !h.dead && (h.wounds | 0) < 5 && (h.hp | 0) <= 0
+        ).length;
+        s += " · Wounds " + wounds;
+        if (dying) s += " · Dying " + dying;
+        if (dead) s += " · Dead " + dead;
+      }
+      return s;
     }
 
     function canPayReact(hero) {
@@ -6499,7 +6627,15 @@
         }
         return;
       }
-      if (pending.type === "move" || pending.type === "carefulStep") {
+      if (
+        pending.type === "move" ||
+        pending.type === "carefulStep" ||
+        pending.type === "martialStep" ||
+        pending.type === "vigilantStep" ||
+        pending.type === "footworkStep"
+      ) {
+        const cell = (pending.cells || []).find((c) => c.x === x && c.y === y);
+        if (!cell) return;
         doAction({ type: pending.type, dest: { x, y } });
         return;
       }
@@ -6565,8 +6701,9 @@
         const cell = (pending.cells || []).find((c) => c.x === x && c.y === y);
         if (!cell) return;
         const t = pending.type;
+        const upcast = !!pending.upcast;
         pending = null;
-        doAction({ type: t, dest: { x, y } });
+        doAction({ type: t, dest: { x, y }, upcast });
         return;
       }
       if (
@@ -6581,9 +6718,10 @@
         );
         if (!a) return;
         const t = pending.type;
+        const upcast = !!pending.upcast;
         const tid = a.id;
         pending = null;
-        const act = { type: t, targetId: tid };
+        const act = { type: t, targetId: tid, upcast };
         if (t === "bless") act.spendRecovery = true;
         doAction(act);
         return;
@@ -6993,9 +7131,11 @@
       if (state.awaitingKitPick) {
         const cur = currentActor(state);
         const action = chooseHeroAction(state, AUTO_POLICY);
-        if (action && (action.type === "pickKit" || action.type === "weaponSwap")) {
-          doAction(action);
-        } else if (cur) {
+        // Weapon Swap is illegal until the opening kit is chosen. Applying it
+        // here returns awaiting-kit-pick and the auto-play tick never leaves
+        // the prompt (Hard room, Scout round 2).
+        if (action && action.type === "pickKit") doAction(action);
+        if (state.awaitingKitPick && cur) {
           doAction({ type: "pickKit", kitIndex: cur.activeKit | 0 });
         }
         return { done: !!state.over };
