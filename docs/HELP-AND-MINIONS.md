@@ -1,6 +1,6 @@
 # Help and minions
 
-Lab QA on Rank-1 train setups (class ×2 vs Training Dummy). Warrior is excluded. Clicked in the sandbox UI. Engine checks in `scripts/help-and-minions-check.mjs`.
+Lab QA on Rank-1 train setups (class ×2 vs Training Dummy). Clicked in the sandbox UI. Engine checks in `scripts/help-and-minions-check.mjs`. The Warrior hero class is gone; Summon Warrior is the Acolyte pet.
 
 Counts from the UI pass: **71 Help flows OK**, **131 N/A**, **0 FAIL**. Four minion types played end to end.
 

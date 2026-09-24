@@ -1184,7 +1184,7 @@
       const byClass = {};
       for (const [id, stub] of Object.entries(FEAT_SMOKE_STUBS)) {
         const cls = stub.classId || "?";
-        if (cls === "warrior" || !allowed.has(cls)) continue;
+        if (!allowed.has(cls)) continue;
         if (!byClass[cls]) byClass[cls] = [];
         byClass[cls].push({ id, stub });
       }
@@ -1441,8 +1441,7 @@
         p === "move" ||
         p === "carefulStep" ||
         p === "martialStep" ||
-        p === "vigilantStep" ||
-        p === "footworkStep"
+        p === "vigilantStep"
       ) {
         return {
           badge: p === "vigilantStep" ? "Vigilant · MOVE 1" : "Stage 3/4 · Move",
@@ -3957,8 +3956,7 @@
           a.type === "carefulStep" ||
           a.type === "stand" ||
           a.type === "martialStep" ||
-          a.type === "vigilantStep" ||
-          a.type === "footworkStep"
+          a.type === "vigilantStep"
       );
       const feats = legal.filter((a) => a.type === "aim");
       const freeActs = legal.filter(
@@ -3987,7 +3985,6 @@
         "stealth",
         "enhanceWeapon",
         "feralInvocation",
-        "inspiringPresence",
         "systemsBargain",
         "iceWall",
         "summon",
@@ -5219,8 +5216,7 @@
           (action.type === "move" ||
             action.type === "carefulStep" ||
             action.type === "martialStep" ||
-            action.type === "vigilantStep" ||
-            action.type === "footworkStep") &&
+            action.type === "vigilantStep") &&
           r.pendingOas &&
           r.pendingOas.length
         ) {
@@ -5260,8 +5256,7 @@
         (action.type === "move" ||
           action.type === "carefulStep" ||
           action.type === "martialStep" ||
-          action.type === "vigilantStep" ||
-          action.type === "footworkStep") &&
+          action.type === "vigilantStep") &&
         r.pendingOas &&
         r.pendingOas.length
       ) {
@@ -6687,8 +6682,7 @@
         pending.type === "move" ||
         pending.type === "carefulStep" ||
         pending.type === "martialStep" ||
-        pending.type === "vigilantStep" ||
-        pending.type === "footworkStep"
+        pending.type === "vigilantStep"
       ) {
         const cell = (pending.cells || []).find((c) => c.x === x && c.y === y);
         if (!cell) return;
@@ -7355,16 +7349,15 @@
 
     function partyClassIds() {
       try {
-        return resolvePartyIds(currentPartyOpt()).filter((id) => id !== "warrior");
+        return resolvePartyIds(currentPartyOpt());
       } catch (_) {
-        return wizardPartyIds.filter((id) => id !== "warrior");
+        return wizardPartyIds.slice();
       }
     }
 
     function presetKeyForIds(ids) {
       const key = (ids || []).map((s) => String(s).toLowerCase()).slice().sort().join(",");
       for (const name of Object.keys(PARTY_PRESETS)) {
-        if (name === "warriorProbe") continue;
         const preset = PARTY_PRESETS[name].slice().sort().join(",");
         if (preset === key) return name;
       }
@@ -7508,7 +7501,7 @@
 
     /** Ladder ids for the active party. R1 uses r1LadderFeats; other presets use mix ladders. */
     function ladderFeatIdsForCurrentParty(n, partyOpt) {
-      const ids = resolvePartyIds(partyOpt).filter((id) => id !== "warrior");
+      const ids = resolvePartyIds(partyOpt);
       const preset = typeof partyOpt === "string" ? presetKeyForIds(ids) || partyOpt : presetKeyForIds(ids);
       const raw =
         preset && preset !== "r1" && preset !== "sunday" && PARTY_PRESETS[preset]
@@ -7517,7 +7510,7 @@
       const party = new Set(ids);
       return raw.filter((id) => {
         const stub = FEAT_SMOKE_STUBS[id];
-        return stub && stub.classId !== "warrior" && party.has(stub.classId);
+        return stub && party.has(stub.classId);
       });
     }
 
@@ -7628,11 +7621,11 @@
       const by = {};
       for (const id of ids) {
         const stub = FEAT_SMOKE_STUBS[id];
-        if (!stub || stub.classId === "warrior") continue;
+        if (!stub) continue;
         if (!by[stub.classId]) by[stub.classId] = [];
         by[stub.classId].push({ id, stub });
       }
-      const order = partyClassIds().filter((cls) => cls !== "warrior");
+      const order = partyClassIds();
       let html = "";
       for (const cls of order) {
         const list = by[cls] || [];
@@ -7742,7 +7735,7 @@
         ],
         party: [
           "Party",
-          "Cztery klasy na ten rift. Domyślnie R1: Fighter, Brawler, Assassin, Scout. Bez Warrior.",
+          "Cztery klasy na ten rift. Domyślnie R1: Fighter, Brawler, Assassin, Scout.",
         ],
         count: [
           "Ile talentów?",
@@ -7998,7 +7991,7 @@
     function partySelectionReady() {
       const ids = wizardPartyIds.slice(0, 4);
       if (ids.length !== 4 || ids.some((id) => !id || PLAYABLE_CLASSES.indexOf(id) < 0)) {
-        return { ok: false, reason: "Wybierz cztery klasy spoza Warrior." };
+        return { ok: false, reason: "Wybierz cztery różne klasy." };
       }
       if (new Set(ids).size !== 4) {
         return { ok: false, reason: "Każdy slot musi być inną klasą." };
@@ -8018,14 +8011,14 @@
       const party = new Set(partyClassIds());
       for (const id of Array.from(manualTalentIds)) {
         const stub = FEAT_SMOKE_STUBS[id];
-        if (!stub || stub.classId === "warrior" || !party.has(stub.classId)) {
+        if (!stub || !party.has(stub.classId)) {
           manualTalentIds.delete(id);
         }
       }
     }
 
     function applyWizardParty() {
-      wizardPartyIds = wizardPartyIds.filter((id) => id !== "warrior").slice(0, 4);
+      wizardPartyIds = wizardPartyIds.slice(0, 4);
       const preset = presetKeyForIds(wizardPartyIds);
       if (preset && elParty && [...elParty.options].some((o) => o.value === preset)) {
         partySel = preset;
@@ -8225,7 +8218,7 @@
         if (picked === "__wizard__") partySel = "__wizard__";
         else partySel = picked;
         if (picked !== "__builder__" && picked !== "__wizard__" && PARTY_PRESETS[picked]) {
-          wizardPartyIds = PARTY_PRESETS[picked].filter((id) => id !== "warrior").slice(0, 4);
+          wizardPartyIds = PARTY_PRESETS[picked].slice(0, 4);
           wizardPartyReady = true;
         }
         const ids = resolvePartyIds(currentPartyOpt());

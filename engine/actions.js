@@ -186,20 +186,6 @@ export function legalActions(state, actor, abilityById) {
         feat: true,
       });
     }
-    // Fast Footwork: MOVE 1 safe after hit
-    if (actor.fastFootwork && actor.footworkMoveReady && !actor.footworkUsedThisTurn) {
-      const cells = reachableCells(actor, 1, occ, state.bounds, hazards).filter((c) =>
-        inBounds(state, c)
-      );
-      actions.push({
-        type: "footworkStep",
-        label: "Fast Footwork · MOVE 1 safe",
-        apCost: 0,
-        cells,
-        moveBudget: 1,
-        feat: true,
-      });
-    }
     // Vigilant: MOVE 1 safely after OA
     if (actor.vigilant && actor.vigilantMoveReady) {
       const cells = reachableCells(actor, 1, occ, state.bounds, hazards).filter((c) =>
@@ -490,16 +476,6 @@ export function legalActions(state, actor, abilityById) {
       label: "Feral Invocation",
       apCost: 1,
       stressCost: 2,
-      feat: true,
-    });
-  }
-
-  // Inspiring Presence — 1 AP arm kill-Focus
-  if (!monster && actor.hasInspiringPresence && !actor.inspireArmed && (actor.ap | 0) >= 1) {
-    actions.push({
-      type: "inspiringPresence",
-      label: "Inspiring Presence",
-      apCost: 1,
       feat: true,
     });
   }

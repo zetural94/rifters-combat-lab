@@ -26,7 +26,7 @@ Opis poniżej jest stanem z `779b823`. Tabela jest stanem po tej poprawce. Hasł
 | A-14 | naprawione — Abort to ręczny stop playtestu, nie Defeat (rany ≥ 5) |
 | D-01 | nie ruszane w remedacji |
 | D-02 | nie ruszane w remedacji |
-| D-03 | nie ruszane w remedacji |
+| D-03 | resolved: Warrior removed for now |
 | D-04 | udokumentowane, mechaniki nie zmieniano — Stealth jest 1/round, wolno nawet po ataku w tej turze; atak nadal zdejmuje stealth |
 
 W tym przebiegu nie było blokera, który wyłącza laba. Pieczęć na żywym Pages działa tak, jak opisuje README: plaintext `engine/`, `cards/`, `mc/` i `sandbox.html` zwracają 404, a `lab.enc` jest serwowany. Zostają błędy reguł w silniku, martwe linki w sandboxie i dziura w samej bramce (opublikowany skrót hasła).
@@ -38,7 +38,7 @@ W tym przebiegu nie było blokera, który wyłącza laba. Pieczęć na żywym Pa
 - Repozytorium zostaje publiczne z wyboru. Klon i tak ma plaintext. Pieczęć chroni link Pages, nie `github.com`. `docs/AUDIT-REMEDIATION.md` nadal nazywa prywatne repo „pozostałym krokiem” — to napięcie z zablokowaną decyzją, nie defekt do cichego „naprawienia”.
 - Potwierdzony rozjazd zasięgu: lista akcji bierze `aoe.range`, a `resolveStrike` bierze `ability.range`. Entangle 2 vs 5, Toxic Cloud 3 vs 4, Fireball 2 vs 4. Schemat 82/82 tego nie widzi.
 - Help, porażka (rany ≥ 5), Soft/BP v0.3g, HP przywołań 14/8/10/10×INT i brak `camouflage` są zgodne z kanonem. Testy silnika, które dało się odpalić, są zielone.
-- Wizard nadal chowa Warriora. Cold Blooded, Spotter, Rank 0 Warriora i „Stealth tylko przed pierwszym atakiem” zostają decyzjami do domknięcia, nie cichymi bugami.
+- resolved: Warrior removed for now. Klasa bohatera Warrior (klon Fightera) jest zdjęta z laba. Zostaje przywołanie Acolyte Summon Warrior. Cold Blooded, Spotter i „Stealth tylko przed pierwszym atakiem” zostają decyzjami do domknięcia (D-01, D-02, D-04).
 - `builder.html`, `verify.html`, `smoke.html` i `mc.html` nadal nie istnieją. Przycisk Builder prowadzi w 404. Link do kanonu w nagłówku został już podmieniony na istniejące `docs/`.
 - CI odpala 17 testów jednostkowych. Nie odpala lab-qa (50), Help (96) ani playthrough (56+16). Skrypty przeglądarkowe nie były tu powtórzone (brak `puppeteer-core`).
 
@@ -62,7 +62,7 @@ W tym przebiegu nie było blokera, który wyłącza laba. Pieczęć na żywym Pa
 | A-14 | low | UX / abort | Abort w `sandbox.html` (ok. 7234) uznaje bohatera za żywego, gdy `!dead`, bez progu ran ≥ 5, i liczy przywołania (`side === "hero"`). Prawdziwe zakończenie walki jest w `engine/encounter.js` `checkOver`. | Abort może zostać etykietą ręczną. Nie mylić go z Defeat. |
 | D-01 | design-open | drabina Assassin | `mc/talent-ladder.js`: Cold Blooded nie ma w `R1_LADDER_PICKS.assassin` (shadow-dash, riposte, stealth, dirty-trick). W wariancie B jest na slocie 0. Stub: +2 max Stress, crit czyści +1. | Adrian wybiera slot na drabinie A albo zostawia talent tylko w ręcznym naborze. |
 | D-02 | design-open | drabina Scout | Spotter (`scout-spotter`) nie wchodzi w drabinę A ani B przy n=1–4. Poza drabiną A są też barrage, survival-tactics, vigilant. Sam talent w silniku działa (marka, BREAK 2 sojusznikom, Crit 1 na następnym dystansie). | Domknąć, czy Spotter jest w pakiecie Rank 1, czy zostaje off-ladder. |
-| D-03 | design-open | Warrior Rank 0 | `cards/warrior.json` = te same HP 30, staty, pancerz, kity i ciosy co `cards/fighter.json`. Wizard: `PLAYABLE_CLASSES` bez warrior; `partyClassIds()` wycina warrior. `trainClassFeats("warrior")` zwraca null. Stuby bez karty: fast-footwork, solid-stance, war-machine, rend, test-of-might (ostatni opisany jako N/A). | Nie wpuszczać T2 do playtestu, dopóki Rank 0 nie jest osobną klasą. Dziś „viability Rank 0” nie ma czego mierzyć — to klon Fightera. |
+| D-03 | resolved | Warrior Rank 0 | Klasa bohatera zdjęta: karty `warrior` / `warrior-*`, stuby `warrior-*` w `FEAT_SMOKE_STUBS`, preset `warriorProbe` i ścieżki silnika tylko dla tych talentów. Przywołanie Acolyte (`acolyte-summon-warrior`, `cards/summon-warrior-*.json`, HP 14×INT) zostaje. | resolved: Warrior removed for now |
 | D-04 | design-open | Stealth | `applyStealth` / `legalActions`: 0 AP, 1 stress, raz na rundę, bez sprawdzenia `attacksThisTurn`. Po ustawieniu `attacksThisTurn = 1` przycisk Stealth nadal jest. Komentarz: „1/round”, nie „tylko przed pierwszym atakiem”. Atak ściąga stealth (`strike.js` ok. 964–970). | Jeśli reguła to „tylko zanim zaatakujesz w tej turze”, dodać bramkę. Jeśli zostaje 1/rundę w dowolnym momencie, dopisać to jednym zdaniem przy talencie. |
 
 Podejrzenia, których nie podnoszę do buga: środek wybuchu Fireballa jest casterem (`inRange(atk, other, aoeR)` w `strike.js`, komentarz „blast around caster”). To jest spójne z kodem i niespójne ze zdaniem „R4 · AoE 1/1/2” na karcie. Rozstrzyga to samo domknięcie co A-02, nie osobna łatka.
@@ -91,9 +91,9 @@ Wszystko poniżej na drzewie `779b823`, bez zmian w kartach i silniku.
 | `/sandbox.html`, `/engine/index.js`, `/cards/fighter.json`, `/mc/r1.js`, `/builder.html` | 404 |
 | `/docs/LAB-QA-PASS.md` | 200 |
 
-Grepy po drzewie (js/mjs/html/md/json): `TODO` 0, `FIXME` 0, `HACK` 0, `XXX` 0, `camouflage` 0. `CARD_FILES` w `mc/r1.js` = 82 stemów i pokrywa się z `cards/*.json` (poza `card.schema.json`, który nie jest kartą). Brak wiszących id w `abilities` / `reactions`.
+Grepy po drzewie (js/mjs/html/md/json): `TODO` 0, `FIXME` 0, `HACK` 0, `XXX` 0, `camouflage` 0. `CARD_FILES` w `mc/r1.js` pokrywa się z `cards/*.json` (poza `card.schema.json`, który nie jest kartą). Po zdjęciu klasy Warrior hero zostaje 78 kart. Brak wiszących id w `abilities` / `reactions`.
 
-`collectPlayableFiles()` = 111, tyle samo co tabela w `docs/AUDIT-REMEDIATION.md`.
+W audycie `collectPlayableFiles()` było 111. Po zdjęciu czterech kart Warrior hero drzewo ma 107 plików gry. `lab.enc` nie został przebity, bo `RIFTERS_LAB_PASSWORD` nie było w środowisku.
 
 ## Nie bugi / zablokowane
 
@@ -101,7 +101,7 @@ Grepy po drzewie (js/mjs/html/md/json): `TODO` 0, `FIXME` 0, `HACK` 0, `XXX` 0, 
 - Porażka: `checkOver` kończy walkę, gdy każdy bohater (nie przywołanie) ma rany ≥ 5 albo `dead`. Dying (0 HP, rany < 5) zostaje w walce. Dying dostaje 2 AP (`apMaxFor`). To jest zgodne z kanonem, nie luka.
 - Help: przerzut niższego d10 (`helpRerollLowerDie`), bez dokładania Advantage. Kolejność zapłaty: Ranger free (`rangerFreeHelps`) → Light Armor free reaction → inaczej −1 AP (`resolveHelp` → `tryPayReaction`). Test 96 OK.
 - HP przywołań w `SUMMON_TEMPLATES`: Warrior 14, Mage 8, Archer 10, Elemental 10, razy INT (minimum 1). Zgadza się ze stubami. Karty przywołań nie mają osobnego bloku HP stwora — nie ma tu starego, sprzecznego HP do poprawy.
-- Warrior T2 jest schowany w wizardzie. Zostaje w `HERO_CATALOG` i `warriorProbe` dla MC. To zgodne z „draft hidden”.
+- resolved: Warrior removed for now. Klasa bohatera nie jest już w `HERO_CATALOG` ani w `warriorProbe`. Przywołanie Summon Warrior zostaje.
 - Hasło nie było rotowane. Ten audyt go nie rusza i nie wkleja skrótu.
 - Publiczne repo jest wyborem Adriana. Plaintext na `github.com` nie jest tu usterką do zamknięcia.
 - `serve.py` jest w drzewie, bind `127.0.0.1`, CORS tylko localhost, POST logów z LAN tylko z `LAB_TOKEN`. ODPAL i README opisują ten sam lokalny start (`python3 serve.py` albo `npx serve`). Wcześniejsza rozbieżność „ODPAL woła serve.py, którego nie ma” jest zamknięta w `779b823`.
@@ -112,5 +112,5 @@ Grepy po drzewie (js/mjs/html/md/json): `TODO` 0, `FIXME` 0, `HACK` 0, `XXX` 0, 
 1. Zdjąć skrót hasła z publikowanego `index.html` (A-01). Hasła nie zmieniać. Potem sprawdzić, że zły wpis nadal zostaje na bramce, a Pages nadal daje 404 na `engine/index.js`.
 2. Domknąć zasięg Entangle / Toxic Cloud / Fireball (A-02): jedna reguła dla kliknięcia, ciosu i wybuchu. Schemat tego nie złapie — to zmiana w `legalActions` i `resolveStrike` po decyzji, nie w liczbach Soft.
 3. Wyciąć martwy Builder / verify / smoke / mc (A-03), żeby playtest nie wychodził w 404.
-4. Cztery decyzje: slot Cold Blooded, Spotter na drabinie Scouta, czy Rank 0 Warriora w ogóle istnieje poza klonem Fightera, Stealth przed pierwszym atakiem czy 1/rundę (D-01–D-04).
+4. Trzy decyzje: slot Cold Blooded, Spotter na drabinie Scouta, Stealth przed pierwszym atakiem czy 1/rundę (D-01, D-02, D-04). D-03: resolved: Warrior removed for now.
 5. Dopisać do CI checker semantyki (range ≠ aoe.range, id `summon-*` nie robi z ciosu wręcz speciala) oraz `lab-qa-pass` i `help-and-minions-check`. Przy edycji plików gry odnawiać `lab.enc` w tym samym commicie (A-07).
