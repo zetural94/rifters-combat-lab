@@ -19,12 +19,12 @@ Pages URL: https://zetural94.github.io/rifters-combat-lab/
 
 | Check | Result |
 | --- | --- |
-| `node --test tests/*.test.mjs` | 21 pass, 1 fail (`lab.manifest.json` still describes the 111-file seal) |
+| `node --test tests/*.test.mjs` | 22 pass |
 | `scripts/check-card-schema.mjs` | 78 pass, 0 fail |
 | `scripts/lab-qa-pass.mjs` | 50 OK, 0 fail |
 | `scripts/help-and-minions-check.mjs` | exit 0 |
 | Playable files (`collectPlayableFiles`) | 107 |
-| Sealed files in committed `lab.enc` | 111 (not resealed: `RIFTERS_LAB_PASSWORD` was unset) |
+| Sealed files in `lab.enc` | 107 |
 | Card schema failures left | 0 |
 
 The earlier “63 tests” figure does not match this repo. `lab-qa-pass.mjs` reports 50 checks. The new unit file is separate. Nothing was padded to 63.

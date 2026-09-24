@@ -93,7 +93,7 @@ Wszystko poniżej na drzewie `779b823`, bez zmian w kartach i silniku.
 
 Grepy po drzewie (js/mjs/html/md/json): `TODO` 0, `FIXME` 0, `HACK` 0, `XXX` 0, `camouflage` 0. `CARD_FILES` w `mc/r1.js` pokrywa się z `cards/*.json` (poza `card.schema.json`, który nie jest kartą). Po zdjęciu klasy Warrior hero zostaje 78 kart. Brak wiszących id w `abilities` / `reactions`.
 
-W audycie `collectPlayableFiles()` było 111. Po zdjęciu czterech kart Warrior hero drzewo ma 107 plików gry. `lab.enc` nie został przebity, bo `RIFTERS_LAB_PASSWORD` nie było w środowisku.
+W audycie `collectPlayableFiles()` było 111. Po zdjęciu czterech kart Warrior hero drzewo i `lab.enc` mają 107 plików gry.
 
 ## Nie bugi / zablokowane
 
