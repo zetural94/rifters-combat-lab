@@ -26,7 +26,7 @@ Checks: numbers (resolved damage, both kits for WD), confirm/prompt, AP/stress, 
 | `acolyte-summon-mage` | OK — n/a — no damage card | OK — no extra prompt — Summon · Mage resolves on click | OK — AP 3→1 (want −2), stress 6→6 (want −0), mana 10→8 (want −2) | OK — n/a | OK — n/a — no target | OK — summon added · self flag |
 | `acolyte-summon-warrior` | OK — n/a — no damage card | OK — no extra prompt — Summon · Warrior resolves on click | OK — AP 3→1 (want −2), stress 6→6 (want −0), mana 10→8 (want −2) | OK — n/a | OK — n/a — no target | OK — summon added · self flag |
 | `acolyte-systems-bargain` | OK — n/a — no damage card | OK — no extra prompt — System's Bargain resolves on click | OK — AP 3→1 (want −2), stress 6→6 (want −0), mana 10→8 (want −2) | OK — n/a | OK — n/a — no target | OK — self flag |
-| `acolyte-toxic-cloud` | OK — flat 4/4/4 | OK — roll confirm (Help or accept) before resolve | OK — AP 3→1 (want −2), stress 6→6 (want −0), mana 10→8 (want −2) | OK — n/a | OK — Dummy in range; ally is not highlighted; out of range R4 blocks Dummy (button disabled in the lab) | OK — raw 4 T1 · −0 HP |
+| `acolyte-toxic-cloud` | OK — flat 0/0/0 | OK — roll confirm (Help or accept) before resolve | OK — AP 3→1 (want −2), stress 6→6 (want −0), mana 10→8 (want −2) | OK — n/a | OK — Dummy in range; ally is not highlighted; out of range R4 blocks Dummy (button disabled in the lab) | OK — raw 0 T1 · −0 HP · Poison 2, Vulnerable 1 (Physical) |
 
 ### Assassin
 
@@ -78,7 +78,7 @@ Checks: numbers (resolved damage, both kits for WD), confirm/prompt, AP/stress, 
 | `mystic-lightning-bolt` | OK — flat 8/12/14 | OK — roll confirm (Help or accept) before resolve | OK — AP 3→1 (want −2), stress 6→6 (want −0), mana 10→9 (want −1) | OK — n/a | OK — Dummy in range; ally is not highlighted; out of range R6 blocks Dummy (button disabled in the lab) | OK — raw 8 T1 · −3 HP |
 | `mystic-living-bomb` | OK — flat 0/0/0 | OK — roll confirm (Help or accept) before resolve | OK — AP 3→1 (want −2), stress 6→6 (want −0), mana 10→8 (want −2) | OK — n/a | OK — Dummy in range; ally is not highlighted; out of range R5 blocks Dummy (button disabled in the lab) | OK — raw 0 T1 · −0 HP · status ×1 · Burn 2, Vulnerable 1 (Physical) |
 | `mystic-magic-shield` | OK — n/a — no damage card | OK — target prompt — click a highlighted token, then the click resolves | OK — AP 3→3 (want −0), stress 6→6 (want −0), mana 10→9 (want −1) | OK — n/a | OK — 2 legal targets; bogus id blocked (bad-target) | OK — landed |
-| `mystic-shadowplay` | OK — flat 0/0/0 | OK — roll confirm (Help or accept) before resolve | OK — AP 3→2 (want −1), stress 6→6 (want −0), mana 10→9 (want −1) | OK — n/a | OK — Dummy in range; ally is not highlighted; out of range R3 blocks Dummy (button disabled in the lab) | OK — raw 0 T1 · −0 HP · status ×1 · Fear ← Mystic A, Vulnerable 1 (Physical) |
+| `mystic-shadowplay` | OK — flat 0/0/0 | OK — roll confirm (Help or accept) before resolve | OK — AP 3→2 (want −1), stress 6→6 (want −0), mana 10→9 (want −1) | OK — n/a | OK — Dummy in range; ally is not highlighted; out of range R3 blocks Dummy (button disabled in the lab) | OK — raw 0 T1 · −0 HP · status ×1 · Fear ← Mystic B, Vulnerable 1 (Physical) |
 
 ### Primalist
 

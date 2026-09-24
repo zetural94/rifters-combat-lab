@@ -2,9 +2,10 @@
   "kind": "ability",
   "id": "acolyte-toxic-cloud",
   "name": "Toxic Cloud",
-  "source": "progressAxisDraft Acolyte · smoke hazard AoE",
+  "source": "progressAxisDraft Acolyte · hazard AoE",
   "costAp": 2,
   "costMana": 2,
+  "upcastMana": 1,
   "range": 4,
   "aoe": { "range": 3 },
   "isAttack": true,
@@ -12,25 +13,20 @@
   "dmgType": "Toxic",
   "tiers": {
     "t1": {
-      "dmg": 4,
+      "dmg": 0,
       "aoeMode": "all",
-      "dmgType": "Toxic",
-      "extras": [{ "id": "toxicCloud", "x": 4 }]
+      "extras": [{ "id": "toxicCloud" }]
     },
     "t2": {
-      "dmg": 4,
+      "dmg": 0,
       "aoeMode": "all",
-      "dmgType": "Toxic",
-      "status": { "id": "poison", "x": 2, "gate": { "stat": "INT", "vs": "attacker" } },
-      "extras": [{ "id": "toxicCloud", "x": 4 }]
+      "extras": [{ "id": "toxicCloud" }]
     },
     "t3": {
-      "dmg": 4,
+      "dmg": 0,
       "aoeMode": "all",
-      "dmgType": "Toxic",
-      "status": { "id": "poison", "x": 2, "gate": { "stat": "INT", "vs": "attacker" } },
-      "extras": [{ "id": "toxicCloud", "x": 4 }]
+      "extras": [{ "id": "toxicCloud" }]
     }
   },
-  "notes": "Smoke: instant 4 Toxic + paint enter hazard 4 Toxic. Cloud persist via hazards."
+  "notes": "2 AP 2 mana, Range 4, AoE 3. Cloud lasts until end of fight. Enter or start there: 4×INT Toxic; INT ≤ YOUR INT Poison 2. UPCAST 1: move the cloud up to 2 at the start of your turn."
 }

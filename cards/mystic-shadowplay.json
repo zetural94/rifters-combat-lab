@@ -2,11 +2,13 @@
   "kind": "ability",
   "id": "mystic-shadowplay",
   "name": "Shadowplay",
-  "source": "progressAxisDraft Mystic · smoke Fear AoE",
+  "source": "progressAxisDraft Mystic · Fear AoE from an ally",
   "costAp": 1,
   "costMana": 1,
+  "upcastMana": 1,
   "range": 3,
   "aoe": { "range": 3 },
+  "allySource": true,
   "isAttack": true,
   "roll": { "stat": "INT", "mode": "power" },
   "dmgType": "Dark",
@@ -14,24 +16,21 @@
     "t1": {
       "dmg": 0,
       "aoeMode": "all",
-      "status": { "id": "fear", "x": 1 },
+      "status": { "id": "fear", "x": 1, "gate": { "stat": "INT", "vs": "attacker" } },
       "extras": [{ "id": "shadowplayMark", "x": 1 }]
     },
     "t2": {
       "dmg": 0,
       "aoeMode": "all",
-      "status": { "id": "fear", "x": 1 },
+      "status": { "id": "fear", "x": 1, "gate": { "stat": "INT", "vs": "attacker" } },
       "extras": [{ "id": "shadowplayMark", "x": 1 }]
     },
     "t3": {
       "dmg": 0,
       "aoeMode": "all",
-      "status": [
-        { "id": "fear", "x": 1 },
-        { "id": "intimidate", "x": 5 }
-      ],
+      "status": { "id": "fear", "x": 1, "gate": { "stat": "INT", "vs": "attacker" } },
       "extras": [{ "id": "shadowplayMark", "x": 1 }]
     }
   },
-  "notes": "Smoke: AoE around caster (ally-source skip). Adv1 vs feared rest of fight."
+  "notes": "1 AP 1 mana. Choose an ally within Range 3 as the source. Enemies in AoE 3 with INT ≤ YOUR INT are Feared. Adv 1 vs feared until end of combat. UPCAST 1: those enemies also take Intimidate 2×INT."
 }

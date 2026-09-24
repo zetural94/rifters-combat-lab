@@ -12,6 +12,7 @@ import { isMonsterEconomy } from "./turn.js";
 import { expandHordeToTokens, queueableEnemies } from "./horde.js";
 import { placeSummon, findSummonOf } from "./summon.js";
 import { inRange } from "./grid.js";
+import { noteTalent } from "./talentTrace.js";
 
 /**
  * Build alternating queue: H0,E0,H1,E1,...
@@ -281,18 +282,24 @@ function runSummonAfter(state, summoner) {
     const foes = (state.actors || []).filter(
       (a) => a.side === "enemy" && !a.dead && (a.hp | 0) > 0
     );
-    let near = null;
-    let nearD = 99;
-    for (const f of foes) {
-      const d = Math.max(
-        Math.abs((f.x | 0) - (pet.x | 0)),
-        Math.abs((f.y | 0) - (pet.y | 0))
-      );
-      if (d < nearD) {
-        nearD = d;
-        near = f;
-      }
-    }
+    const rankFoe = (f) => {
+      if (f.grappleLock && f.grappleLock.advVsTarget) return 0;
+      if (f.st && f.st.restrain) return 0;
+      if (f.st && f.st.fearSource) return 1;
+      return 2;
+    };
+    foes.sort((a, b) => {
+      const ra = rankFoe(a);
+      const rb = rankFoe(b);
+      if (ra !== rb) return ra - rb;
+      const da = Math.max(Math.abs((a.x | 0) - (pet.x | 0)), Math.abs((a.y | 0) - (pet.y | 0)));
+      const db = Math.max(Math.abs((b.x | 0) - (pet.x | 0)), Math.abs((b.y | 0) - (pet.y | 0)));
+      return da - db || (a.hp | 0) - (b.hp | 0);
+    });
+    let near = foes[0] || null;
+    let nearD = near
+      ? Math.max(Math.abs((near.x | 0) - (pet.x | 0)), Math.abs((near.y | 0) - (pet.y | 0)))
+      : 99;
     const isSpecial = (id) =>
       /living-shield|fireball|bone-arrow|elemental-shield/i.test(id || "");
     const isBolt = (id) =>
@@ -392,7 +399,7 @@ function runSummonAfter(state, summoner) {
 function beginActorTurn(state, actor) {
   if (!actor) return actor;
   const w0 = actor.wounds | 0;
-  beginTurn(actor);
+  beginTurn(actor, { actors: state.actors, state });
   if ((actor.wounds | 0) > w0) {
     pushLog(
       state,
@@ -796,7 +803,7 @@ function maybeMitigationHook(state, target, info = {}) {
 
   // Riposte: RANGE 1 melee mitigation only when threat warrants spending stress.
   if (wantMit && !ranged && atkRange <= 1 && target.hasRiposte) {
-    const r = tryRiposte(target, raw, { ranged: false, range: 1 });
+    const r = tryRiposte(target, raw, { ranged: false, range: 1, state });
     if (r.ok) {
       pushLog(
         state,
@@ -1473,6 +1480,8 @@ export function applyAction(state, action) {
       cleaveTargetId: action.cleaveTargetId || null,
       extraTargetIds: action.extraTargetIds || null,
       spendStressAdv: !!action.spendStressAdv,
+      upcast: !!action.upcast,
+      sourceAllyId: action.sourceAllyId || null,
     });
     if (r.oaEvents && r.oaEvents.length) {
       for (const oa of r.oaEvents) {
@@ -1485,6 +1494,25 @@ export function applyAction(state, action) {
     }
     if (r.dryRun) {
       return { ok: true, result: r };
+    }
+    if (state.traceTalents) {
+      const hits = 1 + ((r.aoeHits && r.aoeHits.length) || 0);
+      noteTalent(state, {
+        kind: "cast",
+        abilityId: ab.id,
+        actorId: actor.id,
+        side: actor.side,
+        targetId: target ? target.id : null,
+        hits,
+        upcast: !!action.upcast,
+        feared: !!(target && target.st && target.st.fearSource),
+        grappled: !!(
+          target &&
+          ((target.grappleLock && target.grappleLock.advVsTarget) ||
+            (target.st && target.st.restrain))
+        ),
+        sourceAllyId: action.sourceAllyId || (r && null),
+      });
     }
     // Soft-focus: count hero as targeted this round (enemy single-target strikes)
     if (target && actor.side === "enemy" && target.side === "hero") {
@@ -1846,6 +1874,7 @@ export function applyOpportunityAttack(state, fromId, toId, opts = {}) {
     // Vigilant: MOVE 1 safely after OA
     if (from.vigilant && !from.dead && (from.hp | 0) > 0) {
       from.vigilantMoveReady = true;
+      noteTalent(state, { kind: "vigilantOa", actorId: from.id, targetId: to.id });
     }
   } else pushLog(state, "  OA " + from.name + " nieudany: " + (r.reason || "?"));
   checkOver(state);

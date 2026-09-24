@@ -3,6 +3,8 @@ import { resetKitSwaps, normalizeKitParts } from "./kits.js";
 import { tickStartOfTurnDots, tickGloomAtStartOfTurn } from "./status.js";
 import { applyDamage } from "./damage.js";
 import { syncBloodiedShell } from "./actor.js";
+import { moveUpcastClouds, pulseCloudsAtStart } from "./clouds.js";
+import { noteTalent } from "./talentTrace.js";
 
 /**
  * Turn / AP / reaction window (RULES-CANON §2 / Mechanika).
@@ -219,8 +221,9 @@ export function beginTurn(actor, opts = {}) {
   } else if (actor.barkskinUntilTurn) {
     actor.barkskinUntilTurn = false;
   }
-  // Restrain clears at start of your turn
-  if (actor.st && actor.st.restrain) {
+  // Grapple lasts until the start of the grappler's next turn, not the target's.
+  releaseGrappleHold(actor, opts.actors);
+  if (actor.st && actor.st.restrain && !actor.grappleLock) {
     actor.st.restrain = false;
     actor.grappleFocus = false;
   }
@@ -256,6 +259,25 @@ export function beginTurn(actor, opts = {}) {
   // Gloom: DISADV X this turn, then stacks -= 1 (start of turn).
   tickGloomAtStartOfTurn(actor);
 
+  // Toxic Cloud upcast slides first; then anyone already standing in a cloud pulses
+  // before the Poison DoT tick, so stacks gained this pulse are included.
+  if (opts.state) {
+    const moved = moveUpcastClouds(opts.state, actor);
+    const justPulsed =
+      moved && moved.pulsedIds && moved.pulsedIds.indexOf(actor.id) >= 0;
+    if (!justPulsed) pulseCloudsAtStart(opts.state, actor);
+    noteTalent(opts.state, {
+      kind: "turn",
+      actorId: actor.id,
+      side: actor.side,
+      fear: !!(actor.st && actor.st.fearSource),
+      poison: (actor.st && actor.st.poison) | 0,
+      restrain: !!(actor.st && actor.st.restrain),
+      grapple: !!(actor.grappleLock && actor.grappleLock.advVsTarget),
+      vigilantReady: !!actor.vigilantMoveReady,
+    });
+  }
+
   if (opts.tickDots !== false) {
     tickStartOfTurnDots(actor, function (t, x) {
       applyDamage(t, x, { unpreventable: true, isDot: true, skipBleed: true });
@@ -273,6 +295,33 @@ function hasWeaponEquipped(actor, weaponId) {
     actor.weaponOptions && actor.weaponOptions[actor.activeKit | 0]
   );
   return parts.indexOf(weaponId) >= 0;
+}
+
+/**
+ * Grapple lock until the grappler's next turn.
+ * T2: Adv 1 on attacks vs the grappler and vs the target.
+ * T3: Adv 1 on attacks vs the target only.
+ * Restrain itself stays on the gated status.
+ */
+export function applyGrappleLock(atk, tgt, tier, actors) {
+  if (!atk || !tgt) return;
+  if (atk.grappleHold && atk.grappleHold.targetId && atk.grappleHold.targetId !== tgt.id) {
+    releaseGrappleHold(atk, actors);
+  }
+  atk.grappleHold = { targetId: tgt.id, advVsSelf: (tier | 0) === 2 };
+  tgt.grappleLock = { byId: atk.id, advVsTarget: (tier | 0) >= 2 };
+}
+
+/** Drop a Grapple when the grappler's next turn starts. */
+export function releaseGrappleHold(actor, actors) {
+  const hold = actor && actor.grappleHold;
+  if (!hold) return;
+  actor.grappleHold = null;
+  const tgt = (actors || []).find((a) => a && a.id === hold.targetId);
+  if (!tgt || !tgt.grappleLock || tgt.grappleLock.byId !== actor.id) return;
+  tgt.grappleLock = null;
+  tgt.grappleFocus = false;
+  if (tgt.st) tgt.st.restrain = false;
 }
 
 export { hasWeaponEquipped, hasShieldEquipped };

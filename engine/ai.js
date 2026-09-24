@@ -5,6 +5,8 @@ import { reachableCells } from "./move.js";
 import { objectBlockKeys } from "./terrain.js";
 import { cubeCellsIncluding, cellKey } from "./terrain.js";
 import { canPayMana } from "./feats.js";
+import { oaRangeFor } from "./turn.js";
+import { cellInToxicCloud, findCloud } from "./clouds.js";
 import { listLegalPushDirs } from "./forced.js";
 import { isMonsterSpecialAbility } from "./status.js";
 
@@ -166,7 +168,7 @@ function pickMoveToward(actor, legal, targets, state) {
       }
       return {
         c,
-        score: d + prefD * 0.01 + rangedBonus,
+        score: d + prefD * 0.01 + rangedBonus + (cellInToxicCloud(c.x, c.y, state) ? 40 : 0),
         melee: targets.some((t) => inRange(pos, t, 1)),
       };
     })
@@ -1033,7 +1035,73 @@ function enrichHeroStrike(state, actor, action) {
  * Ranged heroes: stay in strike range, prefer not entering melee vs packs/hordes.
  * Melee heroes: unchanged (toward preferred).
  */
+function controlRank(f) {
+  if (!f) return 9;
+  if (f.grappleLock && f.grappleLock.advVsTarget) return 0;
+  if (f.st && f.st.restrain) return 0;
+  if (f.st && f.st.fearSource) return 1;
+  return 2;
+}
+
+/** Vigilant: end the turn threatening an OA instead of kiting out of reach. */
+function pickVigilantHold(actor, legal, foes, state) {
+  const reach = oaRangeFor(actor);
+  const preferred = foes[0];
+  const threatening = foes.filter((f) => inRange(actor, f, reach));
+  const hereCloud = cellInToxicCloud(actor.x, actor.y, state);
+  const packed = foes.filter((f) => inRange(actor, f, 1)).length >= 3;
+  if (threatening.length && !hereCloud && !packed) return null;
+
+  const move = legal.find((a) => a.type === "move");
+  const careful = legal.find((a) => a.type === "carefulStep");
+  const cells = [].concat((careful && careful.cells) || [], (move && move.cells) || []);
+  if (!cells.length) return null;
+  let best = null;
+  let bestScore = 1e9;
+  const seen = new Set();
+  for (const c of cells) {
+    const key = (c.x | 0) + "," + (c.y | 0);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (cellInToxicCloud(c.x, c.y, state) && !hereCloud) continue;
+    const meleeN = foes.filter((f) => inRange(c, f, 1)).length;
+    const atReach = preferred && chebyshev(c, preferred) === reach;
+    const anyReach = foes.some((f) => {
+      const d = chebyshev(c, f);
+      return d >= 1 && d <= reach;
+    });
+    const score =
+      meleeN * 8 +
+      (atReach ? 0 : anyReach ? 3 : 12) +
+      (preferred ? Math.abs(chebyshev(c, preferred) - reach) : 0);
+    if (score < bestScore) {
+      bestScore = score;
+      best = c;
+    }
+  }
+  if (!best) return null;
+  const stayMelee = foes.filter((f) => inRange(actor, f, 1)).length;
+  const stayScore =
+    (hereCloud ? 80 : 0) +
+    stayMelee * 8 +
+    (preferred && chebyshev(actor, preferred) === reach ? 0 : threatening.length ? 3 : 12);
+  if (bestScore >= stayScore) return null;
+  const onCareful =
+    careful &&
+    careful.cells &&
+    careful.cells.some((c) => (c.x | 0) === (best.x | 0) && (c.y | 0) === (best.y | 0));
+  if (onCareful) return { type: "carefulStep", dest: best };
+  return { type: "move", dest: best };
+}
+
 function pickMoveForHero(actor, legal, foes, state) {
+  if (actor.vigilant) {
+    const reach = oaRangeFor(actor);
+    const close = foes.some((f) => chebyshev(actor, f) <= reach + 2);
+    if (close || (!actor.pinShot && !actor.barrage)) {
+      return pickVigilantHold(actor, legal, foes, state);
+    }
+  }
   const ranged = isRangedRifter(actor, state);
   if (!ranged) return pickMoveToward(actor, legal, foes, state);
 
@@ -1064,7 +1132,14 @@ function pickMoveForHero(actor, legal, foes, state) {
         // Prefer distance 3–5 from preferred, zero melee neighbors
         const band =
           prefD >= 3 && prefD <= strikeRange ? 0 : Math.abs(prefD - Math.min(4, strikeRange));
-        return { c, score: meleeN * 10 + band + (strikeRange - Math.min(minD, strikeRange)) * 0.1 };
+        return {
+          c,
+          score:
+            meleeN * 10 +
+            band +
+            (strikeRange - Math.min(minD, strikeRange)) * 0.1 +
+            (cellInToxicCloud(c.x, c.y, state) ? 30 : 0),
+        };
       })
       .sort((a, b) => a.score - b.score);
     if (ranked.length && ranked[0].score < 20) {
@@ -1084,7 +1159,10 @@ function pickMoveForHero(actor, legal, foes, state) {
       const inBand = prefD >= 2 && prefD <= strikeRange;
       return {
         c,
-        score: meleeN * 8 + (inBand ? prefD * 0.01 : Math.abs(prefD - 4) + 3),
+        score:
+          meleeN * 8 +
+          (inBand ? prefD * 0.01 : Math.abs(prefD - 4) + 3) +
+          (cellInToxicCloud(c.x, c.y, state) ? 30 : 0),
         entersMelee: meleeN > 0,
       };
     })
@@ -1266,6 +1344,124 @@ function pickMartialStepDest(actor, cells, foes, preferred) {
  * All policies finish nearly-dead foes (≤8 HP) before other targeting.
  * Brawler Push is from gloves T2/T3 extras — no separate AI action.
  */
+function blastCount(origin, foes, radius, pred) {
+  let n = 0;
+  for (const f of foes) {
+    if (!inRange(origin, f, radius)) continue;
+    if (pred && !pred(f)) continue;
+    n += 1;
+  }
+  return n;
+}
+
+/** Shadowplay: ally source that fears the most unfeared enemies. Skip a 1-body blast when the pack is larger. */
+function pickShadowplayAction(state, actor, legal, foes) {
+  const sh =
+    legal.find((a) => a.type === "strike" && /shadowplay/i.test(a.abilityId || "") && !a.noTargets) ||
+    null;
+  if (!sh || !actor.shadowplay || (actor.ap | 0) < 1 || !canPayMana(actor, 1)) return null;
+  const range = sh.range != null ? sh.range | 0 : 3;
+  const blast = 3;
+  const allies = (state.actors || []).filter(
+    (a) =>
+      a &&
+      a.side === "hero" &&
+      !a.dead &&
+      (a.hp | 0) > 0 &&
+      !a.summon &&
+      (a === actor || inRange(actor, a, range))
+  );
+  let best = null;
+  let bestScore = -1;
+  let bestHits = 0;
+  for (const al of allies.length ? allies : [actor]) {
+    const hits = blastCount(al, foes, blast);
+    const fresh = blastCount(al, foes, blast, (f) => !(f.st && f.st.fearSource));
+    const score = fresh * 10 + hits;
+    if (fresh > 0 && score > bestScore) {
+      bestScore = score;
+      best = al;
+      bestHits = hits;
+    }
+  }
+  const minHits = foes.length >= 2 ? 2 : 1;
+  if (!best || bestHits < minHits) return null;
+  const tid = foes
+    .filter((f) => inRange(best, f, blast) && !(f.st && f.st.fearSource))
+    .sort((a, b) => (a.hp | 0) - (b.hp | 0))[0];
+  if (!tid) return null;
+  const upcast = canPayMana(actor, 2) && bestHits >= 2;
+  return {
+    type: "strike",
+    abilityId: sh.abilityId,
+    targetId: tid.id,
+    targets: [tid.id],
+    sourceAllyId: best.id,
+    upcast,
+  };
+}
+
+/** Toxic Cloud: center AoE 3 on the enemy cluster, and do not stand in it. */
+function pickToxicAction(state, actor, legal, foes) {
+  if (!actor.toxicCloud || (actor.ap | 0) < 2 || !canPayMana(actor, 2)) return null;
+  const tox = legal.find(
+    (a) => a.type === "strike" && /toxic-cloud/i.test(a.abilityId || "") && a.targets && a.targets.length
+  );
+  if (!tox) return null;
+  const existing = findCloud(state, actor.id);
+  if (
+    existing &&
+    blastCount({ x: existing.ax, y: existing.ay }, foes, existing.radius | 0 || 3) >= 1
+  ) {
+    return null;
+  }
+  const heroes = (state.actors || []).filter(
+    (a) => a && a.side === "hero" && !a.dead && (a.hp | 0) > 0
+  );
+  let best = null;
+  let bestScore = 0;
+  for (const f of foes) {
+    if (tox.targets.indexOf(f.id) < 0) continue;
+    const enemies = blastCount(f, foes, 3);
+    const allies = blastCount(f, heroes, 3);
+    const score = enemies * 3 - allies * 5;
+    if (score > bestScore) {
+      bestScore = score;
+      best = f;
+    }
+  }
+  const minHits = foes.length >= 2 ? 2 : 1;
+  if (!best || blastCount(best, foes, 3) < minHits) return null;
+  return {
+    type: "strike",
+    abilityId: tox.abilityId,
+    targetId: best.id,
+    targets: [best.id],
+    upcast: canPayMana(actor, 3),
+  };
+}
+
+/** Living Bomb: mark the foe most likely to die beside another body. */
+function pickLivingBombAction(state, actor, legal, foes) {
+  if (!actor.livingBombFeat || (actor.ap | 0) < 2 || !canPayMana(actor, 2)) return null;
+  const bomb = legal.find(
+    (a) => a.type === "strike" && /living-bomb/i.test(a.abilityId || "") && a.targets && a.targets.length
+  );
+  if (!bomb) return null;
+  const inR = foes.filter((f) => bomb.targets.indexOf(f.id) >= 0 && !f.livingBomb);
+  if (!inR.length) return null;
+  const withNeighbor = inR.filter((f) => foes.some((o) => o !== f && inRange(f, o, 3)));
+  const pool = withNeighbor.length ? withNeighbor : inR;
+  pool.sort((a, b) => (a.hp | 0) - (b.hp | 0) || controlRank(a) - controlRank(b));
+  return {
+    type: "strike",
+    abilityId: bomb.abilityId,
+    targetId: pool[0].id,
+    targets: [pool[0].id],
+    upcast: canPayMana(actor, 3),
+  };
+}
+
 export function chooseHeroAction(state, policy = "smart") {
   const actor = currentActor(state);
   if (!actor || actor.side !== "hero") return { type: "endTurn" };
@@ -1280,6 +1476,9 @@ export function chooseHeroAction(state, policy = "smart") {
     const finA = (a.hp | 0) <= 8 ? 0 : 1;
     const finB = (b.hp | 0) <= 8 ? 0 : 1;
     if (finA !== finB) return finA - finB;
+    const ca = controlRank(a);
+    const cb = controlRank(b);
+    if (ca !== cb) return ca - cb;
     return (a.hp | 0) - (b.hp | 0);
   });
   const preferred = foes[0];
@@ -1717,20 +1916,9 @@ export function chooseHeroAction(state, policy = "smart") {
       (a) => a.type === "strike" && !a.noTargets && a.targets && a.targets.length
     );
     if (earlyMana.length && (actor.attacksThisTurn | 0) === 0 && preferred) {
-      if (actor.livingBombFeat && (actor.ap | 0) >= 2 && canPayMana(actor, 2)) {
-        const bomb = earlyMana.find((s) => /living-bomb/i.test(s.abilityId || ""));
-        if (
-          bomb &&
-          bomb.targets &&
-          bomb.targets.indexOf(preferred.id) >= 0 &&
-          (isEliteFoe(preferred) || (preferred.hp | 0) >= 18)
-        ) {
-          return enrichHeroStrike(state, actor, {
-            type: "strike",
-            abilityId: bomb.abilityId,
-            targetId: preferred.id,
-          });
-        }
+      {
+        const bombAct = pickLivingBombAction(state, actor, legal, foes);
+        if (bombAct) return enrichHeroStrike(state, actor, bombAct);
       }
       if (actor.lightningBolt && (actor.ap | 0) >= 2 && canPayMana(actor, 1)) {
         const bolt = earlyMana.find((s) => /lightning-bolt/i.test(s.abilityId || ""));
@@ -1742,25 +1930,9 @@ export function chooseHeroAction(state, policy = "smart") {
           });
         }
       }
-      if (actor.livingBombFeat && (actor.ap | 0) >= 2 && canPayMana(actor, 2)) {
-        const bomb = earlyMana.find((s) => /living-bomb/i.test(s.abilityId || ""));
-        if (bomb && bomb.targets && bomb.targets.indexOf(preferred.id) >= 0) {
-          return enrichHeroStrike(state, actor, {
-            type: "strike",
-            abilityId: bomb.abilityId,
-            targetId: preferred.id,
-          });
-        }
-      }
-      if (actor.shadowplay && (actor.ap | 0) >= 1 && canPayMana(actor, 1)) {
-        const sh = earlyMana.find((s) => /shadowplay/i.test(s.abilityId || ""));
-        if (sh && sh.targets && sh.targets.length >= 1) {
-          return enrichHeroStrike(state, actor, {
-            type: "strike",
-            abilityId: sh.abilityId,
-            targetId: sh.targets.indexOf(preferred.id) >= 0 ? preferred.id : sh.targets[0],
-          });
-        }
+      {
+        const shAct = pickShadowplayAction(state, actor, legal, foes);
+        if (shAct) return enrichHeroStrike(state, actor, shAct);
       }
       if (actor.enfeeble && (actor.ap | 0) >= 1 && canPayMana(actor, 1)) {
         const enf = earlyMana.find((s) => /enfeeble/i.test(s.abilityId || ""));
@@ -1815,15 +1987,9 @@ export function chooseHeroAction(state, policy = "smart") {
           });
         }
       }
-      if (actor.toxicCloud && (actor.ap | 0) >= 2 && canPayMana(actor, 2)) {
-        const tox = earlyMana.find((s) => /toxic-cloud/i.test(s.abilityId || ""));
-        if (tox && tox.targets && tox.targets.length >= 2) {
-          return enrichHeroStrike(state, actor, {
-            type: "strike",
-            abilityId: tox.abilityId,
-            targetId: tox.targets[0],
-          });
-        }
+      {
+        const toxAct = pickToxicAction(state, actor, legal, foes);
+        if (toxAct) return enrichHeroStrike(state, actor, toxAct);
       }
       if (actor.frostShock && (actor.ap | 0) >= 1 && canPayMana(actor, 1)) {
         const frost = earlyMana.find((s) => /frost-shock/i.test(s.abilityId || ""));
@@ -2398,13 +2564,13 @@ export function chooseHeroAction(state, policy = "smart") {
       const bolt = strikes.find((s) => /lightning-bolt/i.test(s.abilityId || ""));
       if (bolt && bolt.targets && bolt.targets.indexOf(preferred.id) >= 0) pick = bolt;
     }
-    if (actor.livingBombFeat && (actor.ap | 0) >= 2 && canPayMana(actor, 2)) {
-      const bomb = strikes.find((s) => /living-bomb/i.test(s.abilityId || ""));
-      if (bomb && bomb.targets && bomb.targets.indexOf(preferred.id) >= 0) pick = bomb;
+    {
+      const bombAct = pickLivingBombAction(state, actor, legal, foes);
+      if (bombAct) pick = bombAct;
     }
-    if (actor.shadowplay && (actor.ap | 0) >= 1 && canPayMana(actor, 1)) {
-      const sh = strikes.find((s) => /shadowplay/i.test(s.abilityId || ""));
-      if (sh && sh.targets && sh.targets.length) pick = sh;
+    {
+      const shAct = pickShadowplayAction(state, actor, legal, foes);
+      if (shAct) pick = shAct;
     }
     // Enfeeble: soft packs (≥2 foes)
     if (actor.enfeeble && (actor.ap | 0) >= 1 && canPayMana(actor, 1)) {
@@ -2417,9 +2583,9 @@ export function chooseHeroAction(state, policy = "smart") {
         pick = purge;
       }
     }
-    if (actor.toxicCloud && (actor.ap | 0) >= 2 && canPayMana(actor, 2)) {
-      const tox = strikes.find((s) => /toxic-cloud/i.test(s.abilityId || ""));
-      if (tox && tox.targets && tox.targets.length >= 2) pick = tox;
+    {
+      const toxAct = pickToxicAction(state, actor, legal, foes);
+      if (toxAct) pick = toxAct;
     }
     // Frost Shock: control poke
     if (actor.frostShock && (actor.ap | 0) >= 1 && canPayMana(actor, 1)) {
@@ -2552,6 +2718,8 @@ export function chooseHeroAction(state, policy = "smart") {
       flurry: !!pick.flurry,
       useAim: !!pick.canAim,
       spendStressAdv: !!pick.spendStressAdv,
+      upcast: !!pick.upcast,
+      sourceAllyId: pick.sourceAllyId || null,
     });
   }
 

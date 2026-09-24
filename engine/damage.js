@@ -14,6 +14,7 @@
 
 import { syncHordeAfterHp, resolveHordeDamageTarget, cullHordeTokens, isHorde, resolveHordeAoeTokenHit } from "./horde.js";
 import { inRange } from "./grid.js";
+import { noteTalent } from "./talentTrace.js";
 
 function defFor(target, dmgType) {
   if (!target || !target.def) return 0;
@@ -214,19 +215,28 @@ function commitHp(target, toHp, absorbedShield, afterDefHint, opts = {}) {
     const bomb = target.livingBomb;
     target.livingBomb = null;
     const br = bomb.range != null ? bomb.range | 0 : 3;
-    const bd = bomb.dmg | 0 || 5;
+    const bd = bomb.dmg | 0 || 8;
     const casterSide =
       (opts.actors.find((a) => a && a.id === bomb.fromId) || {}).side || "hero";
+    let splash = 0;
     for (const other of opts.actors) {
       if (!other || other === target || other.side === casterSide) continue;
       if (other.dead || (other.hp | 0) <= 0) continue;
       if (!inRange(target, other, br)) continue;
+      splash += 1;
       applyDamage(other, bd, {
         dmgType: "Fire",
         actors: opts.actors,
         fromLivingBomb: true,
       });
     }
+    noteTalent(bomb.traceState, {
+      kind: "bombDetonate",
+      fromId: bomb.fromId,
+      targetId: target.id,
+      dmg: bd,
+      splash,
+    });
   }
   const out = {
     dealt,
