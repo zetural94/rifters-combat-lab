@@ -1052,20 +1052,21 @@
       resolveMaxTargets,
       resolveAbilityTierDamage,
       critPassiveBonusDmg,
+      ELEMENTAL_BOLT_TYPES,
       listMitigationReactions,
       mitigationButtonLabel,
       commitMitigationChoice,
       reconcileMitigationTarget,
       riposteOfferFromResolution,
-    } from "./engine/index.js?v=20260924react";
+    } from "./engine/index.js?v=20260924help";
     import {
       isWeaponDmgToken,
       kitIndexesForAbility,
       previewTierDamage,
       previewTierTriplet,
-    } from "./engine/abilityPreview.js?v=20260924wd";
-    import { loadCardPack, SCENARIOS, RIFT_CHAINS, makeR1Encounter, resolvePartyIds, FEAT_SMOKE_STUBS, lanePadFromTalents, effectiveEncounterBp, encounterSpentBp, PARTY_PRESETS, partyLabel } from "./mc/r1.js?v=20260919gate";
-    import { r1LadderFeats, trainClassFeats, mixLadderFeats } from "./mc/talent-ladder.js?v=20260919gate";
+    } from "./engine/abilityPreview.js?v=20260924help";
+    import { loadCardPack, SCENARIOS, RIFT_CHAINS, makeR1Encounter, resolvePartyIds, FEAT_SMOKE_STUBS, lanePadFromTalents, effectiveEncounterBp, encounterSpentBp, PARTY_PRESETS, partyLabel } from "./mc/r1.js?v=20260924help";
+    import { r1LadderFeats, trainClassFeats, mixLadderFeats } from "./mc/talent-ladder.js?v=20260924help";
     import {
       loadBuilderRoster,
       loadBuilderParty,
@@ -1855,12 +1856,40 @@
 
     function helpersFor(attacker) {
       return (state.actors || []).filter((a) => {
-        if (!a || a === attacker || a.side !== "hero") return false;
+        if (!a || a === attacker || a.side !== "hero" || a.summon) return false;
         if (a.dead || (a.hp | 0) <= 0) return false;
+        // Summons are slot economy — resolveHelp rejects them.
+        // Ranger free Help is 0 AP and does not spend the reaction slot.
+        if ((a.rangerFreeHelps | 0) > 0) return true;
         if ((a.ap | 0) >= 1) return true;
         if (a.lightArmor && !a.freeReactionUsed) return true;
         return false;
       });
+    }
+
+    function helpPayLabel(helper) {
+      if (!helper) return "−1 AP";
+      if ((helper.rangerFreeHelps | 0) > 0) return "Ranger free · 0 AP";
+      if (helper.lightArmor && !helper.freeReactionUsed) return "free reaction · 0 AP";
+      return "−1 AP";
+    }
+
+    function helpPayNote(pay) {
+      if (pay && pay.rangerFree) return " · Ranger free 0 AP";
+      if (pay && pay.usedFree) return " · free reaction 0 AP";
+      const n = pay && pay.apCost != null ? pay.apCost | 0 : 1;
+      return " · −" + n + " AP";
+    }
+
+    function rollAllowsHelp(decl) {
+      if (!decl || decl.mode === "flat") return false;
+      if (decl.twin) return !!(decl.rolls && decl.rolls.length);
+      return !!(decl.roll && decl.roll.d1 != null);
+    }
+
+    function elementTypesFor(ab) {
+      if (ab && /^summon-elemental-/.test(ab.id || "")) return ELEMENTAL_BOLT_TYPES.slice();
+      return ELEMENT_TYPES.slice();
     }
 
     function pushUndo(label) {
@@ -1885,6 +1914,8 @@
             askHeroPick: state.askHeroPick,
             awaitingHeroPick: state.awaitingHeroPick,
             askReactions: state.askReactions,
+            summonInterlude: state.summonInterlude || null,
+            playSummons: !!state.playSummons,
             askPush: state.askPush,
             deferredStart: state.deferredStart,
             scenarioId: state.scenarioId,
@@ -2030,7 +2061,24 @@
       let featSmoke = null;
       let talentsPerHero = null;
       let talentHint = "Talents OFF.";
-      if (wizardRank === 0) {
+      // Train / Dummy always loads that class's full Rank-1 package (Help ally is the twin).
+      // Rift BP stairs stay on the wizard path below.
+      if (String(scenario || "").indexOf("train_") === 0) {
+        const trainFeats = trainClassFeats(scenario);
+        if (trainFeats && trainFeats.length) {
+          featSmoke = trainFeats;
+          talentsPerHero = null;
+          talentHint =
+            "Train package: all " +
+            String(scenario).replace("train_", "") +
+            " talents (" +
+            trainFeats.length +
+            ").";
+        }
+      }
+      if (featSmoke && featSmoke.length) {
+        // package already chosen
+      } else if (wizardRank === 0) {
         // Rank 0 skips talents. Explicit n=0 still feeds TALENT_BP_V03 (pad 0).
         talentsPerHero = 0;
         featSmoke = null;
@@ -2070,23 +2118,6 @@
             .map((id) => (FEAT_SMOKE_STUBS[id] ? FEAT_SMOKE_STUBS[id].label.split(":")[0] : id))
             .join(", ") +
           ".";
-      } else if (String(scenario || "").indexOf("train_") === 0) {
-        const trainFeats = trainClassFeats(scenario);
-        if (trainFeats && trainFeats.length) {
-          featSmoke = trainFeats;
-          talentsPerHero = trainFeats.length;
-          talentHint =
-            "Train package: all " +
-            String(scenario).replace("train_", "") +
-            " talents (" +
-            trainFeats.length +
-            ").";
-        } else if (mode.indexOf("ladder") === 0) {
-          const n = Math.max(0, Math.min(4, parseInt(mode.replace("ladder", ""), 10) | 0));
-          talentsPerHero = n;
-          featSmoke = r1LadderFeats(n);
-          talentHint = "Ladder n=" + n + " (class has no TRAIN_CLASS_FEATS yet).";
-        }
       } else if (partyOpt === "r1" || partySel === "r1") {
         if (mode.indexOf("ladder") === 0) {
           const n = Math.max(0, Math.min(4, parseInt(mode.replace("ladder", ""), 10) | 0));
@@ -2106,6 +2137,7 @@
         askReactions: true,
         askHeroPick: true,
         askKitPick: true,
+        playSummons: true,
         deferStart: true,
         featSmoke,
         talentsPerHero,
@@ -2272,7 +2304,7 @@
       const byPos = new Map();
       const footprintOf = new Map();
       for (const a of state.actors) {
-        if (a.dead && a.side === "enemy") continue;
+        if (a.dead && (a.side === "enemy" || a.summon)) continue;
         byPos.set(a.x + "," + a.y, a);
         for (const k of footprintKeys(a)) {
           if (!footprintOf.has(k)) footprintOf.set(k, a);
@@ -2389,6 +2421,7 @@
     function renderRoster() {
       elRoster.innerHTML = "";
       for (const a of state.actors) {
+        if (a.dead && a.summon) continue;
         const art = document.createElement("article");
         art.className = a.side + (inspectId === a.id ? " selected" : "");
         art.title = setupMode
@@ -2403,7 +2436,7 @@
           (a.token && a.side === "enemy" ? a.token + " · " : "") +
           a.name +
           (a.defendUp ? " · DEFEND" : "") +
-          (a.actedThisRound && a.side === "hero" ? " · acted" : "") +
+          (a.actedThisRound && a.side === "hero" && !a.summon ? " · acted" : "") +
           "</div>" +
           '<div class="bar"><i style="width:' +
           pct +
@@ -2481,7 +2514,7 @@
     }
 
     function cycleInspect(dir) {
-      const list = (state.actors || []).filter((a) => !(a.dead && a.side === "enemy"));
+      const list = (state.actors || []).filter((a) => !(a.dead && (a.side === "enemy" || a.summon)));
       if (!list.length) return;
       let i = list.findIndex((a) => a.id === inspectId);
       if (i < 0) i = 0;
@@ -3314,8 +3347,10 @@
             modBits.push(sign + (m.n | 0) + " " + (m.src || ""));
           }
         }
-        let outcome =
-          modBits.length
+        const flatRoll = d.mode === "flat" || !rollAllowsHelp(d);
+        let outcome = flatRoll
+          ? "Flat — no Power Roll. Help does not apply."
+          : modBits.length
             ? "Result: " +
               modBits.join(" ") +
               " = " +
@@ -3391,25 +3426,34 @@
         if (pending.helpDone) outcome += " · after Help";
         box.innerHTML =
           formatLogHtml(outcome) +
-          '<div class="help-bridge">Bridge: 2d10+mod → T1/T2/T3 (higher = stronger). Help = ally rerolls the <b>lower</b> d10, then re-check total/tier.</div>';
+          (flatRoll
+            ? ""
+            : '<div class="help-bridge">Bridge: 2d10+mod → T1/T2/T3 (higher = stronger). Help = ally rerolls the <b>lower</b> d10 (not Advantage), then re-check total/tier.</div>');
         elActions.appendChild(box);
-        addGroup(pending.helpDone ? "CTA · accept" : "CTA · Help or accept");
+        const offerHelp = !pending.helpDone && rollAllowsHelp(d);
+        addGroup(
+          pending.helpDone ? "CTA · accept" : offerHelp ? "CTA · Help or accept" : "CTA · accept"
+        );
         btn(
           pending.helpDone
             ? pending.kind === "oa"
               ? "Accept OA result"
               : "Accept — apply result"
-            : pending.kind === "oa"
-              ? "No Help — accept OA"
-              : "No Help — accept roll",
+            : offerHelp
+              ? pending.kind === "oa"
+                ? "No Help — accept OA"
+                : "No Help — accept roll"
+              : pending.kind === "oa"
+                ? "Accept OA result"
+                : "Accept — apply result",
           {
             primary: true,
             onclick: () => commitHeroStrike(null),
           }
         );
-        if (!pending.helpDone) {
+        if (offerHelp) {
           for (const h of pending.helpers || []) {
-            btn("Help from " + h.name + " (−1 AP / free reaction, reroll lower d10)", {
+            btn("Help from " + h.name + " (" + helpPayLabel(h) + ", reroll lower d10)", {
               free: true,
               onclick: () => previewHelpReroll(h.id),
             });
@@ -3512,6 +3556,36 @@
         return;
       }
 
+      if (pending && pending.type === "shieldAlly") {
+        addGroup("Elemental Shield · ally (R4)");
+        addUxNote(
+          "Flat — no Power Roll, so Help is not offered. +" +
+            ((currentActor(state) && currentActor(state).int) | 0) +
+            " " +
+            (pending.dmgTypeOverride || "Fire") +
+            " DEF until end of fight."
+        );
+        const allies = pending.shieldAllies || [];
+        if (!allies.length) {
+          btn("No ally in range", { disabled: true });
+        }
+        for (const a of allies) {
+          btn(a.name + " · HP " + a.hp + "/" + a.hpMax, {
+            primary: true,
+            onclick: () => {
+              pending = Object.assign({}, pending, {
+                type: "helpAfterRoll",
+                supportAllyId: a.id,
+              });
+              elHint.textContent =
+                "Shield on " + a.name + " — accept to apply (no Help on a flat effect).";
+              render();
+            },
+          });
+        }
+        return;
+      }
+
       if (pending && pending.type === "elementPick") {
         addGroup("Elemental Spear · damage type (1/turn)");
         addUxNote("Wybierz typ obrażeń na ten Strike.");
@@ -3520,16 +3594,22 @@
             primary: t === "Earth",
             onclick: () => {
               const resume = pending.resume || {};
-              pending = Object.assign({}, resume, {
+              const next = Object.assign({}, resume, {
                 type: "helpAfterRoll",
                 dmgTypeOverride: t,
                 declaration: Object.assign({}, resume.declaration || {}, {
                   dmgType: t,
                 }),
               });
-              elHint.textContent = (pending.helpers || []).length
-                ? "Element " + t + " — Help or accept."
-                : "Element " + t + " — accept roll.";
+              if (next.abilityId === "summon-elemental-shield") {
+                openShieldAlly(next, t);
+                return;
+              }
+              pending = next;
+              elHint.textContent =
+                rollAllowsHelp(pending.declaration) && (pending.helpers || []).length
+                  ? "Element " + t + " — Help or accept."
+                  : "Element " + t + " — accept.";
               render();
             },
           });
@@ -3711,6 +3791,12 @@
         });
       }
 
+      if (cur && cur.summon) {
+        addUxNote(
+          "Summon turn — 1 Move and 1 Action (not hero AP). A Power Roll can call Help from a hero (reroll the lower d10; Ranger free Help is 0 AP). Flat effects do not offer Help."
+        );
+      }
+
       const legal = listLegal(state);
       const attacks = legal.filter((a) => a.type === "strike");
       const moves = legal.filter(
@@ -3856,9 +3942,8 @@
             a.label +
               (kitBit ? " · " + kitBit : "") +
               rLabel +
-              " (" +
-              a.apCost +
-              " AP)" +
+              (a.slot === "action" ? " · Action" : " (" + a.apCost + " AP)") +
+              (a.stressCost ? " · " + a.stressCost + " stress" : "") +
               (out ? " · out of range" : "") +
               (a.aimArmed ? " · Aim ready" : ""),
             {
@@ -3968,7 +4053,7 @@
         addGroup("Move");
         for (const a of moves) {
           if (a.type === "stand") {
-            btn(actionLabel(a) + (a.apCost ? " (" + a.apCost + " AP)" : " · 0 AP"), {
+            btn(actionLabel(a) + (a.slot === "move" ? " · Move slot" : a.apCost ? " (" + a.apCost + " AP)" : " · 0 AP"), {
               primary: true,
               title: "Stand from Knockdown — spend 3 Speed; remaining Speed can still Move.",
               onclick: () => {
@@ -3978,7 +4063,16 @@
             });
             continue;
           }
-          btn(actionLabel(a) + (a.apCost ? " (" + a.apCost + " AP)" : " · 0 AP"), {
+          btn(
+            actionLabel(a) +
+              (a.slot === "action"
+                ? " · Action"
+                : a.slot === "move"
+                  ? " · Move slot"
+                  : a.apCost
+                    ? " (" + a.apCost + " AP)"
+                    : " · 0 AP"),
+            {
             title: "Choose this action, then click a highlighted cell on the map.",
             onclick: () => {
               pending = { type: a.type, cells: a.cells };
@@ -5627,6 +5721,7 @@
         render();
         return;
       }
+      const payNote = helpPayNote(hr.pay);
       const ab = state.abilityById[pending.abilityId];
       let decl = Object.assign({}, pending.declaration);
       const before = decl.roll
@@ -5639,6 +5734,7 @@
           adv: decl.adv | 0,
           disadv: decl.disadv | 0,
           critX: 0,
+          thresholdShift: (decl.roll && decl.roll.thresholdShift) | 0,
         });
         decl = Object.assign({}, decl, { roll, tier: roll.tier | 0, crit: !!roll.isCrit });
         state.log.push({
@@ -5653,7 +5749,8 @@
             " → " +
             roll.d1 +
             "+" +
-            roll.d2,
+            roll.d2 +
+            payNote,
         });
       } else if (decl.twin && decl.rolls && decl.rolls.length >= 2) {
         const i =
@@ -5669,6 +5766,7 @@
           adv: decl.adv | 0,
           disadv: decl.disadv | 0,
           critX: decl.critX | 0,
+          thresholdShift: (old && old.thresholdShift) | 0,
         });
         const rolls = decl.rolls.slice();
         rolls[i] = newHalf;
@@ -5703,7 +5801,8 @@
             " → " +
             newHalf.d1 +
             "+" +
-            newHalf.d2,
+            newHalf.d2 +
+            payNote,
         });
       } else {
         const newRoll = helpRerollLowerDie(decl.roll, {
@@ -5712,6 +5811,7 @@
           adv: decl.adv | 0,
           disadv: decl.disadv | 0,
           critX: decl.critX | 0,
+          thresholdShift: (decl.roll && decl.roll.thresholdShift) | 0,
         });
         decl = rebuildDeclFromRoll(decl, newRoll, ab);
         state.log.push({
@@ -5726,7 +5826,8 @@
             " → " +
             newRoll.d1 +
             "+" +
-            newRoll.d2,
+            newRoll.d2 +
+            payNote,
         });
       }
       pending.declaration = decl;
@@ -5911,6 +6012,39 @@
       if (!ab || !actor) return false;
       if (actor.elementPickedThisTurn) return false;
       return (ab.traits || []).some((t) => t.id === "elementPick");
+    }
+
+    function shieldAlliesInRange(range) {
+      const cur = currentActor(state);
+      if (!cur) return [];
+      const out = [];
+      for (const a of state.actors || []) {
+        if (!a || a.side !== "hero" || a.dead || (a.hp | 0) <= 0) continue;
+        if (a !== cur && !inRange(cur, a, range | 0)) continue;
+        out.push(a);
+      }
+      return out;
+    }
+
+    function openShieldAlly(resume, elementName) {
+      const allies = shieldAlliesInRange(4);
+      pending = Object.assign({}, resume, {
+        type: "shieldAlly",
+        shieldAllies: allies.map((a) => ({
+          id: a.id,
+          name: a === currentActor(state) ? a.name + " (self)" : a.name,
+          hp: a.hp,
+          hpMax: a.hpMax,
+        })),
+        dmgTypeOverride: elementName || resume.dmgTypeOverride || "Fire",
+      });
+      elHint.textContent =
+        "Elemental Shield · " +
+        (pending.dmgTypeOverride || "Fire") +
+        " — choose who gains +" +
+        ((currentActor(state) && currentActor(state).int) | 0) +
+        " DEF (R4).";
+      render();
     }
 
     function selectSupportEffect(effectId) {
@@ -6149,6 +6283,7 @@
           getReactionAbility(state, a)
         );
         if (cands.length) {
+          pushUndo("OA window");
           const resumeArgs = {
             abilityId,
             flurry,
@@ -6292,7 +6427,7 @@
       if (abilityNeedsElementPick(ab, cur) && !dmgTypeOverride) {
         pending = {
           type: "elementPick",
-          types: ELEMENT_TYPES.slice(),
+          types: elementTypesFor(ab),
           resume,
           abilityId,
           targetId,
@@ -6302,16 +6437,25 @@
           declaration: decl,
           extraTargetIds: base.extraTargetIds,
         };
-        elHint.textContent = "Elemental Spear — choose damage type.";
+        elHint.textContent =
+          (ab && /^summon-elemental-/.test(ab.id || "")
+            ? "Elemental — Earth / Fire / Lightning / Water."
+            : "Elemental Spear — choose damage type.");
         render();
+        return;
+      }
+      if (ab && ab.id === "summon-elemental-shield") {
+        openShieldAlly(resume, dmgTypeOverride || (decl && decl.dmgType) || "Fire");
         return;
       }
       pending = resume;
       // Always show the Power Roll panel (even solo / no Help allies) so the
       // player sees dice + mods before Accept — critical for training (twin heroes → Help).
-      elHint.textContent = (helpers && helpers.length)
-        ? "Roll ready — Help (reroll) or accept."
-        : "Roll ready — accept to apply.";
+      // Flat effects (no d10s) do not offer Help.
+      elHint.textContent =
+        rollAllowsHelp(decl) && helpers && helpers.length
+          ? "Roll ready — Help (reroll lower d10) or accept."
+          : "Roll ready — accept to apply.";
       render();
     }
 

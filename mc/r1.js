@@ -910,7 +910,7 @@ export const FEAT_SMOKE_STUBS = {
   "acolyte-summon-warrior": {
     xp: 250,
     classId: "acolyte",
-    label: "Summon Warrior (2AP+2mana · 12×INT HP · 4×INT Phys · Living Shield)",
+    label: "Summon Warrior (2AP+2mana · 14×INT HP · 4×INT Phys · Living Shield)",
     apply(actor) {
       actor.hasSummonWarrior = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["acolyte-summon-warrior"]);
@@ -919,7 +919,7 @@ export const FEAT_SMOKE_STUBS = {
   "acolyte-summon-mage": {
     xp: 250,
     classId: "acolyte",
-    label: "Summon Mage (2AP+2mana · 6×INT HP · 5×INT Dark · Fireball)",
+    label: "Summon Mage (2AP+2mana · 8×INT HP · 5×INT Dark · Fireball)",
     apply(actor) {
       actor.hasSummonMage = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["acolyte-summon-mage"]);
@@ -928,7 +928,7 @@ export const FEAT_SMOKE_STUBS = {
   "acolyte-summon-archer": {
     xp: 250,
     classId: "acolyte",
-    label: "Summon Archer (2AP+2mana · 8×INT HP · 7×INT R5 · Bone Arrow)",
+    label: "Summon Archer (2AP+2mana · 10×INT HP · 7×INT R5 · Bone Arrow)",
     apply(actor) {
       actor.hasSummonArcher = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["acolyte-summon-archer"]);
@@ -937,7 +937,7 @@ export const FEAT_SMOKE_STUBS = {
   "primalist-summon-elemental": {
     xp: 250,
     classId: "primalist",
-    label: "Summon Elemental (2AP+2mana R5 · 8×INT HP · 4×INT elem · Shield +INT DEF)",
+    label: "Summon Elemental (2AP+2mana R5 · 10×INT HP · 4×INT elem · Shield +INT DEF)",
     apply(actor) {
       actor.hasSummonElemental = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["primalist-summon-elemental"]);
@@ -1704,6 +1704,7 @@ export function makeR1Encounter(pack, seed, opts = {}) {
   if (opts.askHeroPick) state.askHeroPick = true;
   if (opts.askKitPick) state.askKitPick = true;
   if (opts.askPush || opts.askReactions) state.askPush = true;
+  if (opts.playSummons) state.playSummons = true;
   return state;
 }
 

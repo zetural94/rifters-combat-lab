@@ -593,17 +593,12 @@ function beginHeroSlot(state, next) {
   return true;
 }
 
-export function advanceTurn(state) {
-  if (state.over) return;
-  if (state.awaitingHeroPick || state.awaitingKitPick) return;
-  const cur = currentActor(state);
-  if (cur) endTurn(cur);
-
-  // Summon acts after its summoner's turn (not a main queue slot).
-  if (cur && cur.side === "hero" && !cur.summon) {
-    runSummonAfter(state, cur);
-  }
-
+/**
+ * After the actor who just finished (and after their summon, if any),
+ * step the queue to the next living actor.
+ * `cur` is that finished actor — used to rebuild around a dead enemy.
+ */
+function continueAfterFinishedTurn(state, cur) {
   checkOver(state);
   if (state.over) return;
 
@@ -678,6 +673,48 @@ export function advanceTurn(state) {
     state.winner = "timeout";
     pushLog(state, "No actors left to act");
   }
+}
+
+export function advanceTurn(state) {
+  if (state.over) return;
+  if (state.awaitingHeroPick || state.awaitingKitPick) return;
+  const cur = currentActor(state);
+
+  // Human lab: the summon's Move + Action is a real turn, not an AI script.
+  // MC leaves playSummons unset and still auto-resolves via runSummonAfter.
+  if (cur && cur.summon && state.summonInterlude) {
+    endTurn(cur);
+    const saved = state.summonInterlude;
+    state.summonInterlude = null;
+    state.queue = saved.queue;
+    state.queueIndex = saved.queueIndex;
+    pushLog(state, cur.name + " (summon) ends");
+    continueAfterFinishedTurn(state, actorById(state, saved.summonerId) || cur);
+    return;
+  }
+
+  if (cur) endTurn(cur);
+
+  // Summon acts after its summoner's turn (not a main queue slot).
+  if (cur && cur.side === "hero" && !cur.summon) {
+    const pet = findSummonOf(state, cur.id);
+    if (pet && state.playSummons) {
+      state.summonInterlude = {
+        summonerId: cur.id,
+        queue: (state.queue || []).slice(),
+        queueIndex: state.queueIndex | 0,
+      };
+      state.queue = [pet.id];
+      state.queueIndex = 0;
+      beginActorTurn(state, pet);
+      pushLog(state, pet.name + " (summon) acts after " + cur.name);
+      pushTurnStart(state, pet.name + "'s turn");
+      return;
+    }
+    runSummonAfter(state, cur);
+  }
+
+  continueAfterFinishedTurn(state, cur);
 }
 
 /** OA ability: monster reaction line, else active-kit Strike (heroes). */
@@ -943,7 +980,18 @@ export function applyAction(state, action) {
         r.summon.x +
         "," +
         r.summon.y +
-        ")"
+        ") · HP " +
+        r.summon.hp +
+        "/" +
+        r.summon.hpMax +
+        " · STR " +
+        (r.summon.str | 0) +
+        " DEX " +
+        (r.summon.dex | 0) +
+        " INT " +
+        (r.summon.int | 0) +
+        " · Spd " +
+        (r.summon.speed | 0)
     );
     return { ok: true, result: r };
   }

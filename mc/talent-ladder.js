@@ -304,11 +304,17 @@ export const TRAIN_CLASS_FEATS = {
   ],
 };
 
-/** Feats for a train_<class> scenario (all stubs for that class). */
+/** Feats for a train_<class> scenario (every Rank-1 stub for that class, no Warrior). */
 export function trainClassFeats(classId) {
   const cls = String(classId || "")
     .replace(/^train_/, "")
     .toLowerCase();
+  if (!cls || cls === "warrior") return null;
+  const fromStubs = Object.keys(FEAT_SMOKE_STUBS).filter((id) => {
+    const stub = FEAT_SMOKE_STUBS[id];
+    return stub && stub.classId === cls;
+  });
+  if (fromStubs.length) return fromStubs;
   const picks = TRAIN_CLASS_FEATS[cls];
   if (!picks) return null;
   return picks.map(resolveId).filter(Boolean);

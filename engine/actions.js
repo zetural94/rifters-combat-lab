@@ -719,17 +719,19 @@ export function legalActions(state, actor, abilityById) {
           : inRange(actor, f, range)
       );
       // Heroes: list Strikes out of range. Monsters: AoE tools too (AI repositions for Howl).
+      // Summons are played by hand in the lab, so a melee strike stays visible (disabled) until they Move.
       if (!targets.length && monster) {
         const isAoe =
           selfAoe ||
           (ab.aoe && (ab.aoe.range != null || ab.aoe.shape === "cube" || ab.aoe.size != null));
-        if (!isAoe) continue;
+        if (!isAoe && !actor.summon) continue;
       }
       actions.push({
         type: "strike",
         label: ab.name,
         apCost: monster ? 0 : cost,
         slot: monster ? "action" : null,
+        stressCost: (!monster || actor.summon) && stressNeed > 0 ? stressNeed : 0,
         abilityId: ab.id,
         targets: targets.map((t) => t.id),
         noTargets: !targets.length,
