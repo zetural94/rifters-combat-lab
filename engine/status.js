@@ -489,6 +489,7 @@ export function listActorStatusLabels(actor, actors) {
   if (st.silence) out.push("Silence");
   if (st.disarm) out.push("Disarm");
   if (st.knockdown) out.push("Knockdown");
+  if (actor.spotterMarked) out.push("Spotter Mark");
   if (st.restrain) out.push("Restrain");
   if (st.blind) out.push("Blind");
   if (st.cannotBeCrit) out.push("no-crit");

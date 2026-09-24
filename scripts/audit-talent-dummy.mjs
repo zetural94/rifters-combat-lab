@@ -22,6 +22,7 @@ import {
   kitIndexesForAbility,
   previewTierTriplet,
 } from "../engine/abilityPreview.js";
+import { listMitigationReactions } from "../engine/reactPrompt.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CLASS_ORDER = [
@@ -183,8 +184,13 @@ function assertTriplet(label, got, want) {
 const pack = loadPack();
 const sandboxSrc = fs.readFileSync(path.join(root, "sandbox.html"), "utf8");
 const labOffersEye = sandboxSrc.includes("offerEyeForAnEye");
-const labOffersRiposte = /hasRiposte|Riposte/.test(sandboxSrc);
-const labOffersBola = /hasHiddenBola|Hidden Bola/.test(sandboxSrc);
+const labOffersRiposte =
+  sandboxSrc.includes("commitMitigationChoice") &&
+  sandboxSrc.includes('opt.id === "riposte"') &&
+  sandboxSrc.includes("offerRiposte");
+const labOffersBola =
+  sandboxSrc.includes("commitMitigationChoice") &&
+  sandboxSrc.includes('opt.id === "hiddenBola"');
 
 const rows = [];
 let assertError = null;
@@ -382,19 +388,48 @@ for (const id of Object.keys(FEAT_SMOKE_STUBS).sort()) {
         row.notes.push("reactive: lab offers free OA after an enemy T3 hit");
       }
     } else if (hero.hasRiposte) {
-      row.status = "ISSUE";
-      row.notes.push(
-        labOffersRiposte
-          ? "Riposte flag set; confirm the reaction is actually offered"
-          : "Riposte grants hasRiposte, but the lab reaction window only lists Defend / Catch Breath / Interpose. askReactions skips auto-mitigation, so the player cannot fire it."
-      );
+      const foe = (withT.actors || []).find((a) => a && a.side === "enemy");
+      const melee = listMitigationReactions(hero, foe, { range: 1 }, { raw: 8 });
+      const ranged = listMitigationReactions(hero, foe, { range: 6 }, { raw: 8 });
+      const click = melee.find((o) => o.id === "riposte" && o.ok);
+      const blocked = ranged.find((o) => o.id === "riposte" && !o.ok);
+      if (!labOffersRiposte || !click || !blocked) {
+        row.status = "ISSUE";
+        row.notes.push(
+          "Riposte grants hasRiposte, but the lab reaction window does not offer a clickable melee Riposte (ranged must stay blocked)."
+        );
+      } else {
+        row.notes.push(
+          "reaction window offers Riposte on melee R1 (free · −1 stress · −" +
+            click.reduce +
+            "); ranged is explained as " +
+            blocked.reason
+        );
+      }
     } else if (hero.hasHiddenBola) {
-      row.status = "ISSUE";
-      row.notes.push(
-        labOffersBola
-          ? "Hidden Bola flag set; confirm the reaction is actually offered"
-          : "Hidden Bola grants hasHiddenBola, but the lab reaction window does not offer it (same askReactions skip as Riposte)."
-      );
+      const foe = (withT.actors || []).find((a) => a && a.side === "enemy");
+      const near = listMitigationReactions(hero, foe, { range: 1 }, { raw: 8 });
+      const click = near.find((o) => o.id === "hiddenBola" && o.ok);
+      const farHero = Object.assign({}, hero, { x: 0, y: 0 });
+      const farFoe = Object.assign({}, foe || {}, { x: 11, y: 7 });
+      const far = listMitigationReactions(farHero, farFoe, { range: 1 }, { raw: 8 });
+      const blocked = far.find((o) => o.id === "hiddenBola" && !o.ok);
+      if (!labOffersBola || !click || !blocked) {
+        row.status = "ISSUE";
+        row.notes.push(
+          "Hidden Bola grants hasHiddenBola, but the lab reaction window does not offer it when the attacker is in RANGE 3."
+        );
+      } else {
+        row.notes.push(
+          "reaction window offers Hidden Bola in R3 (" +
+            (click.freeAction ? "free reaction" : "−1 AP") +
+            " · −1 stress · −" +
+            click.reduce +
+            (click.knockdown ? " · Knockdown" : "") +
+            "); out of range: " +
+            blocked.reason
+        );
+      }
     } else if (flags.length) {
       row.notes.push("passive: " + flags.join(", "));
       if (id === "mystic-game-knowledge") {

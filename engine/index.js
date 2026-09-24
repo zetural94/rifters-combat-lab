@@ -135,5 +135,12 @@ export {
   activateFeralInvocation,
 } from "./feats.js";
 export { placeSummon, findSummonOf, dismissSummon, SUMMON_TEMPLATES, summonHpMax } from "./summon.js";
+export {
+  listMitigationReactions,
+  mitigationButtonLabel,
+  commitMitigationChoice,
+  reconcileMitigationTarget,
+  riposteOfferFromResolution,
+} from "./reactPrompt.js";
 export { chooseEnemyAction, chooseHeroAction, runEnemyTurns, runHeroTurns, pickElementOverride, pickSupportForAbility } from "./ai.js";
 // AI move pathing: prefer reachable cells (Bear MC 2026-09-14)

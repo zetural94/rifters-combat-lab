@@ -1052,7 +1052,12 @@
       resolveMaxTargets,
       resolveAbilityTierDamage,
       critPassiveBonusDmg,
-    } from "./engine/index.js?v=20260919gate";
+      listMitigationReactions,
+      mitigationButtonLabel,
+      commitMitigationChoice,
+      reconcileMitigationTarget,
+      riposteOfferFromResolution,
+    } from "./engine/index.js?v=20260924react";
     import {
       isWeaponDmgToken,
       kitIndexesForAbility,
@@ -1363,10 +1368,20 @@
           next: "See OA outcome in <b>Actions</b> — Help or Accept.",
         };
       }
+      if (p === "offerRiposte") {
+        return {
+          badge: "Reaction · Riposte OA",
+          next: "The hit dealt 0 HP — <b>free weapon OA</b> or pass.",
+        };
+      }
       if (p === "reactIncoming") {
+        const ids = (pending.options || []).map((o) => o.id);
+        const bits = ["Defend", "Catch Breath", "Interpose"];
+        if (ids.indexOf("riposte") >= 0) bits.push("Riposte");
+        if (ids.indexOf("hiddenBola") >= 0) bits.push("Hidden Bola");
         return {
           badge: "Reaction · step 1/2",
-          next: "Optional Defend / Catch Breath / Interpose, then <b>Accept effect</b>.",
+          next: "Optional " + bits.join(" / ") + ", then <b>Accept effect</b>.",
         };
       }
       if (p === "catchBreathPick") {
@@ -3096,6 +3111,30 @@
         });
         return;
       }
+      if (pending && pending.type === "offerRiposte") {
+        const foe = actorById(state, pending.foeId);
+        const hero = actorById(state, pending.heroId);
+        const ab = hero ? getReactionAbility(state, hero) : null;
+        addGroup("Riposte · free weapon OA");
+        const box = document.createElement("div");
+        box.className = "react-declare";
+        box.textContent =
+          (hero ? hero.name : "?") +
+          " took 0 HP — free Opportunity Attack on " +
+          (foe ? foe.name : "?") +
+          (ab ? " (" + ab.name + ", ADV 1, 0 AP)" : "");
+        elActions.appendChild(box);
+        addUxNote("Riposte: the hit dealt no HP damage, so you may make a standard weapon OA. Stress was already paid.");
+        elHint.textContent = "Riposte — take free OA or pass.";
+        btn((hero ? hero.name : "?") + " · Riposte OA (free)", {
+          primary: true,
+          onclick: () => resolveRiposteOffer(true),
+        });
+        btn((hero ? hero.name : "?") + " · pass", {
+          onclick: () => resolveRiposteOffer(false),
+        });
+        return;
+      }
       if (pending && pending.type === "reactIncoming") {
         addGroup(
           pending.kind === "moveOa"
@@ -3109,13 +3148,29 @@
         const opts = pending.options || [];
         const accept = opts.find((o) => o.id === "none");
         const extras = opts.filter((o) => o.id !== "none");
+        const named = extras
+          .map((o) =>
+            o.id === "riposte"
+              ? "Riposte"
+              : o.id === "hiddenBola"
+                ? "Hidden Bola"
+                : o.id === "defend"
+                  ? "Defend"
+                  : o.id === "catchBreath"
+                    ? "Catch Breath"
+                    : o.id === "interpose"
+                      ? "Interpose"
+                      : null
+          )
+          .filter(Boolean);
+        const namedTxt = named.length ? named.join(" / ") : "reactions";
         addUxNote(
           pending.kind === "moveOa"
             ? extras.length
-              ? "Defend / Catch Breath optional, then Accept — then OA damage lands."
-              : "No AP for Defend/Catch Breath — Accept to take the OA."
+              ? namedTxt + " optional, then Accept — then OA damage lands."
+              : "No AP for reactions — Accept to take the OA."
             : extras.length
-              ? "Optional reactions first, then one CTA: Accept effect (done)."
+              ? "Optional " + namedTxt + " first, then one CTA: Accept effect (done)."
               : "No AP for reactions — Accept effect to resolve."
         );
         const atk = actorById(state, pending.attackerId);
@@ -3130,7 +3185,11 @@
           for (const opt of extras) {
             btn(opt.label, {
               free: true,
-              onclick: () => resolveIncomingReact(opt),
+              disabled: !!opt.disabled,
+              title: opt.title || opt.label,
+              onclick: opt.disabled
+                ? undefined
+                : () => resolveIncomingReact(opt),
             });
           }
         }
@@ -3156,7 +3215,8 @@
             pending.type === "multiTarget" ||
             pending.type === "helpAfterRoll" ||
             pending.type === "moveOaQueue" ||
-            pending.type === "offerEyeForAnEye");
+            pending.type === "offerEyeForAnEye" ||
+            pending.type === "offerRiposte");
         if (!midReact) {
           elActions.innerHTML = "";
           addGroup("Enemy turn");
@@ -4206,6 +4266,24 @@
             label: who.name + " · Catch Breath" + reactCostLabel(who),
           });
         }
+        // Riposte / Hidden Bola follow the engine gates. Only the primary target
+        // (the engine hook does not mitigate AoE extras).
+        if (who.id === action.targetId && attacker) {
+          const mit = listMitigationReactions(who, attacker, ab, decl);
+          for (const extra of mit) {
+            options.push({
+              id: extra.id,
+              actorId: who.id,
+              disabled: !extra.ok,
+              title: extra.ok
+                ? extra.id === "riposte"
+                  ? "Free action · 1 stress · reduce damage by 5×DEX. 0 HP → weapon OA."
+                  : "1 AP (or free reaction) · 1 stress · RANGE 3 · reduce damage by 5×DEX. STR ≤ your DEX → Knockdown."
+                : extra.reason,
+              label: mitigationButtonLabel(who, extra),
+            });
+          }
+        }
       }
       for (const ally of state.actors) {
         if (!ally || ally.side !== "hero") continue;
@@ -4306,7 +4384,7 @@
           }
         );
         elHint.textContent =
-          from.name + " OA — effect known. Defend / Catch Breath / Accept.";
+          from.name + " OA — effect known. Choose a reaction or Accept.";
         scheduleLogFlush(false);
         render();
         return true;
@@ -4365,6 +4443,7 @@
         const resumeAfter = pending.resumeAfter;
         const fromId = pending.action && pending.action.fromId;
         const toId = pending.action && (pending.action.toId || pending.action.targetId);
+        if (decl) reconcileMitigationTarget(decl, action.targetId);
         pending = null;
         if (kind === "moveOa") {
           const r = applyOpportunityAttack(state, fromId, toId, {
@@ -4373,7 +4452,23 @@
           if (!r.ok) {
             elHint.textContent = "OA failed: " + (r.reason || "?");
           }
+          const victim = actorById(state, toId);
+          const striker = actorById(state, fromId);
+          const riposteOffer = riposteOfferFromResolution(
+            decl,
+            victim,
+            striker,
+            r && r.result
+          );
           scheduleLogFlush(false);
+          if (
+            riposteOffer &&
+            beginRiposteOffer(riposteOffer, null, {
+              resumeMoveOa: { queue: moveQ, idx: moveIdx, resumeAfter },
+            })
+          ) {
+            return;
+          }
           pending = {
             type: "reactIncoming",
             kind: "moveOa",
@@ -4387,10 +4482,59 @@
         }
         if (decl) action.declared = decl;
         const r = applyAction(state, action);
+        const riposteOffer =
+          (r && r.riposteOffer) ||
+          riposteOfferFromResolution(decl, target, attacker, r && r.result);
         // Eye OA while still adjacent — before Push dir (forced move may separate).
-        if (r && r.ok && beginEyeForAnEyeOffer(r.eyeForAnEyeOffer, r.result)) return;
+        if (r && r.ok && beginEyeForAnEyeOffer(r.eyeForAnEyeOffer, r.result, riposteOffer)) return;
+        if (r && r.ok && beginRiposteOffer(riposteOffer, r.result)) return;
         if (r && r.ok && maybeOfferPush(r.result)) return;
         continueEnemyPhase();
+        return;
+      }
+
+      if ((opt.id === "riposte" || opt.id === "hiddenBola") && target) {
+        const who = actorById(state, opt.actorId) || target;
+        const ab =
+          (action.abilityId && state.abilityById[action.abilityId]) ||
+          (attacker && getReactionAbility(state, attacker)) ||
+          null;
+        if (!who || !decl) {
+          elHint.textContent = "Reaction failed: no declaration.";
+          render();
+          return;
+        }
+        const r = commitMitigationChoice(who, attacker, ab, decl, opt.id);
+        if (!r.ok) {
+          elHint.textContent =
+            (opt.id === "riposte" ? "Riposte" : "Hidden Bola") +
+            " failed: " +
+            (r.reason || "?");
+          render();
+          return;
+        }
+        pending.declaration = decl;
+        const pay =
+          opt.id === "hiddenBola"
+            ? r.pay && r.pay.usedFree
+              ? " · free reaction"
+              : " · −1 AP"
+            : " · free";
+        state.log.push({
+          t: Date.now(),
+          msg:
+            who.name +
+            (opt.id === "riposte" ? " Riposte" : " Hidden Bola") +
+            " (−" +
+            (r.reduce | 0) +
+            " · raw " +
+            (r.raw | 0) +
+            (r.knockdown ? " · Knockdown" : "") +
+            ")" +
+            pay +
+            " · −1 stress",
+        });
+        refreshReactMenu();
         return;
       }
 
@@ -4703,20 +4847,28 @@
       const decl = pending.declaration;
       const resume = pending.oaResume;
       const eye = !!pending.eyeForAnEye;
+      const riposteOa = !!pending.riposteOa;
       const afterEyeStrikeResult = pending.afterEyeStrikeResult || null;
+      const afterRiposte = pending.afterRiposte || null;
       pending = null;
       const r = applyOpportunityAttack(state, heroId, foeId, {
         declared: decl,
-        skipAp: eye,
+        skipAp: eye || riposteOa,
       });
       if (!r.ok) {
         elHint.textContent = "OA failed: " + (r.reason || "?");
       } else if (eye) {
         state.log.push({ t: Date.now(), msg: "  (Eye for an eye)" });
+      } else if (riposteOa) {
+        state.log.push({ t: Date.now(), msg: "  (Riposte OA)" });
       }
       scheduleLogFlush(false);
       if (eye) {
-        finishAfterEyeOffer(afterEyeStrikeResult);
+        finishAfterEyeOffer(afterEyeStrikeResult, afterRiposte);
+        return;
+      }
+      if (riposteOa) {
+        finishAfterRiposte(afterRiposte);
         return;
       }
       advanceOaQueue(
@@ -4997,7 +5149,7 @@
     }
 
     /** After T3 hit lands: optional free OA (Eye for an eye). */
-    function beginEyeForAnEyeOffer(offer, strikeResult) {
+    function beginEyeForAnEyeOffer(offer, strikeResult, riposteOffer) {
       if (!offer || !offer.heroId || !offer.foeId) return false;
       const hero = actorById(state, offer.heroId);
       const foe = actorById(state, offer.foeId);
@@ -5028,15 +5180,139 @@
         heroId: offer.heroId,
         foeId: offer.foeId,
         strikeResult: strikeResult || null,
+        afterRiposte: riposteOffer || null,
       };
       elHint.textContent = "Eye for an eye — free OA or pass.";
       render();
       return true;
     }
 
-    function finishAfterEyeOffer(strikeResult) {
+    function finishAfterEyeOffer(strikeResult, riposteOffer) {
+      if (beginRiposteOffer(riposteOffer, strikeResult)) return;
       if (maybeOfferPush(strikeResult)) return;
       continueEnemyPhase();
+    }
+
+    /** Riposte reduced the hit to 0 HP: optional free weapon OA. */
+    function beginRiposteOffer(offer, strikeResult, extra) {
+      if (!offer || !offer.heroId || !offer.foeId) return false;
+      const hero = actorById(state, offer.heroId);
+      const foe = actorById(state, offer.foeId);
+      if (!hero || !foe || hero.dead || foe.dead || (hero.hp | 0) <= 0) return false;
+      if (foe.dead || (foe.hp | 0) <= 0) return false;
+      if (!getReactionAbility(state, hero)) {
+        state.log.push({
+          t: Date.now(),
+          msg: "  (Riposte OA — no-oa-ability)",
+        });
+        return false;
+      }
+      const dry = applyOpportunityAttack(state, offer.heroId, offer.foeId, {
+        dryRun: true,
+        skipAp: true,
+      });
+      if (!dry.ok) {
+        state.log.push({
+          t: Date.now(),
+          msg:
+            "  (Riposte OA — " +
+            (dry.reason || (dry.result && dry.result.reason) || "fail") +
+            ")",
+        });
+        return false;
+      }
+      pending = {
+        type: "offerRiposte",
+        heroId: offer.heroId,
+        foeId: offer.foeId,
+        strikeResult: strikeResult || null,
+        resumeMoveOa: (extra && extra.resumeMoveOa) || null,
+      };
+      elHint.textContent = "Riposte — damage was 0. Take free weapon OA or pass.";
+      render();
+      return true;
+    }
+
+    function finishAfterRiposte(ctx) {
+      const resume = ctx && ctx.resumeMoveOa;
+      const strikeResult = ctx && ctx.strikeResult;
+      if (resume) {
+        pending = {
+          type: "moveOaQueue",
+          queue: resume.queue || [],
+          idx: (resume.idx | 0) + 1,
+          resumeAfter: resume.resumeAfter || null,
+        };
+        if (!presentNextMoveOa()) {
+          elHint.textContent = "Pick an action, then a cell / target.";
+          render();
+        }
+        return;
+      }
+      if (maybeOfferPush(strikeResult)) return;
+      continueEnemyPhase();
+    }
+
+    function resolveRiposteOffer(take) {
+      if (!pending || pending.type !== "offerRiposte") return;
+      pushUndo(take ? "Riposte OA" : "Riposte pass");
+      const heroId = pending.heroId;
+      const foeId = pending.foeId;
+      const hero = actorById(state, heroId);
+      const foe = actorById(state, foeId);
+      const after = {
+        strikeResult: pending.strikeResult || null,
+        resumeMoveOa: pending.resumeMoveOa || null,
+      };
+      pending = null;
+      if (take && hero && foe) {
+        const dry = applyOpportunityAttack(state, heroId, foeId, {
+          dryRun: true,
+          skipAp: true,
+        });
+        if (!dry.ok) {
+          state.log.push({
+            t: Date.now(),
+            msg:
+              "  (Riposte OA — " +
+              (dry.reason || (dry.result && dry.result.reason) || "fail") +
+              ")",
+          });
+          scheduleLogFlush(false);
+          finishAfterRiposte(after);
+          return;
+        }
+        const ab = getReactionAbility(state, hero);
+        const decl = (dry.result && dry.result.declaration) || dry.result || {};
+        const helpers = helpersFor(hero).filter((h) => h && h.id !== hero.id);
+        const text = buildDeclareText(hero, ab, decl, foe);
+        state.log.push({ t: Date.now(), msg: "Riposte OA: " + text });
+        pending = {
+          type: "helpAfterRoll",
+          kind: "oa",
+          abilityId: ab ? ab.id : null,
+          targetId: foeId,
+          attackerId: heroId,
+          helpers,
+          declaration: decl,
+          skipAp: true,
+          riposteOa: true,
+          oaResume: null,
+          afterRiposte: after,
+        };
+        elHint.textContent = "Riposte OA roll — Help or accept.";
+        scheduleLogFlush(false);
+        render();
+        return;
+      }
+      if (hero) {
+        state.log.push({
+          t: Date.now(),
+          msg: "  (Riposte OA — pass)",
+        });
+      }
+      scheduleLogFlush(false);
+      finishAfterRiposte(after);
     }
 
     function resolveEyeForAnEye(take) {
@@ -5047,6 +5323,7 @@
       const hero = actorById(state, heroId);
       const foe = actorById(state, foeId);
       const strikeResult = pending.strikeResult;
+      const afterRiposte = pending.afterRiposte || null;
       pending = null;
       if (take && hero && foe) {
         const dry = applyOpportunityAttack(state, heroId, foeId, {
@@ -5062,7 +5339,7 @@
               ")",
           });
           scheduleLogFlush(false);
-          finishAfterEyeOffer(strikeResult);
+          finishAfterEyeOffer(strikeResult, afterRiposte);
           return;
         }
         const ab = getReactionAbility(state, hero);
@@ -5082,6 +5359,7 @@
           eyeForAnEye: true,
           oaResume: null,
           afterEyeStrikeResult: strikeResult,
+          afterRiposte: afterRiposte,
         };
         elHint.textContent = "Eye OA roll — Help or accept.";
         scheduleLogFlush(false);
@@ -5095,7 +5373,7 @@
         });
       }
       scheduleLogFlush(false);
-      finishAfterEyeOffer(strikeResult);
+      finishAfterEyeOffer(strikeResult, afterRiposte);
     }
 
     function resolvePushPick(dir) {
@@ -6461,6 +6739,10 @@
       }
       if (t === "offerEyeForAnEye") {
         resolveEyeForAnEye(true);
+        return true;
+      }
+      if (t === "offerRiposte") {
+        resolveRiposteOffer(true);
         return true;
       }
       if (t === "reactIncoming") {

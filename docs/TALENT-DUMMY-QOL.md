@@ -2,7 +2,7 @@
 
 Scope: every `FEAT_SMOKE_STUBS` talent except Warrior, one at a time on `train_<class>` (two copies of that class vs the Training Dummy). Damage numbers use `resolveAbilityTierDamage` — the same helper a strike uses.
 
-Counts: **54 OK**, **2 issues**, **56 checked**.
+Counts: **56 OK**, **0 issues**, **56 checked**.
 
 Locked preview checks passed (Uppercut 6/8/11 vs 7/9/11, Heavy Swing, Precise Strike, Forceful Push, Flurry 13/18/33 vs 15/20/33, Shield Bash still 3/5/7 and not `useWeapon`).
 
@@ -54,7 +54,7 @@ Shield Bash is unchanged: `3 / 5 / 7` plus Taunt. It is not a WD talent.
 - **OK** `assassin-expose-weakness` — fires kit 1 T1 raw 6; fires kit 2 T3 raw 14
 - **OK** `assassin-flurry-daggers` — fires kit 1 T1 raw 4; fires kit 2 T3 raw 14
 - **OK** `assassin-perfectionist` — passive: perfectionist
-- **ISSUE** `assassin-riposte` — Riposte grants hasRiposte, but the lab reaction window only lists Defend / Catch Breath / Interpose. askReactions skips auto-mitigation, so the player cannot fire it.
+- **OK** `assassin-riposte` — reaction window offers Riposte on melee R1 (free · −1 stress · −5); ranged is explained as melee RANGE 1 only
 - **OK** `assassin-shadow-dash` — fires Shadow Dash
 - **OK** `assassin-stealth` — fires Stealth
 
@@ -105,7 +105,7 @@ Shield Bash is unchanged: `3 / 5 / 7` plus Taunt. It is not a WD talent.
 ### Scout
 
 - **OK** `scout-barrage` — fires kit 1 T1 raw 7; fires kit 2 T3 raw 14
-- **ISSUE** `scout-hidden-bola` — Hidden Bola grants hasHiddenBola, but the lab reaction window does not offer it (same askReactions skip as Riposte).
+- **OK** `scout-hidden-bola` — reaction window offers Hidden Bola in R3 (free reaction · −1 stress · −5 · Knockdown); out of range: attacker beyond RANGE 3
 - **OK** `scout-hunters-knowledge` — passive: huntersKnowledge
 - **OK** `scout-pin-shot` — kit-locked to Shortbow (weaponId shortbow); fires kit 1 T1 raw 6
 - **OK** `scout-ranger` — passive: ranger, rangerFreeHelps, scoutingAdv, stress, stressMax
@@ -115,8 +115,7 @@ Shield Bash is unchanged: `3 / 5 / 7` plus Taunt. It is not a WD talent.
 
 ## Still failing mechanically
 
-- `assassin-riposte`: Riposte grants hasRiposte, but the lab reaction window only lists Defend / Catch Breath / Interpose. askReactions skips auto-mitigation, so the player cannot fire it.
-- `scout-hidden-bola`: Hidden Bola grants hasHiddenBola, but the lab reaction window does not offer it (same askReactions skip as Riposte).
+None.
 
 ## Display notes
 
