@@ -575,7 +575,8 @@
     }
     .setup-bar .lbl { color: var(--muted); font-size: 11px; }
     #log-status { color: var(--muted); font-size: 11px; }
-    header button#btn-open-builder {
+    header button#btn-open-builder,
+    header button.header-action {
       appearance: none;
       border: 1px solid var(--line);
       background: var(--panel);
@@ -585,13 +586,148 @@
       font: inherit;
       cursor: pointer;
     }
-    header button#btn-open-builder:hover { border-color: var(--hl); }
+    header button#btn-open-builder:hover,
+    header button.header-action:hover { border-color: var(--hl); }
+    header button.header-action[hidden] { display: none; }
+    #setup-chip { color: var(--hl); font-size: 12px; }
+    .start-wizard {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background: rgba(8, 10, 12, 0.94);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      overflow: auto;
+      padding: 28px 16px 48px;
+    }
+    .start-wizard[hidden] { display: none !important; }
+    .start-wizard-card {
+      width: min(880px, 100%);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 22px 22px 18px;
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+    }
+    .wizard-kicker {
+      margin: 0 0 4px;
+      color: var(--hl);
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .start-wizard-card h2 {
+      margin: 0 0 6px;
+      font-size: 22px;
+      font-weight: 650;
+      letter-spacing: 0;
+      text-transform: none;
+      color: var(--text);
+    }
+    .wizard-lead { margin: 0 0 12px; color: var(--muted); max-width: 62ch; }
+    .wizard-steps {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+      margin: 0 0 16px;
+      padding: 0;
+      list-style: none;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .wizard-steps li.current { color: var(--text); font-weight: 650; }
+    .wizard-steps li.done { color: var(--ok); }
+    .wizard-choices {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .wizard-choices-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .wizard-choices-4 { grid-template-columns: repeat(4, 1fr); }
+    .wizard-choice {
+      text-align: left;
+      padding: 14px 14px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #2e343a;
+      color: var(--text);
+      cursor: pointer;
+      font: inherit;
+    }
+    .wizard-choice strong { display: block; font-size: 16px; margin-bottom: 4px; }
+    .wizard-choice span { display: block; color: var(--muted); font-size: 12px; line-height: 1.4; }
+    .wizard-choice:hover,
+    .wizard-choice.active { border-color: var(--hl); background: #3a3420; }
+    .wizard-choice.go { border-color: #3d6b52; }
+    .wizard-choice.go:hover { border-color: var(--ok); background: #24362c; }
+    .wizard-secondary { margin: 14px 0 0; display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: baseline; }
+    .wizard-note { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
+    .wizard-link, .wizard-nav button {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: #2e343a;
+      color: var(--text);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font: inherit;
+      cursor: pointer;
+    }
+    .wizard-link { color: var(--hl); background: transparent; }
+    .wizard-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+    .wizard-nav button.primary, .wizard-nav button.go {
+      border-color: var(--ok);
+      background: #24362c;
+    }
+    .wizard-nav button[hidden] { display: none; }
+    #wizard-ladder-preview {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .ladder-card {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 10px;
+      background: #1e2226;
+      font-size: 12px;
+    }
+    .ladder-card.in-party { border-color: #3d6b52; }
+    .ladder-card h4 { margin: 0 0 4px; font-size: 12px; color: var(--hl); }
+    .ladder-card ol { margin: 0; padding-left: 18px; color: var(--muted); }
+    #wizard-manual-slot { margin-top: 12px; }
+    #wizard-manual-slot[hidden], #wizard-ladder-preview[hidden], .start-wizard-card section[hidden] { display: none !important; }
+    .wizard-advanced { display: block; margin-top: 16px; color: var(--muted); }
+    .wizard-advanced select { display: block; margin-top: 4px; max-width: 100%; font: inherit; padding: 4px 6px; }
+    .lab-group { margin-top: 14px; }
+    .lab-group h3 {
+      margin: 0 0 8px;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .lab-choice-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .lab-choice { flex: 1 1 220px; }
+    .talent-class-count { color: var(--muted); font-weight: 500; }
+    .talent-picker-group.in-party h4 { color: var(--ok); }
+    .talent-picker-row.capped { opacity: 0.45; }
+    #feat-mode-wrap { display: none; }
+    @media (max-width: 720px) {
+      .wizard-choices, .wizard-choices-3, .wizard-choices-4, #wizard-ladder-preview {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
   <header>
     <h1 id="title">R1 combat lab</h1>
     <span class="meta" id="status">Loading…</span>
+    <span class="meta" id="setup-chip"></span>
+    <button type="button" class="header-action" id="btn-change-setup" hidden>Zmień setup</button>
+    <button type="button" class="header-action" id="btn-open-lab" hidden>Lab / Dummy</button>
     <label class="meta">queue (optional)
       <select id="start-actor">
         <option value="fighter">Fighter</option>
@@ -621,55 +757,6 @@
         <option value="__builder__">From Builder party</option>
       </select>
     </label>
-    <label class="meta">scenario
-      <select id="scenario">
-        <optgroup label="Rifts (2–3 rooms)">
-          <option value="rift_easy" selected>Easy — 8→7→12 α-pack (27 BP)</option>
-          <option value="rift_medium">Medium — 8→11→Tortoise (30 BP)</option>
-          <option value="rift_hard">Hard — 11→12→Tortoise (34 BP)</option>
-        </optgroup>
-        <optgroup label="Training (×2 same hero vs Dummy · Help)">
-          <option value="train_fighter">Fighter ×2 vs Dummy</option>
-          <option value="train_brawler">Brawler ×2 vs Dummy</option>
-          <option value="train_assassin">Assassin ×2 vs Dummy</option>
-          <option value="train_scout">Scout ×2 vs Dummy</option>
-          <option value="train_mystic">Mystic ×2 vs Dummy</option>
-          <option value="train_acolyte">Acolyte ×2 vs Dummy</option>
-          <option value="train_primalist">Primalist ×2 vs Dummy</option>
-        </optgroup>
-        <optgroup label="Single room">
-          <option value="w1">Easy — 4× Wolf (8)</option>
-          <option value="w1b">Med− — 2W+Alpha (10)</option>
-          <option value="medium">Med+ — 3W+Alpha (12)</option>
-          <option value="hard">Hard — 3W+Alpha (12) · Rift Hard room 2</option>
-          <option value="horde_pack">Easy — 4H+2W (8)</option>
-          <option value="horde_alpha">Med− — 3H+Alpha (9)</option>
-          <option value="bear_w2">Easy — Bear+2W (7)</option>
-          <option value="bear_w4">Med — Bear+4W (11)</option>
-          <option value="solo_tortoise">Med — Tortoise Solo (11)</option>
-        </optgroup>
-        <optgroup label="Builder">
-          <option value="__builder__">Custom roster (from Builder)</option>
-        </optgroup>
-        <optgroup label="Saved layouts" id="scenario-saved" hidden></optgroup>
-      </select>
-    </label>
-    <label class="meta" title="Talent→BP v0.3c: synced n u każdego bohatera (r1LadderFeats). Hard pad +2 gdy n≥3.">
-      talents
-      <select id="feat-mode">
-        <option value="ladder4" selected>Ladder n=4 (pad model)</option>
-        <option value="ladder3">Ladder n=3 (Hard +2)</option>
-        <option value="ladder2">Ladder n=2 (pad 0)</option>
-        <option value="off">Off (no talents)</option>
-      </select>
-    </label>
-    <details class="glossary meta" id="talent-picker-details" title="Ręczny wybór talentów per klasa — zastępuje ladder powyżej gdy zaznaczone. Uses real engine mechanics (engine/feats.js hasX flags + abilityIds), not just a flat XP proxy.">
-      <summary>Talenty (equip) <span id="talent-picker-count"></span></summary>
-      <div id="talent-picker-body" class="talent-picker-body">Ładowanie…</div>
-      <div class="talent-picker-actions">
-        <button type="button" id="btn-talent-clear">Clear (wróć do ladder)</button>
-      </div>
-    </details>
     <button type="button" class="meta" id="btn-open-builder" title="Złóż roster BP, potem wróć do sandbox">Builder…</button>
     <details class="glossary meta">
       <summary>Glossary AP / BP / R1 / OA / T1</summary>
@@ -688,6 +775,146 @@
     <span class="meta"><a href="builder.html" style="color:var(--muted)">builder</a> · <a href="verify.html" style="color:var(--muted)">verify</a> · <a href="smoke.html" style="color:var(--muted)">smoke</a> · <a href="mc.html" style="color:var(--muted)">mc</a> · <a href="RULES-CANON.md" style="color:var(--muted)">canon</a> · <a href="RULES-CANON.md#12-lab-play-clarifications-sandbox-2026-09-14" style="color:var(--muted)">lab notes §12</a></span>
     <span id="log-status" class="meta"></span>
   </header>
+  <div id="start-wizard" class="start-wizard" role="dialog" aria-modal="true" aria-labelledby="wizard-title">
+    <div class="start-wizard-card">
+      <p class="wizard-kicker">Playtest</p>
+      <h2 id="wizard-title">Ranga</h2>
+      <p class="wizard-lead" id="wizard-lead">Pierwszy wybór: Rank 0 (bez talentów) albo Rank 1 (z talentami). Pełny rift jest dopiero po tym.</p>
+      <ol class="wizard-steps" id="wizard-steps"></ol>
+
+      <section id="wizard-panel-rank">
+        <div class="wizard-choices">
+          <button type="button" class="wizard-choice" id="wizard-rank-0">
+            <strong>Rank 0</strong>
+            <span>Bez talentów. n = 0. Dalej od razu pełny rift Easy / Medium / Hard.</span>
+          </button>
+          <button type="button" class="wizard-choice" id="wizard-rank-1">
+            <strong>Rank 1</strong>
+            <span>Z talentami. Najpierw ile (n = 1, 2, 3 albo 4), potem które.</span>
+          </button>
+        </div>
+        <p class="wizard-secondary">
+          <button type="button" class="wizard-link" id="wizard-rank-lab">Lab / Dummy</button>
+          <span class="wizard-note">Pojedyncze walki i manekiny — nie domyślna ścieżka po randze.</span>
+        </p>
+      </section>
+
+      <section id="wizard-panel-count" hidden>
+        <div class="wizard-choices wizard-choices-4">
+          <button type="button" class="wizard-choice" data-talent-n="1"><strong>1</strong><span>jeden talent na bohatera</span></button>
+          <button type="button" class="wizard-choice" data-talent-n="2"><strong>2</strong><span>dwa talenty na bohatera</span></button>
+          <button type="button" class="wizard-choice" data-talent-n="3"><strong>3</strong><span>trzy talenty na bohatera</span></button>
+          <button type="button" class="wizard-choice" data-talent-n="4"><strong>4</strong><span>cztery talenty na bohatera</span></button>
+        </div>
+        <div class="wizard-nav">
+          <button type="button" id="wizard-count-back">Wstecz</button>
+        </div>
+      </section>
+
+      <section id="wizard-panel-talents" hidden>
+        <div class="wizard-choices">
+          <button type="button" class="wizard-choice" id="wizard-src-ladder">
+            <strong>Drabina</strong>
+            <span>Pierwsze n talentów klasy, to samo n u każdego bohatera — jak dotychczasowy ladder.</span>
+          </button>
+          <button type="button" class="wizard-choice" id="wizard-src-manual">
+            <strong>Wybór ręczny</strong>
+            <span>Dokładnie n talentów na każdą klasę w party (FEAT_SMOKE_STUBS).</span>
+          </button>
+        </div>
+        <div id="wizard-ladder-preview"></div>
+        <div id="wizard-manual-slot" hidden>
+          <div id="talent-picker-body" class="talent-picker-body">Ładowanie…</div>
+          <div class="talent-picker-actions">
+            <button type="button" id="btn-talent-clear">Wyczyść wybór</button>
+            <span id="talent-picker-count"></span>
+          </div>
+          <p id="wizard-talent-status" class="wizard-note"></p>
+        </div>
+        <div class="wizard-nav">
+          <button type="button" id="wizard-talents-back">Wstecz</button>
+          <button type="button" class="primary" id="wizard-talents-next">Dalej — trudność</button>
+          <button type="button" id="wizard-talents-lab">Lab / Dummy</button>
+        </div>
+      </section>
+
+      <section id="wizard-panel-diff" hidden>
+        <div class="wizard-choices wizard-choices-3">
+          <button type="button" class="wizard-choice go" id="wizard-diff-easy" data-rift="rift_easy">
+            <strong>Easy</strong>
+            <span>Pełny rift, nie jedna sala.</span>
+          </button>
+          <button type="button" class="wizard-choice go" id="wizard-diff-medium" data-rift="rift_medium">
+            <strong>Medium</strong>
+            <span>Pełny rift, nie jedna sala.</span>
+          </button>
+          <button type="button" class="wizard-choice go" id="wizard-diff-hard" data-rift="rift_hard">
+            <strong>Hard</strong>
+            <span>Pełny rift, nie jedna sala.</span>
+          </button>
+        </div>
+        <p id="wizard-diff-summary" class="wizard-note"></p>
+        <div class="wizard-nav">
+          <button type="button" id="wizard-diff-back">Wstecz</button>
+          <button type="button" id="wizard-diff-lab">Lab / Dummy</button>
+          <button type="button" id="wizard-resume" hidden>Wróć do walki</button>
+        </div>
+      </section>
+
+      <section id="wizard-panel-lab" hidden>
+        <div id="lab-choice-host"></div>
+        <label class="wizard-advanced">Zapisane layouty, builder, reszta scenariuszy
+          <select id="scenario">
+            <optgroup label="Rifts (2–3 rooms)">
+              <option value="rift_easy" selected>Easy — 8→7→12 α-pack (27 BP)</option>
+              <option value="rift_medium">Medium — 8→11→Tortoise (30 BP)</option>
+              <option value="rift_hard">Hard — 11→12→Tortoise (34 BP)</option>
+            </optgroup>
+            <optgroup label="Training (×2 same hero vs Dummy · Help)">
+              <option value="train_fighter">Fighter ×2 vs Dummy</option>
+              <option value="train_brawler">Brawler ×2 vs Dummy</option>
+              <option value="train_assassin">Assassin ×2 vs Dummy</option>
+              <option value="train_scout">Scout ×2 vs Dummy</option>
+              <option value="train_mystic">Mystic ×2 vs Dummy</option>
+              <option value="train_acolyte">Acolyte ×2 vs Dummy</option>
+              <option value="train_primalist">Primalist ×2 vs Dummy</option>
+            </optgroup>
+            <optgroup label="Single room">
+              <option value="w1">Easy — 4× Wolf (8)</option>
+              <option value="w1b">Med− — 2W+Alpha (10)</option>
+              <option value="medium">Med+ — 3W+Alpha (12)</option>
+              <option value="hard">Hard — 3W+Alpha (12) · Rift Hard room 2</option>
+              <option value="horde_pack">Easy — 4H+2W (8)</option>
+              <option value="horde_alpha">Med− — 3H+Alpha (9)</option>
+              <option value="bear_w2">Easy — Bear+2W (7)</option>
+              <option value="bear_w4">Med — Bear+4W (11)</option>
+              <option value="solo_tortoise">Med — Tortoise Solo (11)</option>
+            </optgroup>
+            <optgroup label="Builder">
+              <option value="__builder__">Custom roster (from Builder)</option>
+            </optgroup>
+            <optgroup label="Saved layouts" id="scenario-saved" hidden></optgroup>
+          </select>
+        </label>
+        <div id="feat-mode-wrap">
+          <label>talents
+            <select id="feat-mode">
+              <option value="ladder4" selected>Ladder n=4 (pad model)</option>
+              <option value="ladder3">Ladder n=3 (Hard +2)</option>
+              <option value="ladder2">Ladder n=2 (pad 0)</option>
+              <option value="ladder1">Ladder n=1</option>
+              <option value="ladder0">Ladder n=0</option>
+              <option value="off">Off (no talents)</option>
+            </select>
+          </label>
+        </div>
+        <div class="wizard-nav">
+          <button type="button" id="wizard-lab-back">Wstecz</button>
+          <button type="button" id="wizard-lab-resume" hidden>Wróć do walki</button>
+        </div>
+      </section>
+    </div>
+  </div>
   <main>
     <section class="panel map-col">
       <h2>Map 12×8</h2>
@@ -797,7 +1024,7 @@
       critPassiveBonusDmg,
     } from "./engine/index.js?v=20260919gate";
     import { loadCardPack, SCENARIOS, RIFT_CHAINS, makeR1Encounter, resolvePartyIds, FEAT_SMOKE_STUBS } from "./mc/r1.js?v=20260919gate";
-    import { r1LadderFeats, trainClassFeats } from "./mc/talent-ladder.js?v=20260919gate";
+    import { r1LadderFeats, trainClassFeats, mixLadderFeats } from "./mc/talent-ladder.js?v=20260919gate";
     import {
       loadBuilderRoster,
       loadBuilderParty,
@@ -845,6 +1072,17 @@
     // registry that grants engine/feats.js hasX flags + abilityIds, so this
     // equips the REAL mechanic, not a separate placeholder layer.
     let manualTalentIds = new Set();
+    // Designer playtest wizard. Rank 0 → n=0. Rank 1 → synced n (ladder or
+    // manual n-per-hero) passed as talentsPerHero so TALENT_BP_V03 stairs apply.
+    let wizardRank = null;
+    let wizardTalentN = 0;
+    let wizardTalentSource = "ladder";
+    let wizardStep = "rank";
+    let wizardOpen = true;
+    let wizardComplete = false;
+    let wizardTalentsReady = false;
+    let wizardAfterTalents = "diff";
+    let pendingBegin = null;
 
     const SETUP_STORE_KEY = "combat-lab-sandbox-setups-v1";
     const BRUSH_LABEL = {
@@ -909,16 +1147,50 @@
 
     function updateTalentPickerCount() {
       if (!elTalentPickerCount) return;
-      const n = manualTalentIds.size;
-      elTalentPickerCount.textContent = n ? "· " + n + " equipped" : "";
-      if (elFeatMode) elFeatMode.disabled = n > 0;
+      const picked = manualTalentIds.size;
+      const cap = wizardRank === 1 ? wizardTalentN | 0 : 0;
+      elTalentPickerCount.textContent = picked
+        ? "· " + picked + " zaznaczonych" + (cap ? " · limit " + cap + "/klasę" : "")
+        : "";
+      if (elFeatMode) elFeatMode.disabled = wizardTalentSource === "manual" && picked > 0;
+      const counts = {};
+      for (const id of manualTalentIds) {
+        const stub = FEAT_SMOKE_STUBS[id];
+        const cls = stub && stub.classId;
+        if (!cls) continue;
+        counts[cls] = (counts[cls] | 0) + 1;
+      }
+      const party = new Set(partyClassIds());
       if (elTalentPickerBody) {
-        elTalentPickerBody
-          .querySelectorAll(".talent-picker-row")
-          .forEach((row) => {
-            const id = row.getAttribute("data-id");
-            row.classList.toggle("checked", manualTalentIds.has(id));
-          });
+        elTalentPickerBody.querySelectorAll(".talent-picker-group").forEach((group) => {
+          const cls = group.getAttribute("data-class");
+          group.classList.toggle("in-party", party.has(cls));
+          const badge = group.querySelector(".talent-class-count");
+          if (badge) {
+            const have = counts[cls] | 0;
+            const avail = (talentPickerGroups()[cls] || []).length;
+            const need = wizardRank === 1 ? Math.min(cap, avail) : have;
+            badge.textContent = party.has(cls)
+              ? "(" + have + "/" + need + " · party)"
+              : "(" + have + (cap ? "/" + cap : "") + ")";
+          }
+        });
+        elTalentPickerBody.querySelectorAll(".talent-picker-row").forEach((row) => {
+          const id = row.getAttribute("data-id");
+          const stub = FEAT_SMOKE_STUBS[id];
+          const cls = stub && stub.classId;
+          const checked = manualTalentIds.has(id);
+          row.classList.toggle("checked", checked);
+          const input = row.querySelector("input");
+          const atCap =
+            wizardRank === 1 &&
+            wizardTalentSource === "manual" &&
+            cls &&
+            (counts[cls] | 0) >= cap &&
+            !checked;
+          if (input) input.disabled = !!atCap;
+          row.classList.toggle("capped", !!atCap);
+        });
       }
     }
 
@@ -928,7 +1200,12 @@
       const classes = Object.keys(groups).sort();
       let html = "";
       for (const cls of classes) {
-        html += '<div class="talent-picker-group"><h4>' + escapeHtml(cls) + "</h4>";
+        html +=
+          '<div class="talent-picker-group" data-class="' +
+          escapeHtml(cls) +
+          '"><h4>' +
+          escapeHtml(cls) +
+          ' <span class="talent-class-count"></span></h4>';
         for (const { id, stub } of groups[cls]) {
           html +=
             '<div class="talent-picker-row" data-id="' +
@@ -956,10 +1233,26 @@
           cb.checked = manualTalentIds.has(cb.getAttribute("data-id"));
           cb.onchange = () => {
             const id = cb.getAttribute("data-id");
-            if (cb.checked) manualTalentIds.add(id);
-            else manualTalentIds.delete(id);
+            if (cb.checked) {
+              const stub = FEAT_SMOKE_STUBS[id];
+              const cls = stub && stub.classId;
+              if (
+                wizardRank === 1 &&
+                wizardTalentSource === "manual" &&
+                cls &&
+                talentsSelectedForClass(cls) >= (wizardTalentN | 0)
+              ) {
+                cb.checked = false;
+                refreshWizardTalentGate();
+                return;
+              }
+              manualTalentIds.add(id);
+            } else {
+              manualTalentIds.delete(id);
+            }
             updateTalentPickerCount();
-            resetEncounter();
+            refreshWizardTalentGate();
+            if (wizardComplete && !wizardOpen) resetEncounter();
           };
         });
       updateTalentPickerCount();
@@ -969,7 +1262,8 @@
       elBtnTalentClear.onclick = () => {
         manualTalentIds.clear();
         renderTalentPicker();
-        resetEncounter();
+        refreshWizardTalentGate();
+        if (wizardComplete && !wizardOpen) resetEncounter();
       };
     }
 
@@ -983,6 +1277,20 @@
         return { badge: "Loading…", next: "Waiting for card pack." };
       }
       if (setupMode) {
+        const chain = riftId && RIFT_CHAINS[riftId];
+        if (chain) {
+          return {
+            badge:
+              "Rift · sala " +
+              (riftRoomIndex + 1) +
+              "/" +
+              chain.fights.length,
+            next:
+              "Pełny rift: " +
+              escapeHtml(chain.label) +
+              ". Ustaw pozycje, potem <b>Start fight</b>.",
+          };
+        }
         return {
           badge: "Stage 1/4 · Setup",
           next: "Set positions / terrain, then <b>Start fight</b>.",
@@ -1668,7 +1976,36 @@
       let featSmoke = null;
       let talentsPerHero = null;
       let talentHint = "Talents OFF.";
-      if (manualTalentIds.size > 0) {
+      if (wizardRank === 0) {
+        // Rank 0 skips talents. Explicit n=0 still feeds TALENT_BP_V03 (pad 0).
+        talentsPerHero = 0;
+        featSmoke = null;
+        talentHint = "Rank 0 · n=0 (bez talentów).";
+      } else if (wizardRank === 1 && wizardTalentSource === "manual" && manualTalentIds.size > 0) {
+        const n = Math.max(1, Math.min(4, wizardTalentN | 0));
+        featSmoke = Array.from(manualTalentIds);
+        talentsPerHero = n;
+        talentHint =
+          "Rank 1 · ręcznie n=" +
+          n +
+          ": " +
+          featSmoke
+            .map((id) => (FEAT_SMOKE_STUBS[id] ? FEAT_SMOKE_STUBS[id].label.split(":")[0] : id))
+            .join(", ") +
+          ".";
+      } else if (wizardRank === 1 && wizardTalentSource === "ladder") {
+        const n = Math.max(1, Math.min(4, wizardTalentN | 0));
+        talentsPerHero = n;
+        featSmoke = ladderFeatIdsForCurrentParty(n, partyOpt);
+        talentHint =
+          "Rank 1 · drabina n=" +
+          n +
+          " (Talent→BP v0.3g). Każdy bohater ma " +
+          n +
+          " " +
+          (n === 1 ? "talent" : "talenty") +
+          ".";
+      } else if (manualTalentIds.size > 0) {
         // Manual per-talent equip (Point 2 lab work) overrides the ladder-n
         // dropdown entirely. talentsPerHero is left null so the pad-BP
         // formula infers an average count from the feat list length.
@@ -1721,7 +2058,7 @@
       };
       let setupHint =
         "Setup: click unit → cell. Brushes = terrain. Then Start fight.";
-      if (featSmoke && featSmoke.length) {
+      if (wizardRank === 0 || wizardRank === 1 || (featSmoke && featSmoke.length)) {
         setupHint = talentHint + " " + setupHint;
       }
       if (scenario === "__builder__") {
@@ -1786,10 +2123,14 @@
       inspectId = startActorId;
       elTitle.textContent = titleLabel;
       elHint.textContent = setupHint;
+      updateSetupChip();
       if (elSetupBar) elSetupBar.style.display = "";
       syncStartButton();
       if (elBtnDeleteSetup) elBtnDeleteSetup.hidden = sel.kind !== "saved";
       setBrush("unit");
+      if (wizardRank === 0 || wizardRank === 1) {
+        elHint.textContent = talentHint + " " + (elHint.textContent || "");
+      }
       // Quiet: don't overwrite setup hint with "Saved log (+1)"
       scheduleLogFlush(true, true);
       render();
@@ -3542,6 +3883,14 @@
                     : "AP " + cur.ap
                   : "—")) +
         " · " +
+        (riftId && RIFT_CHAINS[riftId]
+          ? riftId +
+            " " +
+            (riftRoomIndex + 1) +
+            "/" +
+            RIFT_CHAINS[riftId].fights.length +
+            " · "
+          : "") +
         scenario;
       updateStageBanner();
       syncStartButton();
@@ -6191,7 +6540,388 @@
       arenaId = "custom";
       render();
     };
-    elScenario.onchange = () => {
+    function partyClassIds() {
+      const partyOpt =
+        partySel === "__builder__" ? loadBuilderParty() || "r1" : partySel || "r1";
+      try {
+        return resolvePartyIds(partyOpt);
+      } catch (_) {
+        return ["fighter", "brawler", "assassin", "scout"];
+      }
+    }
+
+    function talentsSelectedForClass(cls) {
+      let n = 0;
+      for (const id of manualTalentIds) {
+        const stub = FEAT_SMOKE_STUBS[id];
+        if (stub && stub.classId === cls) n++;
+      }
+      return n;
+    }
+
+    /** Ladder ids for the active party. R1 uses r1LadderFeats (same as the old dropdown). */
+    function ladderFeatIdsForCurrentParty(n, partyOpt) {
+      const key = typeof partyOpt === "string" ? partyOpt : partySel || "r1";
+      if (key === "r1" || key === "sunday") return r1LadderFeats(n);
+      return mixLadderFeats(key, n);
+    }
+
+    function clampManualToN() {
+      const cap = Math.max(0, wizardTalentN | 0);
+      const keep = [];
+      const counts = {};
+      for (const id of manualTalentIds) {
+        const stub = FEAT_SMOKE_STUBS[id];
+        const cls = (stub && stub.classId) || "?";
+        const used = counts[cls] | 0;
+        if (used >= cap) continue;
+        counts[cls] = used + 1;
+        keep.push(id);
+      }
+      manualTalentIds = new Set(keep);
+    }
+
+    function manualLoadoutReady() {
+      const n = Math.max(1, Math.min(4, wizardTalentN | 0));
+      const missing = [];
+      for (const cls of partyClassIds()) {
+        const have = talentsSelectedForClass(cls);
+        const available = (talentPickerGroups()[cls] || []).length;
+        const need = Math.min(n, available);
+        if (have !== need) missing.push({ cls, have, need });
+      }
+      return { ok: missing.length === 0, missing, n };
+    }
+
+    function loadoutSummary() {
+      if (wizardRank === 0) return "Rank 0 · n=0 · bez talentów";
+      const how = wizardTalentSource === "manual" ? "ręcznie" : "drabina";
+      return "Rank 1 · n=" + (wizardTalentN | 0) + " · " + how;
+    }
+
+    function updateSetupChip() {
+      const el = document.getElementById("setup-chip");
+      if (!el) return;
+      if (wizardRank == null) {
+        el.textContent = "";
+        return;
+      }
+      let chip = loadoutSummary();
+      if (riftId && RIFT_CHAINS[riftId]) {
+        chip +=
+          " · sala " +
+          (riftRoomIndex + 1) +
+          "/" +
+          RIFT_CHAINS[riftId].fights.length;
+      }
+      el.textContent = chip;
+    }
+
+    function syncFeatModeControl() {
+      if (!elFeatMode) return;
+      function ensure(val, label) {
+        if (![...elFeatMode.options].some((o) => o.value === val)) {
+          const opt = document.createElement("option");
+          opt.value = val;
+          opt.textContent = label;
+          elFeatMode.appendChild(opt);
+        }
+      }
+      if (wizardRank === 0) {
+        ensure("ladder0", "Ladder n=0");
+        elFeatMode.value = "off";
+        elFeatMode.disabled = false;
+        return;
+      }
+      if (wizardRank === 1 && wizardTalentSource === "ladder") {
+        const n = wizardTalentN | 0;
+        ensure("ladder" + n, "Ladder n=" + n);
+        elFeatMode.value = "ladder" + n;
+        elFeatMode.disabled = false;
+        return;
+      }
+      if (wizardRank === 1 && wizardTalentSource === "manual") {
+        elFeatMode.disabled = manualTalentIds.size > 0;
+      }
+    }
+
+    function seedManualFromLadder() {
+      manualTalentIds.clear();
+      const n = Math.max(1, Math.min(4, wizardTalentN | 0));
+      const partyOpt =
+        partySel === "__builder__" ? loadBuilderParty() || "r1" : partySel || "r1";
+      const ids = ladderFeatIdsForCurrentParty(n, partyOpt);
+      const party = new Set(partyClassIds());
+      const counts = {};
+      for (const id of ids) {
+        const stub = FEAT_SMOKE_STUBS[id];
+        if (!stub || !party.has(stub.classId)) continue;
+        const used = counts[stub.classId] | 0;
+        if (used >= n) continue;
+        counts[stub.classId] = used + 1;
+        manualTalentIds.add(id);
+      }
+      renderTalentPicker();
+    }
+
+    function renderLadderPreview() {
+      const host = document.getElementById("wizard-ladder-preview");
+      if (!host) return;
+      const n = Math.max(1, Math.min(4, wizardTalentN | 0));
+      const partyOpt =
+        partySel === "__builder__" ? loadBuilderParty() || "r1" : partySel || "r1";
+      const ids = ladderFeatIdsForCurrentParty(n, partyOpt);
+      const by = {};
+      for (const id of ids) {
+        const stub = FEAT_SMOKE_STUBS[id];
+        if (!stub) continue;
+        if (!by[stub.classId]) by[stub.classId] = [];
+        by[stub.classId].push(stub.label || id);
+      }
+      const party = partyClassIds();
+      const partySet = new Set(party);
+      const order = party.concat(Object.keys(by).filter((cls) => !partySet.has(cls)));
+      const labelCls = (cls) => cls.charAt(0).toUpperCase() + cls.slice(1);
+      let html = "";
+      for (const cls of order) {
+        const list = by[cls] || [];
+        html +=
+          '<div class="ladder-card' +
+          (partySet.has(cls) ? " in-party" : "") +
+          '"><h4>' +
+          escapeHtml(labelCls(cls)) +
+          (partySet.has(cls) ? " · party" : "") +
+          "</h4>";
+        if (!list.length) {
+          html += "<p>Brak drabiny dla tej klasy.</p>";
+        } else {
+          html += "<ol>";
+          for (const label of list) html += "<li>" + escapeHtml(label) + "</li>";
+          html += "</ol>";
+        }
+        html += "</div>";
+      }
+      host.innerHTML = html;
+    }
+
+    function refreshWizardTalentGate() {
+      const status = document.getElementById("wizard-talent-status");
+      const next = document.getElementById("wizard-talents-next");
+      const labBtn = document.getElementById("wizard-talents-lab");
+      if (wizardTalentSource !== "manual") {
+        if (status) status.textContent = "Drabina: pierwsze " + (wizardTalentN | 0) + " talentów klasy, to samo n u każdego bohatera.";
+        if (next) next.disabled = false;
+        if (labBtn) labBtn.disabled = false;
+        return;
+      }
+      const gate = manualLoadoutReady();
+      if (status) {
+        if (gate.ok) {
+          status.textContent =
+            "Gotowe: każda klasa w party ma " +
+            gate.n +
+            " " +
+            (gate.n === 1 ? "talent" : "talenty") +
+            ".";
+        } else {
+          status.textContent =
+            "Dobierz dokładnie n na klasę w party: " +
+            gate.missing
+              .map((m) => m.cls + " " + m.have + "/" + m.need)
+              .join(", ") +
+            ".";
+        }
+      }
+      if (next) next.disabled = !gate.ok;
+      if (labBtn) labBtn.disabled = !gate.ok;
+    }
+
+    function refreshTalentModeUi() {
+      const ladderBtn = document.getElementById("wizard-src-ladder");
+      const manualBtn = document.getElementById("wizard-src-manual");
+      const preview = document.getElementById("wizard-ladder-preview");
+      const manual = document.getElementById("wizard-manual-slot");
+      const ladderOn = wizardTalentSource !== "manual";
+      if (ladderBtn) ladderBtn.classList.toggle("active", ladderOn);
+      if (manualBtn) manualBtn.classList.toggle("active", !ladderOn);
+      if (preview) preview.hidden = !ladderOn;
+      if (manual) manual.hidden = ladderOn;
+      if (ladderOn) renderLadderPreview();
+      else updateTalentPickerCount();
+      refreshWizardTalentGate();
+    }
+
+    function wizardStepModel() {
+      if (wizardRank === 1) {
+        return [
+          ["rank", "Ranga"],
+          ["count", "Liczba"],
+          ["talents", "Talenty"],
+          ["diff", "Trudność"],
+        ];
+      }
+      return [
+        ["rank", "Ranga"],
+        ["diff", "Trudność"],
+      ];
+    }
+
+    function showWizardStep(step) {
+      wizardStep = step;
+      wizardOpen = true;
+      const root = document.getElementById("start-wizard");
+      if (root) root.hidden = false;
+      const panels = {
+        rank: "wizard-panel-rank",
+        count: "wizard-panel-count",
+        talents: "wizard-panel-talents",
+        diff: "wizard-panel-diff",
+        lab: "wizard-panel-lab",
+      };
+      for (const key of Object.keys(panels)) {
+        const el = document.getElementById(panels[key]);
+        if (el) el.hidden = key !== step;
+      }
+      const copy = {
+        rank: [
+          "Ranga",
+          "Pierwszy wybór: Rank 0 (bez talentów) albo Rank 1 (z talentami). Pełny rift jest dopiero po tym.",
+        ],
+        count: [
+          "Ile talentów?",
+          "n na każdego bohatera (1–4). Ta liczba wchodzi w schody Soft/BP v0.3g.",
+        ],
+        talents: [
+          "Które talenty?",
+          "n = " +
+            (wizardTalentN | 0) +
+            " u każdego bohatera w party. Drabina albo ręczny wybór — ten sam n.",
+        ],
+        diff: [
+          "Trudność riftu",
+          "Easy, Medium i Hard startują pełny łańcuch sal, nie jedną walkę.",
+        ],
+        lab: [
+          "Lab / Dummy",
+          "Pojedyncze walki, żeby sprawdzić czy talent się odpala. To nie jest domyślny rift.",
+        ],
+      };
+      const pair = copy[step] || copy.rank;
+      const title = document.getElementById("wizard-title");
+      const lead = document.getElementById("wizard-lead");
+      if (title) title.textContent = pair[0];
+      if (lead) lead.textContent = pair[1];
+      const steps = document.getElementById("wizard-steps");
+      if (steps) {
+        const model = wizardStepModel();
+        const idx = model.findIndex((s) => s[0] === step);
+        steps.innerHTML = model
+          .map((s, i) => {
+            const cls = i === idx ? "current" : idx > i ? "done" : "";
+            return '<li class="' + cls + '">' + (i + 1) + ". " + s[1] + "</li>";
+          })
+          .join("");
+        if (step === "lab") {
+          steps.innerHTML += '<li class="current">Lab / Dummy</li>';
+        }
+      }
+      document.querySelectorAll("#wizard-panel-rank .wizard-choice").forEach((btn) => {
+        btn.classList.toggle("active", btn.id === "wizard-rank-" + wizardRank);
+      });
+      document.querySelectorAll("[data-talent-n]").forEach((btn) => {
+        btn.classList.toggle("active", (btn.getAttribute("data-talent-n") | 0) === (wizardTalentN | 0));
+      });
+      const showResume = !!(wizardComplete && state);
+      const resume = document.getElementById("wizard-resume");
+      const resumeLab = document.getElementById("wizard-lab-resume");
+      if (resume) resume.hidden = !showResume;
+      if (resumeLab) resumeLab.hidden = !showResume;
+      if (step === "talents") refreshTalentModeUi();
+      if (step === "diff") {
+        fillDiffButtons();
+        const sum = document.getElementById("wizard-diff-summary");
+        if (sum) sum.textContent = loadoutSummary() + " · start = sala 1 pełnego riftu.";
+      }
+      if (step === "lab") renderLabChoices();
+    }
+
+    function fillDiffButtons() {
+      const map = [
+        ["wizard-diff-easy", "rift_easy"],
+        ["wizard-diff-medium", "rift_medium"],
+        ["wizard-diff-hard", "rift_hard"],
+      ];
+      for (const [id, key] of map) {
+        const btn = document.getElementById(id);
+        const chain = RIFT_CHAINS[key];
+        const span = btn && btn.querySelector("span");
+        if (chain && span) {
+          span.textContent =
+            "Pełny rift · " + chain.fights.length + " sale · " + chain.label;
+        }
+      }
+    }
+
+    function closeWizard() {
+      wizardOpen = false;
+      const root = document.getElementById("start-wizard");
+      if (root) root.hidden = true;
+      const change = document.getElementById("btn-change-setup");
+      const lab = document.getElementById("btn-open-lab");
+      if (change) change.hidden = !wizardComplete;
+      if (lab) lab.hidden = !wizardComplete;
+    }
+
+    function openWizard(step) {
+      stopAutoPlay();
+      showWizardStep(step || "rank");
+    }
+
+    function renderLabChoices() {
+      const host = document.getElementById("lab-choice-host");
+      if (!host || !elScenario) return;
+      const titles = {
+        "Training (×2 same hero vs Dummy · Help)": "Manekiny (trening klasy)",
+        "Single room": "Stare potyczki (jedna sala)",
+        Builder: "Builder",
+        "Saved layouts": "Zapisane layouty",
+      };
+      host.innerHTML = "";
+      const groups = elScenario.querySelectorAll("optgroup");
+      for (const g of groups) {
+        const label = g.label || "";
+        if (/^Rifts/i.test(label)) continue;
+        const options = [...g.querySelectorAll("option")];
+        if (!options.length) continue;
+        const box = document.createElement("div");
+        box.className = "lab-group";
+        const h = document.createElement("h3");
+        h.textContent = titles[label] || label;
+        box.appendChild(h);
+        const row = document.createElement("div");
+        row.className = "lab-choice-row";
+        for (const opt of options) {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "wizard-choice lab-choice";
+          const strong = document.createElement("strong");
+          strong.textContent = opt.textContent;
+          b.appendChild(strong);
+          b.onclick = () => beginScenario(opt.value);
+          row.appendChild(b);
+        }
+        box.appendChild(row);
+        host.appendChild(box);
+      }
+    }
+
+    function onScenarioPicked() {
+      if (!pack) {
+        pendingBegin = elScenario.value;
+        const lead = document.getElementById("wizard-lead");
+        if (lead) lead.textContent = "Ładuję karty… walka wystartuje za chwilę.";
+        return;
+      }
       const sel = parseScenarioSelect();
       if (sel.kind !== "saved") {
         savedPositions = null;
@@ -6212,8 +6942,179 @@
           }
         }
       }
+      wizardComplete = true;
+      syncFeatModeControl();
+      closeWizard();
+      updateSetupChip();
       resetEncounter();
-    };
+    }
+
+    function beginScenario(id) {
+      if (!pack) {
+        pendingBegin = id;
+        const lead = document.getElementById("wizard-lead");
+        if (lead) lead.textContent = "Ładuję karty… walka wystartuje za chwilę.";
+        return;
+      }
+      stopAutoPlay();
+      const exists = [...elScenario.options].some((o) => o.value === id);
+      if (!exists) {
+        if (elHint) elHint.textContent = "Nieznany scenariusz: " + id;
+        return;
+      }
+      elScenario.value = id;
+      riftId = null;
+      riftRoomIndex = 0;
+      riftPartyCarry = null;
+      onScenarioPicked();
+    }
+
+    function chooseRank(rank) {
+      wizardRank = rank === 0 ? 0 : 1;
+      wizardAfterTalents = "diff";
+      if (wizardRank === 0) {
+        wizardTalentN = 0;
+        wizardTalentSource = "ladder";
+        wizardTalentsReady = true;
+        manualTalentIds.clear();
+        renderTalentPicker();
+        syncFeatModeControl();
+        showWizardStep("diff");
+        return;
+      }
+      wizardTalentsReady = false;
+      showWizardStep("count");
+    }
+
+    function chooseCount(n) {
+      wizardRank = 1;
+      wizardTalentN = Math.max(1, Math.min(4, n | 0));
+      wizardTalentsReady = false;
+      clampManualToN();
+      if (wizardTalentSource === "manual" && manualTalentIds.size) renderTalentPicker();
+      showWizardStep("talents");
+    }
+
+    function openLabFromWizard() {
+      if (wizardRank == null) {
+        const lead = document.getElementById("wizard-lead");
+        if (lead) {
+          lead.textContent =
+            "Najpierw Rank 0 albo Rank 1. Lab używa tego samego n i tych samych talentów.";
+        }
+        showWizardStep("rank");
+        return;
+      }
+      if (wizardRank === 1 && !wizardTalentsReady) {
+        wizardAfterTalents = "lab";
+        showWizardStep(wizardTalentN >= 1 ? "talents" : "count");
+        return;
+      }
+      showWizardStep("lab");
+    }
+
+    function commitTalentStep(next) {
+      if (wizardTalentSource === "manual") {
+        const gate = manualLoadoutReady();
+        if (!gate.ok) {
+          refreshWizardTalentGate();
+          return;
+        }
+      } else {
+        wizardTalentSource = "ladder";
+        manualTalentIds.clear();
+        renderTalentPicker();
+      }
+      wizardTalentsReady = true;
+      wizardRank = 1;
+      syncFeatModeControl();
+      if (next === "lab" || wizardAfterTalents === "lab") {
+        wizardAfterTalents = "diff";
+        showWizardStep("lab");
+        return;
+      }
+      showWizardStep("diff");
+    }
+
+    function wirePlaytestWizard() {
+      const rank0 = document.getElementById("wizard-rank-0");
+      const rank1 = document.getElementById("wizard-rank-1");
+      if (rank0) rank0.onclick = () => chooseRank(0);
+      if (rank1) rank1.onclick = () => chooseRank(1);
+      document.querySelectorAll("[data-talent-n]").forEach((btn) => {
+        btn.onclick = () => chooseCount(btn.getAttribute("data-talent-n"));
+      });
+      const srcLadder = document.getElementById("wizard-src-ladder");
+      const srcManual = document.getElementById("wizard-src-manual");
+      if (srcLadder) {
+        srcLadder.onclick = () => {
+          wizardTalentSource = "ladder";
+          manualTalentIds.clear();
+          renderTalentPicker();
+          refreshTalentModeUi();
+        };
+      }
+      if (srcManual) {
+        srcManual.onclick = () => {
+          wizardTalentSource = "manual";
+          if (manualTalentIds.size === 0) seedManualFromLadder();
+          else renderTalentPicker();
+          refreshTalentModeUi();
+        };
+      }
+      const countBack = document.getElementById("wizard-count-back");
+      if (countBack) countBack.onclick = () => showWizardStep("rank");
+      const talentsBack = document.getElementById("wizard-talents-back");
+      if (talentsBack) talentsBack.onclick = () => showWizardStep("count");
+      const talentsNext = document.getElementById("wizard-talents-next");
+      if (talentsNext) {
+        talentsNext.onclick = () => {
+          wizardAfterTalents = "diff";
+          commitTalentStep("diff");
+        };
+      }
+      const talentsLab = document.getElementById("wizard-talents-lab");
+      if (talentsLab) talentsLab.onclick = () => commitTalentStep("lab");
+      const diffBack = document.getElementById("wizard-diff-back");
+      if (diffBack) {
+        diffBack.onclick = () => showWizardStep(wizardRank === 1 ? "talents" : "rank");
+      }
+      document.querySelectorAll("[data-rift]").forEach((btn) => {
+        btn.onclick = () => beginScenario(btn.getAttribute("data-rift"));
+      });
+      const diffLab = document.getElementById("wizard-diff-lab");
+      if (diffLab) diffLab.onclick = () => showWizardStep("lab");
+      const rankLab = document.getElementById("wizard-rank-lab");
+      if (rankLab) rankLab.onclick = () => openLabFromWizard();
+      const labBack = document.getElementById("wizard-lab-back");
+      if (labBack) {
+        labBack.onclick = () => {
+          if (wizardRank === 1 && wizardTalentsReady) showWizardStep("diff");
+          else if (wizardRank === 0) showWizardStep("diff");
+          else showWizardStep("rank");
+        };
+      }
+      const resume = () => {
+        if (!wizardComplete) return;
+        closeWizard();
+      };
+      const resumeBtn = document.getElementById("wizard-resume");
+      const resumeLab = document.getElementById("wizard-lab-resume");
+      if (resumeBtn) resumeBtn.onclick = resume;
+      if (resumeLab) resumeLab.onclick = resume;
+      const change = document.getElementById("btn-change-setup");
+      if (change) change.onclick = () => openWizard("rank");
+      const openLab = document.getElementById("btn-open-lab");
+      if (openLab) {
+        openLab.onclick = () => {
+          if (wizardRank == null) openWizard("rank");
+          else if (wizardRank === 1 && !wizardTalentsReady) openWizard("count");
+          else openWizard("lab");
+        };
+      }
+    }
+
+    elScenario.onchange = () => onScenarioPicked();
     if (elParty) {
       elParty.value = partySel;
       elParty.onchange = () => {
@@ -6224,7 +7125,11 @@
         if (elStart && ids.indexOf(elStart.value) < 0) {
           elStart.value = ids[0] || "fighter";
         }
-        resetEncounter();
+        if (wizardOpen && wizardStep === "talents") {
+          if (wizardTalentSource === "ladder") renderLadderPreview();
+          else refreshWizardTalentGate();
+        }
+        if (!wizardOpen) resetEncounter();
       };
     }
     if (elFeatMode) {
@@ -6411,17 +7316,34 @@
       );
     }
 
+    wirePlaytestWizard();
+    renderTalentPicker();
+    refreshScenarioSavedOptions();
+    clearUndo();
+    initPanelResize();
+    if (fromBuilder) {
+      const root = document.getElementById("start-wizard");
+      if (root) root.hidden = true;
+    } else {
+      showWizardStep("rank");
+    }
     pack = await loadCardPack("./cards/");
     if (fromBuilder && elScenario) {
       elScenario.value = "__builder__";
       partySel = "__builder__";
       if (elParty) elParty.value = "__builder__";
+      wizardRank = null;
+      wizardComplete = true;
+      wizardTalentsReady = false;
+      closeWizard();
+      resetEncounter();
+    } else if (pendingBegin) {
+      const queued = pendingBegin;
+      pendingBegin = null;
+      beginScenario(queued);
+    } else if (!wizardComplete) {
+      if (elStatus) elStatus.textContent = "Wybierz rangę";
     }
-    refreshScenarioSavedOptions();
-    clearUndo();
-    initPanelResize();
-    renderTalentPicker();
-    resetEncounter();
   </script>
 </body>
 </html>
