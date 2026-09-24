@@ -9,7 +9,7 @@ import { loadPuppeteer } from "./load-puppeteer.mjs";
 
 const puppeteer = await loadPuppeteer();
 
-const HASH = "82db039b15a911c4522cf523450d2954d083cd5290eaf8f97dec453933199aa7";
+const AUTH_OK = "open";
 const BASE = process.env.LAB_URL || "http://127.0.0.1:8765/sandbox.html";
 const CHROME = process.env.CHROME || "/usr/bin/google-chrome";
 const SHOTS = "/tmp/lab-qa-shots";
@@ -802,9 +802,9 @@ async function main() {
   page.on("console", (msg) => {
     if (msg.type() === "error") pageErrors.push("console: " + msg.text());
   });
-  await page.evaluateOnNewDocument((hash) => {
-    sessionStorage.setItem("riftersLabAuth", hash);
-  }, HASH);
+  await page.evaluateOnNewDocument((flag) => {
+    sessionStorage.setItem("riftersLabAuth", flag);
+  }, AUTH_OK);
   await page.goto(BASE, { waitUntil: "networkidle0" });
   await page.waitForSelector("#wizard-rank-1");
 

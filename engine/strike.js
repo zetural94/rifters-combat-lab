@@ -14,7 +14,6 @@ import {
   woundDisadv,
   gloomDisadv,
   statusExtraApCost,
-  shockOnReaction,
   cleanse,
   freshStatuses,
   isWeaponAttack,
@@ -544,13 +543,6 @@ export function tryDefendReaction(target, opts = {}) {
     else if (!isMonsterEconomy(target)) target.ap = (target.ap | 0) + 1;
     return r;
   }
-  if (typeof opts.onShock === "function") {
-    shockOnReaction(target, opts.onShock);
-  } else {
-    shockOnReaction(target, function (t, x) {
-      applyDamage(t, x, { unpreventable: true, dmgType: "Lightning", isDot: true, skipBleed: true });
-    });
-  }
   return { ok: true, pay };
 }
 
@@ -625,11 +617,6 @@ export function resolveStrike(ctx) {
         asOa: !!ctx.asOa,
       });
       if (!pay.ok) return { ok: false, reason: pay.reason || "no-ap" };
-      if (!monster) {
-        shockOnReaction(atk, function (t, x) {
-          applyDamage(t, x, { unpreventable: true, dmgType: "Lightning", isDot: true, skipBleed: true });
-        });
-      }
     } else if (monster) {
       if (!spendMonsterAction(atk)) return { ok: false, reason: "no-action" };
     } else if (isFlurry) {
@@ -2197,9 +2184,6 @@ export function resolveCatchBreath(actor, opts = {}) {
   if ((actor.hp | 0) > 0) {
     actor.down = false;
   }
-  shockOnReaction(actor, function (t, x) {
-    applyDamage(t, x, { unpreventable: true, dmgType: "Lightning", isDot: true, skipBleed: true });
-  });
   return { ok: true, heal, d1, d2, hp: actor.hp, pay, before };
 }
 
@@ -2547,9 +2531,6 @@ export function resolveHelp(helper, opts = {}) {
       forceCost: 1,
     });
     if (!pay.ok) return { ok: false, reason: pay.reason || "no-ap" };
-    shockOnReaction(helper, function (t, x) {
-      applyDamage(t, x, { unpreventable: true, dmgType: "Lightning", isDot: true, skipBleed: true });
-    });
   }
   return { ok: true, pay, helperId: helper.id };
 }
@@ -2612,9 +2593,6 @@ export function resolveInterpose(interposer, protectedTarget, opts = {}) {
     forceCost: 1,
   });
   if (!pay.ok) return { ok: false, reason: pay.reason || "no-ap" };
-  shockOnReaction(interposer, function (t, x) {
-    applyDamage(t, x, { unpreventable: true, dmgType: "Lightning", isDot: true, skipBleed: true });
-  });
 
   const actors = opts.actors || [];
   const occ = new Set();

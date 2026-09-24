@@ -504,7 +504,8 @@ export function legalActions(state, actor, abilityById) {
     });
   }
 
-  // Stealth — free (0 AP) + 1 stress · 1/round
+  // Stealth — 0 AP + 1 stress, once per round, allowed even after attacking this turn.
+  // Attacks still break stealth.
   if (
     !monster &&
     actor.hasStealth &&
@@ -518,6 +519,7 @@ export function legalActions(state, actor, abilityById) {
       apCost: 0,
       stressCost: 1,
       feat: true,
+      note: "1/round, allowed even after attacking this turn; attacks still break stealth.",
     });
   }
 
@@ -700,12 +702,9 @@ export function legalActions(state, actor, abilityById) {
       const selfAoe =
         !!ab.selfAoe ||
         /intimidating-shout|self-aoe/i.test(String(ab.id || ab.name || ""));
-      const range =
-        ab.aoe && ab.aoe.range != null
-          ? ab.aoe.range | 0
-          : ab.range != null
-            ? ab.range | 0
-            : 1;
+      // Click / primary-target range is ability.range.
+      // aoe.range and tier aoeRange are blast radius only (resolveStrike).
+      const range = ab.range != null ? ab.range | 0 : 1;
       // selfAoe / AoE: include stealthed (area still hits). Single-target: foes (R2 gate).
       const pool =
         selfAoe ||

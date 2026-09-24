@@ -498,7 +498,7 @@ export function applyBarkskin(state, actor, targetId, opts = {}) {
   };
 }
 
-/** Stealth: free action (0 AP) + 1 stress · 1/round · untargetable ST beyond R2 (AoE still hits) · first melee Crit 1. */
+/** Stealth: 0 AP + 1 stress. Once per round, allowed even after attacking this turn. Attacks still break stealth. Untargetable beyond range 2 (AoE still hits). First melee from stealth is Crit 1. */
 export function applyStealth(actor) {
   if (!actor || !actor.hasStealth) return { ok: false, reason: "no-feat" };
   if (actor.stealthUsedThisRound) return { ok: false, reason: "used-this-round" };

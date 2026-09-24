@@ -11,7 +11,7 @@ const puppeteer = await loadPuppeteer();
 import { FEAT_SMOKE_STUBS } from "../mc/r1.js";
 import { trainClassFeats } from "../mc/talent-ladder.js";
 
-const HASH = "82db039b15a911c4522cf523450d2954d083cd5290eaf8f97dec453933199aa7";
+const AUTH_OK = "open";
 const BASE = process.env.LAB_URL || "http://127.0.0.1:8765/sandbox.html";
 const CHROME = process.env.CHROME || "/usr/local/bin/google-chrome";
 const OUT = "/tmp/help-ui-results.json";
@@ -723,9 +723,9 @@ async function main() {
   page.on("console", (msg) => {
     if (msg.type() === "error") pageErrors.push("console: " + msg.text());
   });
-  await page.evaluateOnNewDocument((hash) => {
-    sessionStorage.setItem("riftersLabAuth", hash);
-  }, HASH);
+  await page.evaluateOnNewDocument((flag) => {
+    sessionStorage.setItem("riftersLabAuth", flag);
+  }, AUTH_OK);
   await page.goto(BASE, { waitUntil: "domcontentloaded" });
   const results = { classes: {}, minions: [], pageErrors: [] };
   let first = true;

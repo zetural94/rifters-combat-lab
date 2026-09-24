@@ -45,7 +45,9 @@ export function isMonsterSpecialAbility(ability) {
   if (ability.aoe) return true;
   if ((ability.range | 0) > 1) return true;
   if (ability.costMana != null || ability.manaCost != null) return true;
-  if (/howl|charge|eruption|barrage|nova|storm|focus|summon/i.test(ability.id || ability.name || "")) {
+  // Role words only. An id prefix such as summon-* is not a special:
+  // warrior pet melee (range 1, no AoE) stays a basic under Silence/Disarm.
+  if (/howl|charge|eruption|barrage|nova|storm|focus/i.test(ability.id || ability.name || "")) {
     return true;
   }
   const tiers = ability.tiers || {};

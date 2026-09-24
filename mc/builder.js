@@ -1,5 +1,6 @@
 /**
- * Combat Builder — roster + BP helpers (shared by builder.html / sandbox).
+ * Roster + BP helpers. The sandbox can read a roster already saved in this browser.
+ * builder.html is not part of the lab pack.
  */
 import {
   BUDGET,

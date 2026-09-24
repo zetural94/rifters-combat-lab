@@ -597,7 +597,6 @@
     }
     .setup-bar .lbl { color: var(--muted); font-size: 11px; }
     #log-status { color: var(--muted); font-size: 11px; }
-    header button#btn-open-builder,
     header button.header-action {
       appearance: none;
       border: 1px solid var(--line);
@@ -608,7 +607,6 @@
       font: inherit;
       cursor: pointer;
     }
-    header button#btn-open-builder:hover,
     header button.header-action:hover { border-color: var(--hl); }
     header button.header-action[hidden] { display: none; }
     #setup-chip { color: var(--hl); font-size: 12px; }
@@ -750,7 +748,7 @@
     <span class="meta" id="setup-chip"></span>
     <button type="button" class="header-action" id="btn-change-setup" hidden>Zmień setup</button>
     <button type="button" class="header-action" id="btn-open-lab" hidden>Lab / Dummy</button>
-    <label class="meta">queue (optional)
+    <label class="meta" title="Who is first in the round queue. Train / Dummy uses the real token ids.">who starts
       <select id="start-actor">
         <option value="fighter">Fighter</option>
         <option value="brawler">Brawler</option>
@@ -779,22 +777,22 @@
         <option value="__builder__">From Builder party</option>
       </select>
     </label>
-    <button type="button" class="meta" id="btn-open-builder" title="Złóż roster BP, potem wróć do sandbox">Builder…</button>
     <details class="glossary meta">
-      <summary>Glossary AP / BP / R1 / OA / T1</summary>
+      <summary>Glossary AP / BP / Rank / range / OA / T1</summary>
       <dl>
         <dt>AP</dt><dd>action points (usually 3/turn; Dying = 2).</dd>
         <dt>BP</dt><dd>encounter difficulty budget (sum of monsters).</dd>
-        <dt>R1</dt><dd>range 1 = adjacent (melee).</dd>
-        <dt>OA</dt><dd>opportunity attack — react to ranged-from-melee / leaving R1.</dd>
-        <dt>T0–T3</dt><dd>Power Roll tier (2d10+mod): higher total = stronger effect.</dd>
+        <dt>Rank 1</dt><dd>character rank in the wizard (the R1 lock). Not a distance.</dd>
+        <dt>R1 range</dt><dd>range 1 = adjacent (melee). On a strike, “R1” is distance, not Rank 1.</dd>
+        <dt>OA</dt><dd>opportunity attack — react to a ranged attack from melee, or to leaving range 1.</dd>
+        <dt>T1–T3</dt><dd>Power Roll tiers only (2d10+mod). T1 low, T2 mid, T3 high. There is no T0.</dd>
         <dt>ADV/DIS</dt><dd>advantage / disadvantage on the Power Roll.</dd>
         <dt>Help</dt><dd>ally rerolls the lower d10 after the roll.</dd>
         <dt>Move</dt><dd>first Move costs 1 AP and unlocks Speed for the turn; later Moves spend remaining spaces for free.</dd>
         <dt>Careful Step</dt><dd>always 1 AP → up to 3 spaces, no OA.</dd>
       </dl>
     </details>
-    <span class="meta"><a href="builder.html" style="color:var(--muted)">builder</a> · <a href="verify.html" style="color:var(--muted)">verify</a> · <a href="smoke.html" style="color:var(--muted)">smoke</a> · <a href="mc.html" style="color:var(--muted)">mc</a> · <a href="docs/HELP-AND-MINIONS.md" style="color:var(--muted)">help / minions</a> · <a href="docs/LAB-QA-PASS.md" style="color:var(--muted)">lab notes</a></span>
+    <span class="meta"><a href="docs/HELP-AND-MINIONS.md" style="color:var(--muted)">help / minions</a> · <a href="docs/LAB-QA-PASS.md" style="color:var(--muted)">lab notes</a></span>
     <span id="log-status" class="meta"></span>
   </header>
   <div id="start-wizard" class="start-wizard" role="dialog" aria-modal="true" aria-labelledby="wizard-title">
@@ -894,7 +892,7 @@
 
       <section id="wizard-panel-lab" hidden>
         <div id="lab-choice-host"></div>
-        <label class="wizard-advanced">Zapisane layouty, builder, reszta scenariuszy
+        <label class="wizard-advanced">Zapisane layouty i reszta scenariuszy
           <select id="scenario">
             <optgroup label="Rifts (2–3 rooms)">
               <option value="rift_easy" selected>Easy — 8→7→12 α-pack (27 BP)</option>
@@ -961,7 +959,7 @@
         <button type="button" id="btn-end">End turn</button>
         <button type="button" id="btn-step" title="One table-AI tick (hero action or auto-resolve pending OA/react)">Step AI</button>
         <button type="button" id="btn-auto" title="Auto-play with table AI until fight ends (Stop to pause)">Auto-play</button>
-        <button type="button" id="btn-abort-playtest" title="End fight now and open playtest card (Victory / Defeat / Abort)">End → playtest</button>
+        <button type="button" id="btn-abort-playtest" title="Manual stop for the playtest card. Abort is not Defeat. Defeat is only when every hero has wounds ≥ 5.">Abort → playtest</button>
         <button type="button" id="btn-flush-log">Save log</button>
       </div>
       <div class="setup-bar" id="setup-bar">
@@ -1001,16 +999,16 @@
     </section>
   </main>
   <script type="module">
-    const HASH = "82db039b15a911c4522cf523450d2954d083cd5290eaf8f97dec453933199aa7";
     const AUTH_KEY = "riftersLabAuth";
-    if (sessionStorage.getItem(AUTH_KEY) !== HASH) {
+    const AUTH_OK = "open";
+    if (sessionStorage.getItem(AUTH_KEY) !== AUTH_OK) {
       location.replace("index.html");
     } else {
       await startLab();
     }
 
     async function startLab() {
-    const V = "20260924labqa";
+    const V = "20260924remed";
     const engine = await import("./engine/index.js?v=" + V);
     const preview = await import("./engine/abilityPreview.js?v=" + V);
     const r1 = await import("./mc/r1.js?v=" + V);
@@ -1349,7 +1347,13 @@
         return {
           badge: "Fight over",
           next:
-            (state.winner === "hero" ? "Victory" : "Defeat") +
+            (state.winner === "hero"
+              ? "Victory"
+              : state.winner === "abort"
+                ? "Aborted (manual stop, not Defeat)"
+                : state.winner === "timeout"
+                  ? "Timeout"
+                  : "Defeat (wounds ≥ 5)") +
             " — rate the fight in <b>Actions</b>, then Reset layout.",
         };
       }
@@ -1482,7 +1486,15 @@
       }
       if (!state || state.over) {
         box.textContent =
-          state && state.winner === "hero" ? "Victory" : state && state.over ? "Defeat" : "—";
+          !state || !state.over
+            ? "—"
+            : state.winner === "hero"
+              ? "Victory"
+              : state.winner === "abort"
+                ? "Aborted"
+                : state.winner === "timeout"
+                  ? "Timeout"
+                  : "Defeat";
         elActions.appendChild(box);
         return;
       }
@@ -1977,6 +1989,45 @@
       if (ub) ub.disabled = true;
     }
 
+    function syncStartActorOptions(scenarioId) {
+      if (!elStart) return;
+      const train = String(scenarioId || "").match(/^train_([a-z0-9-]+)$/);
+      const options = [];
+      if (train) {
+        const hero = train[1];
+        const label = hero.charAt(0).toUpperCase() + hero.slice(1);
+        options.push({ id: hero + "-a", label: label + " A" });
+        options.push({ id: hero + "-b", label: label + " B" });
+      } else {
+        let ids = ["fighter", "brawler", "assassin", "scout"];
+        try {
+          ids = resolvePartyIds(currentPartyOpt());
+        } catch (err) {
+          ids = ["fighter", "brawler", "assassin", "scout"];
+        }
+        for (const id of ids) {
+          if (options.some((o) => o.id === id)) continue;
+          options.push({ id, label: id.charAt(0).toUpperCase() + id.slice(1) });
+        }
+      }
+      const prev = elStart.value;
+      elStart.innerHTML = "";
+      for (const opt of options) {
+        const o = document.createElement("option");
+        o.value = opt.id;
+        o.textContent = opt.label;
+        elStart.appendChild(o);
+      }
+      const keep = options.some((o) => o.id === prev)
+        ? prev
+        : train && prev === train[1]
+          ? train[1] + "-a"
+          : options[0]
+            ? options[0].id
+            : "";
+      if (keep) elStart.value = keep;
+    }
+
     function resetEncounter() {
       const sel = parseScenarioSelect();
       let positions = null;
@@ -1993,8 +2044,15 @@
         }
         activeSavedId = entry.id;
         scenario = entry.baseScenario || "medium";
-        startActorId = entry.startActorId || elStart.value || "brawler";
-        if (elStart && entry.startActorId) elStart.value = entry.startActorId;
+        syncStartActorOptions(scenario);
+        if (
+          elStart &&
+          entry.startActorId &&
+          [...elStart.options].some((o) => o.value === entry.startActorId)
+        ) {
+          elStart.value = entry.startActorId;
+        }
+        startActorId = (elStart && elStart.value) || "brawler";
         arenaId = "custom";
         if (elArena) elArena.value = "custom";
         positions = entry.positions || null;
@@ -2014,6 +2072,7 @@
         const resolved = resolveScenarioId(raw);
         scenario = resolved.roomId;
         if (resolved.riftId) riftId = resolved.riftId;
+        syncStartActorOptions(scenario);
         startActorId = elStart.value || "brawler";
         // Prefer scenario-authored terrain (Push surfaces) over arena dropdown when present
         const preview =
@@ -2180,8 +2239,7 @@
       if (scenario === "__builder__") {
         if (!builderRoster || !builderRoster.length) {
           titleLabel = "Builder (pusty)";
-          setupHint =
-            "Brak rosteru Buildera — otwórz builder.html, dodaj moby, potem „Otwórz w sandbox”.";
+          setupHint = "Brak zapisanego rosteru. Zostajesz w sandboxie.";
           state = makeR1Encounter(pack, 14, {
             roster: [],
             arena: arenaId === "custom" ? null : arenaId,
@@ -4010,6 +4068,7 @@
           } else {
             btn(actionLabel(a) + " · " + costTxt, {
               primary: true,
+              title: a.note || undefined,
               onclick: () => {
                 pending = null;
                 doAction({ type: a.type, upcast: !!a.upcast });
@@ -6475,12 +6534,7 @@
       }
       // Barrage / Flurry: player chooses up to maxTargets (canon: "you choose")
       if (maxTargets > 1 && !(pending && pending.multiTargetReady)) {
-        const aoeR =
-          ab.aoe && ab.aoe.range != null
-            ? ab.aoe.range | 0
-            : ab.range != null
-              ? ab.range | 0
-              : 1;
+        const pickR = ab.range != null ? ab.range | 0 : 1;
         const legal = (state.actors || [])
           .filter(
             (t) =>
@@ -6489,7 +6543,7 @@
               !t.dead &&
               (t.hp | 0) > 0 &&
               t.id !== targetId &&
-              inRange(cur, t, aoeR)
+              inRange(cur, t, pickR)
           )
           .map((t) => t.id);
         pending = {
@@ -7247,14 +7301,17 @@
         state.log.push({ t: Date.now(), msg: "FIGHT END — Victory" });
       } else {
         state.winner = "abort";
-        state.log.push({ t: Date.now(), msg: "FIGHT END — Aborted (playtest)" });
+        state.log.push({ t: Date.now(), msg: "FIGHT END — Aborted (playtest, not Defeat)" });
       }
       state.over = true;
       state.awaitingHeroPick = false;
       state.awaitingKitPick = false;
       playtestSubmitted = false;
       scheduleLogFlush(true, true);
-      elHint.textContent = "Fight ended — fill playtest card.";
+      elHint.textContent =
+        state.winner === "abort"
+          ? "Aborted — manual stop, not Defeat (Defeat is wounds ≥ 5). Fill the playtest card."
+          : "Fight ended — fill playtest card.";
       render();
     };
 
@@ -7858,15 +7915,8 @@
       if (elBtnDeleteSetup) elBtnDeleteSetup.hidden = sel.kind !== "saved";
       if (sel.kind === "builtin" && sel.id === "__builder__") {
         const ros = loadBuilderRoster();
-        if (!ros || !ros.length) {
-          if (
-            window.confirm(
-              "Brak rosteru Buildera.\nOK = otwórz Builder i złóż encounter,\nAnuluj = zostań w sandbox (pusto)."
-            )
-          ) {
-            location.href = "builder.html?from=sandbox";
-            return;
-          }
+        if ((!ros || !ros.length) && elHint) {
+          elHint.textContent = "Brak zapisanego rosteru. Zostajesz w sandboxie.";
         }
       }
       wizardComplete = true;
@@ -8179,7 +8229,7 @@
           wizardPartyReady = true;
         }
         const ids = resolvePartyIds(currentPartyOpt());
-        if (elStart && ids.indexOf(elStart.value) < 0) {
+        if (elStart && !String(scenario).startsWith("train_") && ids.indexOf(elStart.value) < 0) {
           elStart.value = ids[0] || "fighter";
         }
         if (wizardOpen && wizardStep === "talents") {
@@ -8193,12 +8243,6 @@
     }
     if (elFeatMode) {
       elFeatMode.onchange = () => resetEncounter();
-    }
-    const elOpenBuilder = document.getElementById("btn-open-builder");
-    if (elOpenBuilder) {
-      elOpenBuilder.onclick = () => {
-        location.href = "builder.html?from=sandbox";
-      };
     }
     elStart.onchange = () => {
       if (parseScenarioSelect().kind === "saved") {

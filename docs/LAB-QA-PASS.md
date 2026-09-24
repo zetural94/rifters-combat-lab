@@ -112,7 +112,7 @@ There is no hero Silence card in the pack. Disarm is Dirty Trick (Assassin, DEX 
 ## What was not changed
 
 - Stair tables v0.3g (Easy pad 0/2/3/4/5, Medium 0/4/5/6/7, Hard 0/6/7/8/9).
-- Password gate hash and `riftersLabAuth`.
+- Designer password (not rotated). The session flag is no longer a password hash.
 - Help = reroll the lower d10.
 
 The plain static server logs a 404/501 for `/api/sandbox-log`. That route belongs to `serve.py`. It is not a fight bug.

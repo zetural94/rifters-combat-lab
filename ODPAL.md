@@ -62,7 +62,20 @@ Do grania niepotrzebne:
 
 ```bash
 node --test tests/*.test.mjs
+node scripts/check-card-schema.mjs
+node scripts/lab-qa-pass.mjs
+node scripts/help-and-minions-check.mjs
 ```
+
+## 6. Pieczęć po zmianie gry
+
+Każda zmiana `sandbox.html`, `engine/`, `mc/` albo `cards/` ma iść w tym samym commicie co nowy `lab.enc`. Hasło jest to, które już znasz. Nie zapisuj go w repo i nie obracaj go przy pieczęci.
+
+```bash
+RIFTERS_LAB_PASSWORD='…' node scripts/seal-lab.mjs
+```
+
+Skrypt pisze `lab.enc` i `lab.manifest.json` (liczba plików i skróty, bez hasła). Test pieczęci porównuje manifest z drzewem bez odszyfrowania.
 
 ## Problemy
 
