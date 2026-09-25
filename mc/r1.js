@@ -535,7 +535,7 @@ export const FEAT_SMOKE_STUBS = {
   "mystic-ice-wall": {
     xp: 350,
     classId: "mystic",
-    label: "Ice Wall (2 mana 1/fight · 5 seg · adj difficult)",
+    label: "Ice Wall (2AP+3mana · Range 5 · 4 seg · HP 3+INT · upcast +3 spaces or +2 destroy)",
     apply(actor) {
       actor.hasIceWall = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["mystic-ice-wall"]);
@@ -803,7 +803,7 @@ export const FEAT_SMOKE_STUBS = {
   "mystic-living-bomb": {
     xp: 250,
     classId: "mystic",
-    label: "Living Bomb (2AP+2mana · Burn DEX≤INT · death 8+3×INT Fire R3)",
+    label: "Living Bomb (2AP+2mana · Burn DEX≤INT · death 10+INT Fire R3)",
     apply(actor) {
       actor.livingBombFeat = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["mystic-living-bomb"]);
@@ -2027,6 +2027,9 @@ export function playRift(pack, seed, opts = {}) {
     }
     const summary = playFight(state, policy);
     if (state.talentTrace) summary.talentTrace = state.talentTrace;
+    if (opts.traceTalents && state.log) {
+      summary.logMsgs = state.log.map((e) => (e && e.msg) || "");
+    }
     // Per-fight drop from resources entering this encounter (not from full 12)
     summary.recDrop = Math.max(0, recBefore - (summary.recLeft | 0));
     fights.push({

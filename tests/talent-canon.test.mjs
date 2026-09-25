@@ -7,7 +7,8 @@ import { resolveStrike, resolveAbilityTierDamage } from "../engine/strike.js";
 import { applyDamage } from "../engine/damage.js";
 import { beginTurn, endTurn } from "../engine/turn.js";
 import { powerRoll } from "../engine/powerRoll.js";
-import { systemsBargainT1Damage, tryRiposte } from "../engine/feats.js";
+import { systemsBargainT1Damage, tryRiposte, placeIceWall, iceWallDestroySplash } from "../engine/feats.js";
+import { legalActions } from "../engine/actions.js";
 import { paintToxicCloud } from "../engine/clouds.js";
 import { freshStatuses } from "../engine/status.js";
 import { createRng } from "../engine/rng.js";
@@ -140,7 +141,7 @@ test("Toxic Cloud is 4×INT, persists, poisons on enter and start, and stacks", 
   assert.ok(foe.hp < 40 - 8);
 });
 
-test("Living Bomb burn uses DEX ≤ INT and death burst is 8+3×INT in range 3", () => {
+test("Living Bomb burn uses DEX ≤ INT and death burst is 10+INT in range 3", () => {
   const ab = card("mystic-living-bomb");
   assert.equal(ab.costAp, 2);
   assert.equal(ab.costMana, 2);
@@ -180,7 +181,7 @@ test("Living Bomb burn uses DEX ≤ INT and death burst is 8+3×INT in range 3",
   assert.equal(miss.ok, true, miss.reason);
   assert.equal(open.st.burn | 0, 0);
   assert.ok(open.livingBomb);
-  assert.equal(open.livingBomb.dmg, 8 + 3 * 1);
+  assert.equal(open.livingBomb.dmg, 10 + 1);
 
   const hit = resolveStrike({
     attacker: caster,
@@ -195,7 +196,7 @@ test("Living Bomb burn uses DEX ≤ INT and death burst is 8+3×INT in range 3",
   });
   assert.equal(hit.ok, true, hit.reason);
   assert.equal(shut.st.burn, 2);
-  assert.equal(shut.livingBomb.dmg, 8 + 3 * 1 + 2 * 1);
+  assert.equal(shut.livingBomb.dmg, 10 + 1 + 2 * 1);
 
   const near = actor({ id: "near", side: "enemy", x: 5, y: 0, hp: 30, hpMax: 30, def: { Fire: 0 } });
   const far = actor({ id: "far", side: "enemy", x: 8, y: 0, hp: 30, hpMax: 30, def: { Fire: 0 } });
@@ -208,6 +209,90 @@ test("Living Bomb burn uses DEX ≤ INT and death burst is 8+3×INT in range 3",
   assert.equal(near.hp, 21);
   assert.equal(far.hp, 30);
   assert.equal(caster.hp, 30);
+});
+
+test("Ice Wall costs 2 AP and 3 mana, places 4 segments, and can be cast again", () => {
+  const bounds = { minX: 0, minY: 0, maxX: 11, maxY: 7 };
+  const foe = actor({ id: "foe", side: "enemy", x: 10, y: 2, hp: 20, hpMax: 20 });
+  const hero = actor({
+    id: "mystic",
+    hasIceWall: true,
+    int: 2,
+    ap: 4,
+    mana: 6,
+    stress: 0,
+    x: 2,
+    y: 2,
+  });
+  const state = { actors: [hero, foe], objects: [], hazards: [], bounds };
+  const legal = legalActions(state, hero, {});
+  const walls = legal.filter((a) => a.type === "iceWall");
+  assert.equal(walls.filter((a) => !a.upcast).length, 1);
+  assert.equal(walls.find((a) => !a.upcast).apCost, 2);
+  assert.equal(walls.find((a) => !a.upcast).manaCost, 3);
+  assert.ok(walls.some((a) => a.upcastMode === "spaces" && a.manaCost === 4));
+  assert.ok(walls.some((a) => a.upcastMode === "damage" && a.manaCost === 4));
+
+  const broke = actor({ id: "poor", hasIceWall: true, ap: 1, mana: 10, stress: 0, x: 2, y: 2 });
+  const noAp = placeIceWall({ actors: [broke, foe], objects: [], hazards: [], bounds }, broke);
+  assert.equal(noAp.ok, false);
+  assert.equal(noAp.reason, "no-ap");
+  assert.equal(broke.ap, 1);
+  assert.equal(broke.mana, 10);
+
+  const dry = actor({ id: "dry", hasIceWall: true, ap: 3, mana: 2, stress: 0, x: 2, y: 2 });
+  const noMana = placeIceWall({ actors: [dry, foe], objects: [], hazards: [], bounds }, dry);
+  assert.equal(noMana.ok, false);
+  assert.equal(noMana.reason, "no-mana");
+  assert.equal(dry.ap, 3);
+  assert.equal(dry.mana, 2);
+
+  const first = placeIceWall(state, hero);
+  assert.equal(first.ok, true, first.reason);
+  assert.equal(first.segments.length, 4);
+  assert.equal(first.segHp, 5);
+  assert.equal(first.destroyDmg, 2);
+  assert.equal(hero.ap, 2);
+  assert.equal(hero.mana, 3);
+  assert.equal(hero.iceWallUsed, undefined);
+  assert.ok(state.hazards.some((h) => h.difficult));
+
+  const second = placeIceWall(state, hero);
+  assert.equal(second.ok, true, second.reason);
+  assert.equal(second.segments.length, 4);
+  assert.equal(hero.ap, 0);
+  assert.equal(hero.mana, 0);
+  assert.equal(state.objects.filter((o) => o.iceWall).length, 8);
+
+  const up = actor({
+    id: "up",
+    hasIceWall: true,
+    int: 1,
+    ap: 4,
+    mana: 8,
+    stress: 0,
+    x: 1,
+    y: 1,
+  });
+  const upState = {
+    actors: [up, actor({ id: "foe2", side: "enemy", x: 10, y: 1, hp: 20, hpMax: 20 })],
+    objects: [],
+    hazards: [],
+    bounds,
+  };
+  const spaces = placeIceWall(upState, up, { upcast: true, upcastMode: "spaces" });
+  assert.equal(spaces.ok, true, spaces.reason);
+  assert.equal(spaces.segments.length, 7);
+  assert.equal(spaces.destroyDmg, 2);
+  assert.equal(up.mana, 4);
+  const boom = placeIceWall(upState, up, { upcast: true, upcastMode: "damage" });
+  assert.equal(boom.ok, true, boom.reason);
+  assert.equal(boom.segments.length, 4);
+  assert.equal(boom.destroyDmg, 4);
+  assert.equal(up.mana, 0);
+  const bystander = actor({ id: "by", side: "enemy", x: boom.segments[0].x, y: boom.segments[0].y + 1, hp: 20, hpMax: 20 });
+  iceWallDestroySplash(boom.segments[0], [bystander]);
+  assert.equal(bystander.hp, 16);
 });
 
 test("Grapple damage scales by tier and the Restrain gate is +0/+1/+1", () => {

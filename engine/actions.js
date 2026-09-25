@@ -5,7 +5,7 @@ import { isMonsterEconomy, canReact } from "./turn.js";
 import { objectBlockKeys } from "./terrain.js";
 import { reachableCells } from "./move.js";
 import { hordeStackInRange } from "./horde.js";
-import { canPayMana, activateGuard, applyMagicShield } from "./feats.js";
+import { canPayMana, activateGuard, applyMagicShield, ICE_WALL_NOTE } from "./feats.js";
 import { placeSummon, SUMMON_TEMPLATES } from "./summon.js";
 
 function living(actors, side) {
@@ -288,20 +288,38 @@ export function legalActions(state, actor, abilityById) {
     }
   }
 
-  // Ice Wall — 2 mana, 1/fight (AP 0 for smoke; draft has no AP line beyond mana)
-  if (
-    !monster &&
-    actor.hasIceWall &&
-    !actor.iceWallUsed &&
-    canPayMana(actor, 2)
-  ) {
+  // Ice Wall — 2 AP + 3 mana, repeatable. Upcast +1 mana: +3 spaces or +2 destroy damage.
+  if (!monster && actor.hasIceWall && (actor.ap | 0) >= 2 && canPayMana(actor, 3)) {
     actions.push({
       type: "iceWall",
       label: "Ice Wall",
-      apCost: 0,
-      manaCost: 2,
+      apCost: 2,
+      manaCost: 3,
       feat: true,
+      note: ICE_WALL_NOTE,
     });
+    if (canPayMana(actor, 4)) {
+      actions.push({
+        type: "iceWall",
+        label: "Ice Wall (Upcast +3 spaces)",
+        apCost: 2,
+        manaCost: 4,
+        feat: true,
+        upcast: true,
+        upcastMode: "spaces",
+        note: ICE_WALL_NOTE,
+      });
+      actions.push({
+        type: "iceWall",
+        label: "Ice Wall (Upcast +2 destroy)",
+        apCost: 2,
+        manaCost: 4,
+        feat: true,
+        upcast: true,
+        upcastMode: "damage",
+        note: ICE_WALL_NOTE,
+      });
+    }
   }
 
   // Spotter Mark — 1 AP + 1 stress, WR (weapon/ability max range, min 8)

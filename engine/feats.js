@@ -55,16 +55,31 @@ export function activateSystemsBargain(actor, opts = {}) {
 }
 
 /**
- * Ice Wall smoke: 5 segments, HP = 3+INT, adjacent difficult.
- * Places a line between caster and preferred foe (or horizontal in front).
+ * Ice Wall: 3 MANA, 2 AP, Range 5.
+ * Create a 4-space wall (line; the lab does not draw a custom shape).
+ * Adjacent = Difficult Terrain. Each segment HP = 3 + INT.
+ * Destroyed segment: 2 unpreventable to adjacent.
+ * UPCAST 1 (+1 mana): +3 spaces OR +2 destroy damage (opts.upcastMode "spaces" | "damage").
+ * Repeatable. No once-per-fight gate.
  */
+export const ICE_WALL_AP = 2;
+export const ICE_WALL_MANA = 3;
+export const ICE_WALL_SEGMENTS = 4;
+export const ICE_WALL_NOTE =
+  "Ice Wall: 3 MANA, 2 AP, Range 5. Create a 4-space wall (any shape). Adjacent = Difficult Terrain. Each segment HP = 3 + INT. Destroyed segment: 2 unpreventable to adjacent. UPCAST 1: +3 spaces or +2 destroy damage.";
+
+export function iceWallUpcastMode(opts = {}) {
+  const raw = opts.upcastMode || opts.upcast;
+  if (raw === "spaces" || raw === "damage") return raw;
+  return null;
+}
+
 export function placeIceWall(state, actor, opts = {}) {
   if (!actor || !actor.hasIceWall) return { ok: false, reason: "no-feat" };
-  if (actor.iceWallUsed) return { ok: false, reason: "already" };
-  if (!opts.skipMana) {
-    const pay = spendMana(actor, 2);
-    if (!pay.ok) return { ok: false, reason: pay.reason || "no-mana" };
-  }
+  const mode = iceWallUpcastMode(opts);
+  const manaNeed = ICE_WALL_MANA + (mode ? 1 : 0);
+  const segments = ICE_WALL_SEGMENTS + (mode === "spaces" ? 3 : 0);
+  const destroyDmg = 2 + (mode === "damage" ? 2 : 0);
   const foes = (state.actors || []).filter(
     (a) => a && a.side === "enemy" && !a.dead && (a.hp | 0) > 0
   );
@@ -72,16 +87,30 @@ export function placeIceWall(state, actor, opts = {}) {
     opts.preferred ||
     foes.slice().sort((a, b) => chebyshev(actor, a) - chebyshev(actor, b))[0] ||
     null;
-  const cells = pickIceWallCells(actor, preferred, state, 5);
+  const cells = pickIceWallCells(actor, preferred, state, segments);
   if (!cells.length) return { ok: false, reason: "no-space" };
 
+  if (!opts.skipAp && (actor.ap | 0) < ICE_WALL_AP) return { ok: false, reason: "no-ap" };
+  if (!opts.skipMana && !canPayMana(actor, manaNeed)) return { ok: false, reason: "no-mana" };
+  if (!opts.skipAp && !spendAp(actor, ICE_WALL_AP)) return { ok: false, reason: "no-ap" };
+  let pay = { ok: true, mana: 0, stress: 0 };
+  if (!opts.skipMana) {
+    pay = spendMana(actor, manaNeed);
+    if (!pay.ok) {
+      if (!opts.skipAp) actor.ap = (actor.ap | 0) + ICE_WALL_AP;
+      return { ok: false, reason: pay.reason || "no-mana" };
+    }
+  }
+
   const segHp = Math.max(1, 3 + (actor.int | 0));
+  const castN = (actor.iceWallCasts | 0) + 1;
+  actor.iceWallCasts = castN;
   state.objects = state.objects || [];
   const placed = [];
   for (let i = 0; i < cells.length; i++) {
     const c = cells[i];
     const obj = {
-      id: "ice-" + actor.id + "-" + i,
+      id: "ice-" + actor.id + "-" + castN + "-" + i,
       x: c.x,
       y: c.y,
       material: "ice",
@@ -89,7 +118,7 @@ export function placeIceWall(state, actor, opts = {}) {
       hpMax: segHp,
       label: "Ice Wall",
       iceWall: true,
-      destroyDmg: 2,
+      destroyDmg,
       destroyed: false,
     };
     state.objects.push(obj);
@@ -116,11 +145,19 @@ export function placeIceWall(state, actor, opts = {}) {
     label: "Ice Wall adjacent",
   });
 
-  actor.iceWallUsed = true;
-  return { ok: true, segments: placed, segHp };
+  noteTalent(state, {
+    kind: "cast",
+    abilityId: "mystic-ice-wall",
+    actorId: actor.id,
+    side: actor.side,
+    upcast: !!mode,
+    upcastMode: mode,
+    segments: placed.length,
+  });
+  return { ok: true, segments: placed, segHp, destroyDmg, upcastMode: mode, manaNeed };
 }
 
-export function pickIceWallCells(actor, preferred, state, n = 5) {
+export function pickIceWallCells(actor, preferred, state, n = 4) {
   const bounds = state.bounds || { minX: 0, minY: 0, maxX: 11, maxY: 7 };
   const blocked = new Set();
   for (const a of state.actors || []) {
@@ -148,29 +185,44 @@ export function pickIceWallCells(actor, preferred, state, n = 5) {
   }
 
   const horizontal = Math.abs(tx - ax) >= Math.abs(ty - ay);
+  const want = Math.max(1, n | 0);
+
+  function fullLine(ox, oy) {
+    if (chebyshev({ x: ax, y: ay }, { x: ox, y: oy }) > 5) return null;
+    const start = -Math.floor((want - 1) / 2);
+    const cells = [];
+    for (let i = 0; i < want; i++) {
+      const off = start + i;
+      const x = horizontal ? ox + off : ox;
+      const y = horizontal ? oy : oy + off;
+      if (x < bounds.minX || x > bounds.maxX || y < bounds.minY || y > bounds.maxY) return null;
+      if (x === ax && y === ay) return null;
+      if (blocked.has(x + "," + y)) return null;
+      cells.push({ x, y });
+    }
+    return cells;
+  }
+
+  const shifts = [0, -1, 1, -2, 2, -3, 3, -4, 4];
+  for (const perp of shifts) {
+    for (const along of shifts) {
+      const ox = horizontal ? mx + along : mx + perp;
+      const oy = horizontal ? my + perp : my + along;
+      const line = fullLine(ox, oy);
+      if (line) return line;
+    }
+  }
+
+  // Cramped board: take the longest partial line that still fits.
   const cells = [];
-  const half = Math.floor(n / 2);
-  for (let i = -half; i <= half && cells.length < n; i++) {
+  const half = Math.floor(want / 2);
+  for (let i = -half; i <= half && cells.length < want; i++) {
     const x = horizontal ? mx + i : mx;
     const y = horizontal ? my : my + i;
     if (x < bounds.minX || x > bounds.maxX || y < bounds.minY || y > bounds.maxY) continue;
     const key = x + "," + y;
-    if (blocked.has(key)) continue;
-    if (x === ax && y === ay) continue;
+    if (blocked.has(key) || (x === ax && y === ay)) continue;
     cells.push({ x, y });
-    blocked.add(key);
-  }
-  // Fill remaining along axis if short
-  let guard = 0;
-  while (cells.length < n && guard++ < 12) {
-    const tip = cells[cells.length - 1] || { x: mx, y: my };
-    const nx = horizontal ? tip.x + 1 : tip.x;
-    const ny = horizontal ? tip.y : tip.y + 1;
-    if (nx < bounds.minX || nx > bounds.maxX || ny < bounds.minY || ny > bounds.maxY) break;
-    const key = nx + "," + ny;
-    if (blocked.has(key)) break;
-    cells.push({ x: nx, y: ny });
-    blocked.add(key);
   }
   return cells;
 }

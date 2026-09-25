@@ -1743,7 +1743,7 @@ export function resolveStrike(ctx) {
         const INT = Math.max(0, atk.int | 0);
         const up = ctx.upcast ? 2 * INT : 0;
         tgt.livingBomb = {
-          dmg: 8 + 3 * INT + up,
+          dmg: 10 + INT + up,
           fromId: atk.id,
           range: 3,
           upcast: !!ctx.upcast,

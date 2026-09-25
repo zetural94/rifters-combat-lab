@@ -1005,7 +1005,10 @@ export function applyAction(state, action) {
   }
 
   if (action.type === "iceWall") {
-    const r = placeIceWall(state, actor);
+    const r = placeIceWall(state, actor, {
+      upcast: !!action.upcast,
+      upcastMode: action.upcastMode || null,
+    });
     if (!r.ok) return r;
     pushLog(
       state,
@@ -1014,7 +1017,11 @@ export function applyAction(state, action) {
         (r.segments || []).length +
         " (HP " +
         (r.segHp | 0) +
-        "/seg · adjacent difficult)"
+        "/seg · destroy " +
+        (r.destroyDmg | 0) +
+        " · adjacent difficult" +
+        (r.upcastMode ? " · upcast " + r.upcastMode : "") +
+        ")"
     );
     return { ok: true, result: r };
   }
