@@ -1008,6 +1008,8 @@ export function applyAction(state, action) {
     const r = placeIceWall(state, actor, {
       upcast: !!action.upcast,
       upcastMode: action.upcastMode || null,
+      // Heavy 1/fight tylko dla AI. Human clicks omit fromAi.
+      fromAi: !!action.fromAi,
     });
     if (!r.ok) return r;
     pushLog(

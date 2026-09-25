@@ -1008,7 +1008,7 @@
     }
 
     async function startLab() {
-    const V = "20260924remed";
+    const V = "20260925ice";
     const engine = await import("./engine/index.js?v=" + V);
     const preview = await import("./engine/abilityPreview.js?v=" + V);
     const r1 = await import("./mc/r1.js?v=" + V);
@@ -1051,6 +1051,8 @@
       gatePass,
       resolveMaxTargets,
       resolveAbilityTierDamage,
+      applyDamage,
+      iceWallDestroySplash,
       critPassiveBonusDmg,
       ELEMENTAL_BOLT_TYPES,
       listMitigationReactions,
@@ -4103,6 +4105,7 @@
               (kitBit ? " · " + kitBit : "") +
               rLabel +
               (a.slot === "action" ? " · Action" : " (" + a.apCost + " AP)") +
+              (a.manaCost ? " · " + a.manaCost + " mana" : "") +
               (a.stressCost ? " · " + a.stressCost + " stress" : "") +
               (out ? " · out of range" : "") +
               (a.aimArmed ? " · Aim ready" : ""),
@@ -4127,6 +4130,7 @@
                     flurry: !!a.flurry,
                     useAim: false,
                     canAim: false,
+                    upcast: !!a.upcast,
                   };
                   try {
                     beginStrike(null);
@@ -4146,6 +4150,7 @@
                   flurry: !!a.flurry,
                   useAim: false,
                   canAim: !!a.canAim,
+                  upcast: !!a.upcast,
                 };
                 elHint.textContent =
                   "Target: click a highlighted foe · " +
@@ -6361,6 +6366,7 @@
         supportAllyId: allyId,
         dmgTypeOverride: pending.dmgTypeOverride || null,
         spendStressAdv: !!pending.spendStressAdv,
+        upcast: !!pending.upcast,
         skipRangedOa: true,
         extraTargetIds:
           pending.extraTargetIds && pending.extraTargetIds.length
@@ -6388,6 +6394,7 @@
       const cur = currentActor(state);
       const helpers = helpersFor(cur);
       const useAim = !!pending.useAim || !!(cur && cur.aimArmed);
+      const upcast = !!(pending && pending.upcast);
       const abilityId = pending.abilityId;
       const flurry = !!pending.flurry;
       const dmgTypeOverride = pending.dmgTypeOverride || null;
@@ -6415,6 +6422,7 @@
           dmgTypeOverride,
           spendStressAdv,
           extraTargetIds: null,
+          upcast,
         };
         pushUndo("Strike");
         const dry = applyAction(
@@ -6447,6 +6455,7 @@
           dmgTypeOverride,
           spendStressAdv,
           extraTargetIds: null,
+          upcast,
         };
         const ids = (decl && decl.aoeTargetIds) || [];
         const r = decl && decl.aoeR != null ? decl.aoeR : "?";
@@ -6559,6 +6568,7 @@
           maxExtra: maxTargets - 1,
           legalExtra: legal,
           abName: ab.name || abilityId,
+          upcast,
         };
         elHint.textContent =
           (ab.name || "Multi") +
@@ -6583,6 +6593,7 @@
         dmgTypeOverride,
         spendStressAdv,
         extraTargetIds: extraTargetIds && extraTargetIds.length ? extraTargetIds.slice() : null,
+        upcast,
       };
       pushUndo("Strike");
       const dry = applyAction(
@@ -6606,6 +6617,7 @@
         dmgTypeOverride,
         spendStressAdv,
         extraTargetIds: base.extraTargetIds,
+        upcast,
       };
       if (abilityNeedsElementPick(ab, cur) && !dmgTypeOverride) {
         pending = {
@@ -8445,6 +8457,111 @@
       beginScenario(queued);
     } else if (!wizardComplete) {
       if (elStatus) elStatus.textContent = "Wybierz rangę";
+    }
+    if (urlParams.get("qa") === "1") {
+      // Lab QA only (?qa=1). Not a rules gate.
+      globalThis.__riftersQa = {
+        snap() {
+          const cur = currentActor(state);
+          return {
+            over: !!state.over,
+            currentId: cur && cur.id,
+            awaitingKit: !!state.awaitingKitPick,
+            awaitingPick: !!state.awaitingHeroPick,
+            actors: (state.actors || []).map((a) => ({
+              id: a.id,
+              name: a.name,
+              side: a.side,
+              hp: a.hp | 0,
+              ap: a.ap | 0,
+              mana: a.mana | 0,
+              int: a.int | 0,
+              dex: a.dex | 0,
+              x: a.x | 0,
+              y: a.y | 0,
+              dead: !!a.dead,
+              burn: a.st ? a.st.burn | 0 : 0,
+              attacksThisTurn: a.attacksThisTurn | 0,
+              iceWallUsed: !!a.iceWallUsed,
+              hasIceWall: !!a.hasIceWall,
+              defFire: a.def ? a.def.Fire | 0 : 0,
+              livingBomb: a.livingBomb
+                ? {
+                    dmg: a.livingBomb.dmg | 0,
+                    range: a.livingBomb.range | 0,
+                    upcast: !!a.livingBomb.upcast,
+                  }
+                : null,
+            })),
+            ice: (state.objects || [])
+              .filter((o) => o && o.iceWall && !o.destroyed)
+              .map((o) => ({
+                id: o.id,
+                x: o.x | 0,
+                y: o.y | 0,
+                hp: o.hp | 0,
+                destroyDmg: o.destroyDmg | 0,
+              })),
+            difficult: (state.hazards || []).filter((h) => h && h.difficult).length,
+            log: (state.log || []).slice(-16).map((l) => l.msg || ""),
+          };
+        },
+        hurt(id, n) {
+          const a = actorById(state, id);
+          if (!a) return { ok: false, reason: "missing" };
+          applyDamage(a, n | 0, { dmgType: "Physical", actors: state.actors });
+          render();
+          return { ok: true, hp: a.hp | 0, dead: !!a.dead };
+        },
+        setResources(id, patch) {
+          const a = actorById(state, id);
+          if (!a || !patch) return { ok: false };
+          if (patch.ap != null) a.ap = patch.ap | 0;
+          if (patch.mana != null) a.mana = patch.mana | 0;
+          if (patch.attacksThisTurn != null) a.attacksThisTurn = patch.attacksThisTurn | 0;
+          render();
+          return { ok: true, ap: a.ap | 0, mana: a.mana | 0 };
+        },
+        primeDice(d1, d2) {
+          const orig = state.rng;
+          const faces = [d1 | 0, d2 | 0].map((d) => (Math.max(1, Math.min(10, d)) - 1 + 0.01) / 10);
+          const queue = [];
+          for (let n = 0; n < 8; n++) queue.push(faces[0], faces[1]);
+          const wrapped = function () {
+            if (queue.length) return queue.shift();
+            return orig();
+          };
+          if (orig && orig._getA) wrapped._getA = orig._getA.bind(orig);
+          if (orig && orig._setA) wrapped._setA = orig._setA.bind(orig);
+          state.rng = wrapped;
+          return { ok: true };
+        },
+        aiPick() {
+          return chooseHeroAction(state, "smart");
+        },
+        apply(action) {
+          const r = applyAction(state, action);
+          render();
+          return { ok: !!(r && r.ok), reason: r && r.reason, type: action && action.type };
+        },
+        moveActor(id, x, y) {
+          const a = actorById(state, id);
+          if (!a) return { ok: false };
+          a.x = x | 0;
+          a.y = y | 0;
+          render();
+          return { ok: true };
+        },
+        smashIce(objId) {
+          const obj = (state.objects || []).find((o) => o && o.id === objId && o.iceWall);
+          if (!obj) return { ok: false, reason: "missing" };
+          obj.hp = 0;
+          obj.destroyed = true;
+          const hit = iceWallDestroySplash(obj, state.actors);
+          render();
+          return { ok: true, hit, destroyDmg: obj.destroyDmg | 0 };
+        },
+      };
     }
     }
   </script>

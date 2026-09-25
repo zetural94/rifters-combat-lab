@@ -60,7 +60,8 @@ export function activateSystemsBargain(actor, opts = {}) {
  * Adjacent = Difficult Terrain. Each segment HP = 3 + INT.
  * Destroyed segment: 2 unpreventable to adjacent.
  * UPCAST 1 (+1 mana): +3 spaces OR +2 destroy damage (opts.upcastMode "spaces" | "damage").
- * Repeatable. No once-per-fight gate.
+ * Repeatable for a human click. Heavy 1/fight tylko dla AI; gracz w labie może rzucać ponownie.
+ * chooseHeroAction passes fromAi, and only that path sets iceWallUsed. legalActions never checks it.
  */
 export const ICE_WALL_AP = 2;
 export const ICE_WALL_MANA = 3;
@@ -145,6 +146,8 @@ export function placeIceWall(state, actor, opts = {}) {
     label: "Ice Wall adjacent",
   });
 
+  // AI / Monte Carlo only. A lab click does not pass fromAi, so the button stays up.
+  if (opts.fromAi) actor.iceWallUsed = true;
   noteTalent(state, {
     kind: "cast",
     abilityId: "mystic-ice-wall",
@@ -153,6 +156,7 @@ export function placeIceWall(state, actor, opts = {}) {
     upcast: !!mode,
     upcastMode: mode,
     segments: placed.length,
+    fromAi: !!opts.fromAi,
   });
   return { ok: true, segments: placed, segHp, destroyDmg, upcastMode: mode, manaNeed };
 }

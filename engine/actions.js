@@ -288,7 +288,7 @@ export function legalActions(state, actor, abilityById) {
     }
   }
 
-  // Ice Wall — 2 AP + 3 mana, repeatable. Upcast +1 mana: +3 spaces or +2 destroy damage.
+  // Ice Wall — 2 AP + 3 mana. Human may cast again. The AI picker, not this list, is once per fight.
   if (!monster && actor.hasIceWall && (actor.ap | 0) >= 2 && canPayMana(actor, 3)) {
     actions.push({
       type: "iceWall",
@@ -746,12 +746,13 @@ export function legalActions(state, actor, abilityById) {
           (ab.aoe && (ab.aoe.range != null || ab.aoe.shape === "cube" || ab.aoe.size != null));
         if (!isAoe && !actor.summon) continue;
       }
-      actions.push({
+      const strike = {
         type: "strike",
         label: ab.name,
         apCost: monster ? 0 : cost,
         slot: monster ? "action" : null,
         stressCost: (!monster || actor.summon) && stressNeed > 0 ? stressNeed : 0,
+        manaCost: !monster && manaNeed > 0 ? manaNeed : 0,
         abilityId: ab.id,
         targets: targets.map((t) => t.id),
         noTargets: !targets.length,
@@ -763,7 +764,19 @@ export function legalActions(state, actor, abilityById) {
           !actor.movedThisTurn &&
           !actor.aimUsedThisRound,
         aimArmed: !!actor.aimArmed,
-      });
+      };
+      actions.push(strike);
+      const upMana = !monster ? ab.upcastMana | 0 : 0;
+      if (upMana > 0 && canPayMana(actor, manaNeed + upMana) && (monster || ap >= cost)) {
+        actions.push(
+          Object.assign({}, strike, {
+            label: ab.name + " (Upcast)",
+            manaCost: manaNeed + upMana,
+            upcast: true,
+            targets: strike.targets.slice(),
+          })
+        );
+      }
     }
   }
 

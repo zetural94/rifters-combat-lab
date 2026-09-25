@@ -1,6 +1,6 @@
 # Rebalance v1 — próba przed kanonem
 
-Werdykt: **tekst Adriana jest w kartach.** Living Bomb wybucha za 10 + INT. Ice Wall kosztuje 2 AP i 3 many, stawia 4 segmenty i można ją rzucić znowu. Grapple i Riposte zostają dokładnie tak, jak były w tym PR. Kotwica R1 się nie rusza. Hard n=3 zostaje poza pasmem, mediana 11 przy paśmie 4–10.
+Werdykt: **tekst Adriana jest w kartach.** Living Bomb wybucha za 10 + INT. Ice Wall kosztuje 2 AP i 3 many, stawia 4 segmenty, a gracz w labie może ją rzucić znowu. Heavy 1/fight tylko dla AI; gracz w labie może rzucać ponownie. Grapple i Riposte zostają dokładnie tak, jak były w tym PR. Kotwica R1 się nie rusza. Hard n=3 zostaje poza pasmem, mediana 11 przy paśmie 4–10.
 
 To nadal nie jest kanon, dopóki Adrian tak nie powie. Schody Soft/BP v0.3g i pasma ran nie były ruszane. Bramka T1 Shadowplay i Living Bomb też nie.
 
@@ -9,7 +9,7 @@ Pasma: Easy 0–4, Medium 0–6, Hard 4–10. Pad v0.3g przy n=0..4: Easy 0/2/3/
 ## Zablokowany tekst
 
 - **Living Bomb.** 2 many, 2 AP, Range 5. Śmierć: cel zadaje 10 + INT Fire w Range 3. Bramki Burn zostają: ≤11 DEX ≤ twój INT − 1 i Burn 2, 12–16 DEX ≤ twój INT i Burn 3, 17+ DEX ≤ twój INT + 1 i Burn 4. Upcast +1 many dokłada +2×INT do śmierci. AI dalej wymaga 2 AP i 2 many.
-- **Ice Wall.** 3 many, 2 AP, Range 5. Ściana ma 4 pola. Sąsiedztwo to trudny teren. Każdy segment ma HP = 3 + INT. Zniszczony segment zadaje 2 nie do zablokowania sąsiadom. Upcast +1 many daje albo +3 pola, albo +2 do obrażeń przy zniszczeniu. W labie są dwa osobne przyciski. AI, gdy stać je na 4 many, bierze dłuższą ścianę. Przycisk obrażeń zostaje dla gracza. Znacznik raz na walkę jest zdjęty. Ściana wraca, gdy zostają AP i mana.
+- **Ice Wall.** 3 many, 2 AP, Range 5. Ściana ma 4 pola. Sąsiedztwo to trudny teren. Każdy segment ma HP = 3 + INT. Zniszczony segment zadaje 2 nie do zablokowania sąsiadom. Upcast +1 many daje albo +3 pola, albo +2 do obrażeń przy zniszczeniu. W labie są dwa osobne przyciski. AI, gdy stać je na 4 many, bierze dłuższą ścianę. Przycisk obrażeń zostaje dla gracza. Heavy 1/fight tylko dla AI; gracz w labie może rzucać ponownie. Klik w labie nie ustawia `iceWallUsed`. Ten licznik schodzi tylko po rzucie z pickera Monte Carlo (`fromAi`). Lista przycisków tego licznika nie czyta, więc drugi rzut gracza przechodzi, gdy stać go na 2 AP i 3 many.
 - **Grapple.** Bez zmian. T1 WD+STR, T2 WD+2×STR, T3 WD+3×STR. Bramka Restrain: T1 STR ≤ twoje STR, T2 i T3 STR ≤ twoje STR + 1. Zamek trwa do końca następnej tury chwytającego.
 - **Riposte.** Bez zmian. Raz na rundę na bohatera.
 
@@ -17,7 +17,7 @@ Lab stawia ścianę w linii, tak jak wcześniej. Tekst mówi „any shape”, a 
 
 ## Jak to było liczone
 
-Ten sam runner co `docs/TALENT-OUTLIERS.md`, ten sam seed, ta sama próbka. „Przed” to świeży przebieg `main` na `9b6b06b`. Ten przebieg ma zablokowany tekst. Czas ścienny **648 s**. Baza miała **548 s**.
+Ten sam runner co `docs/TALENT-OUTLIERS.md`, ten sam seed, ta sama próbka. „Przed” to świeży przebieg `main` na `9b6b06b`. Ten przebieg ma zablokowany tekst i licznik ściany tylko na ścieżce AI. Czas ścienny **573 s**. Baza miała **548 s**. Poprzedni commit, w którym AI mogło stawiać ścianę co turę, miał **648 s**. Te liczby są niżej, jako historia.
 
 ```
 node tools/run-talent-sweep.mjs --seed 1 --runs 4 --mixed 1000 --jobs 4 --out /tmp/talent-sweep
@@ -30,81 +30,82 @@ node tools/run-talent-sweep.mjs --analyze /tmp/talent-sweep --report /tmp/talent
 
 ## Living Bomb
 
-Na randze 1 mystic ma INT 1. Wtedy 10 + INT to 11, a upcast to 13. Wariant B (8+3×INT) dawał na tej randze te same liczby. Ślad solo bomby jest dlatego taki sam jak przy B: 1,67 → 1,58 rzutu na walkę (120 → 114), detonacje 1,36 → 1,29 (98 → 93), upcast pada za każdym razem (114 ze 114).
+Na randze 1 mystic ma INT 1. Wtedy 10 + INT to 11, a upcast to 13. Wariant B (8+3×INT) dawał na tej randze te same liczby. Ślad solo bomby zostaje jak przy B i jak przy ścianie bez limitu AI: 1,67 → 1,58 rzutu na walkę (120 → 114), detonacje 1,36 → 1,29 (98 → 93), upcast pada za każdym razem (114 ze 114). Licznik ściany nie zmienia pickera bomby.
 
-Delta nie jest kopią wariantu B, bo Ice Wall w tej samej puli Mystica mocno osłabła. Build z bombą wypada lepiej na tle buildu ze ścianą.
+Delta nie jest kopią wariantu B. Ściana w puli Mystica jest nadal słaba, tylko mniej niż wtedy, gdy AI stawiało ją co turę. Build z bombą wypada lepiej na tle buildu ze ścianą, ale mniej niż w tamtym przebiegu.
 
 | Living Bomb | ogółem | Easy | Medium | Hard |
 | --- | --- | --- | --- | --- |
 | przed, 8+INT, 2 AP | +1,24 | +1,01 | +0,96 | +1,74 |
-| ten tekst, 10+INT, 2 AP | +0,36 | +0,78 | +0,66 | −0,36 |
+| ten sam tekst, AI bez limitu ściany | +0,36 | +0,78 | +0,66 | −0,36 |
+| ten tekst, Heavy 1/fight tylko dla AI | +0,59 | +0,97 | +0,84 | −0,06 |
 
-Ogółem +0,36 mieści się w oknie około −0,50 do +0,50. Easy i Medium zostają po stronie słabej. Hard przechodzi na minus.
+Ogółem +0,59 jest tuż za oknem około −0,50 do +0,50. Karta zostaje, bo tekst jest zablokowany. Easy i Medium zostają po stronie słabej. Hard jest przy zerze, po stronie mocnej o −0,06. W przebiegu bez limitu AI bomba wyglądała bliżej zera (+0,36), bo ściana w tej samej puli była jeszcze słabsza.
 
 ## Ice Wall
 
-Ściana była lekko mocna, delta −0,18. Po koszcie 2 AP i 3 many oraz po zdjęciu limitu raz na walkę jest słaba, delta +1,82. Ruch to +2,00.
+Ściana na bazie była lekko mocna, delta −0,18. Tamten rzut kosztował 0 AP, stawiał 5 pól i AI mogło go oddać raz na walkę. Ten tekst kosztuje 2 AP i 3 many i stawia 4 pola. Gdy AI mogło powtarzać rzut, delta poszła do +1,82. Z licznikiem tylko dla AI schodzi do +1,12. Ruch wobec bazy to +1,30. To nadal słaba ściana. Nie wraca do −0,18, bo koszt i krótsza linia zostają.
 
 | Ice Wall | ogółem | Easy | Medium | Hard |
 | --- | --- | --- | --- | --- |
 | przed, 0 AP, 2 many, 5 pól, raz na walkę | −0,18 | −0,18 | +0,93 | −1,29 |
-| ten tekst, 2 AP, 3 many, 4 pola, powtarzalna | +1,82 | +1,53 | +1,54 | +2,40 |
+| ten tekst, AI bez limitu | +1,82 | +1,53 | +1,54 | +2,40 |
+| ten tekst, Heavy 1/fight tylko dla AI | +1,12 | +0,43 | +0,89 | +2,05 |
 
-Ślad solo nie spada. Rośnie. Przed: 56 rzutów na 72 walki, czyli 0,78 na walkę. Po: 145 rzutów, czyli 2,01 na walkę. 143 z tych 145 to upcast dłuższej ściany. AI stawia ścianę na początku tury, gdy widzi co najmniej dwóch wrogów i jeszcze nie atakowało. Kiedyś licznik raz na walkę ucinał to po pierwszym rzucie, a rzut był za 0 AP. Teraz many starcza na dwa upcasty (4 + 4 z puli 10), więc mystic oddaje 2 AP na ścianę w dwóch turach zamiast atakować. To jest niespodzianka wobec oczekiwania, że droższy koszt zbije częstość.
+Ślad solo wraca do tempa bazy. Przed: 56 rzutów na 72 walki, czyli 0,78 na walkę. Bez limitu AI: 145 rzutów, czyli 2,01 na walkę, z czego 143 to upcast dłuższej ściany. Z licznikiem tylko dla AI: znowu 56 rzutów, czyli 0,78 na walkę, i wszystkie 56 to upcast dłuższej ściany. AI stawia ścianę na początku tury, gdy widzi co najmniej dwóch wrogów i jeszcze nie atakowało, a drugi raz w tej samej walce picker odmawia. Gracz w labie tego licznika nie ma. Częstość spadła, a delta została po stronie słabej, bo jeden rzut i tak zjada 2 AP oraz 3 many za krótszą ścianę niż darmowe 5 pól z bazy.
 
 ## Inne talenty, ruch ponad 0,30
 
 | Talent | przed | po | zmiana |
 | --- | --- | --- | --- |
-| `mystic-ice-wall` | −0,18 | +1,82 | +2,00 |
-| `mystic-living-bomb` | +1,24 | +0,36 | −0,88 |
-| `mystic-magic-shield` | −0,19 | −0,72 | −0,53 |
+| `mystic-ice-wall` | −0,18 | +1,12 | +1,30 |
+| `mystic-living-bomb` | +1,24 | +0,59 | −0,65 |
 | `brawler-grapple` | +1,48 | +1,13 | −0,35 |
-| `mystic-lightning-bolt` | −0,35 | −0,68 | −0,33 |
+| `mystic-magic-shield` | −0,19 | −0,52 | −0,33 |
 
-Grapple ma ten sam ruch co w poprzednim commicie. Karta się nie zmieniła. Riposte zostaje −2,40 → −2,30. Magic Shield i Lightning Bolt nie mają nowej karty. Ich delta schodzi w dół, bo ściana weszła do puli jako słaby talent. Build bez ściany wypada teraz lepiej na tle buildu ze ścianą.
+Grapple ma ten sam ruch co w poprzednim commicie. Karta się nie zmieniła. Riposte zostaje −2,40 → −2,30. Magic Shield nie ma nowej karty. Delta schodzi w dół, bo ściana w puli zostaje słaba, tylko mniej niż przy +1,82. Lightning Bolt wypada z tej listy: −0,35 → −0,48, ruch −0,13. W przebiegu bez limitu AI był na liście przy −0,68.
 
 ## Exhaustive, udział w paśmie
 
-Reszta party siedzi na drabince A. Komórka jest w paśmie, gdy średnia ran z jej czterech riftów mieści się w paśmie włącznie. Chmura jest trochę cięższa niż baza. Hard n=2 spada z 65,8% do 60,2% w paśmie, a średnia idzie z 6,84 do 7,35.
+Reszta party siedzi na drabince A. Komórka jest w paśmie, gdy średnia ran z jej czterech riftów mieści się w paśmie włącznie. Chmura jest bliżej bazy niż przy ścianie bez limitu AI. Hard n=2 dalej spada, z 65,8% do 60,7% w paśmie, a średnia idzie z 6,84 do 7,28. Przy ścianie bez limitu było 60,2% i 7,35.
 
 | Pas | n | w paśmie przed | po | średnia przed | po |
 | --- | --- | --- | --- | --- | --- |
-| Easy | 1 | 82,1% | 83,9% | 2,74 | 2,71 |
-| Easy | 2 | 90,8% | 88,8% | 2,32 | 2,54 |
-| Easy | 3 | 66,1% | 64,8% | 3,70 | 3,80 |
-| Easy | 4 | 65,7% | 63,3% | 3,65 | 3,76 |
-| Medium | 1 | 75,0% | 75,0% | 4,69 | 4,67 |
-| Medium | 2 | 84,7% | 84,7% | 3,61 | 3,71 |
-| Medium | 3 | 58,9% | 59,4% | 5,98 | 6,09 |
-| Medium | 4 | 59,6% | 56,7% | 5,91 | 6,07 |
-| Hard | 1 | 66,1% | 66,1% | 9,21 | 9,15 |
-| Hard | 2 | 65,8% | 60,2% | 6,84 | 7,35 |
-| Hard | 3 | 34,9% | 34,4% | 11,01 | 11,09 |
-| Hard | 4 | 47,1% | 46,5% | 10,20 | 10,47 |
+| Easy | 1 | 82,1% | 83,9% | 2,74 | 2,69 |
+| Easy | 2 | 90,8% | 89,8% | 2,32 | 2,49 |
+| Easy | 3 | 66,1% | 66,1% | 3,70 | 3,72 |
+| Easy | 4 | 65,7% | 64,1% | 3,65 | 3,72 |
+| Medium | 1 | 75,0% | 75,0% | 4,69 | 4,66 |
+| Medium | 2 | 84,7% | 83,7% | 3,61 | 3,70 |
+| Medium | 3 | 58,9% | 59,4% | 5,98 | 6,06 |
+| Medium | 4 | 59,6% | 56,9% | 5,91 | 5,99 |
+| Hard | 1 | 66,1% | 66,1% | 9,21 | 9,21 |
+| Hard | 2 | 65,8% | 60,7% | 6,84 | 7,28 |
+| Hard | 3 | 34,9% | 34,9% | 11,01 | 11,03 |
+| Hard | 4 | 47,1% | 46,7% | 10,20 | 10,36 |
 
 ## Party mieszane, średnia ran
 
-Średnia nieważona po n=1..4: Easy 5,40 → 5,62, Medium 6,53 → 6,90, Hard 10,20 → 10,72. Sufit Easy to 4, Medium to 6, Hard to 10. Środek każdego pasa jest wyżej niż w bazie. Ściana, którą AI stawia za 2 AP, dokłada ran party w chmurze mieszanej.
+Średnia nieważona po n=1..4: Easy 5,40 → 5,42, Medium 6,53 → 6,62, Hard 10,20 → 10,38. Sufit Easy to 4, Medium to 6, Hard to 10. Środek każdego pasa jest trochę wyżej niż w bazie i niżej niż przy ścianie bez limitu AI (tam było 5,62 / 6,90 / 10,72).
 
 | Pas | n | średnia przed | po |
 | --- | --- | --- | --- |
-| Easy | 1 | 5,50 | 5,51 |
-| Easy | 2 | 5,23 | 5,30 |
-| Easy | 3 | 5,59 | 5,91 |
-| Easy | 4 | 5,28 | 5,77 |
-| Medium | 1 | 6,05 | 6,08 |
-| Medium | 2 | 5,99 | 6,18 |
-| Medium | 3 | 7,25 | 7,77 |
-| Medium | 4 | 6,82 | 7,56 |
-| Hard | 1 | 9,83 | 9,85 |
-| Hard | 2 | 9,51 | 9,81 |
-| Hard | 3 | 10,99 | 11,70 |
-| Hard | 4 | 10,47 | 11,51 |
+| Easy | 1 | 5,50 | 5,47 |
+| Easy | 2 | 5,23 | 5,19 |
+| Easy | 3 | 5,59 | 5,66 |
+| Easy | 4 | 5,28 | 5,38 |
+| Medium | 1 | 6,05 | 6,04 |
+| Medium | 2 | 5,99 | 6,06 |
+| Medium | 3 | 7,25 | 7,37 |
+| Medium | 4 | 6,82 | 7,00 |
+| Hard | 1 | 9,83 | 9,80 |
+| Hard | 2 | 9,51 | 9,57 |
+| Hard | 3 | 10,99 | 11,25 |
+| Hard | 4 | 10,47 | 10,90 |
 
 ## Kotwica R1
 
-Party kotwicy to Fighter, Brawler, Assassin i Scout. Living Bomb i Ice Wall nie siedzą na tej drabince. Od n=2 siedzi Riposte, a ten limit się nie zmienił. Piętnaście komórek jest bit w bit z kotwicą po limicie Riposte. Żadna komórka, która była w paśmie, z niego nie wypada. Hard n=3 zostaje poza pasmem.
+Party kotwicy to Fighter, Brawler, Assassin i Scout. Living Bomb i Ice Wall nie siedzą na tej drabince. Od n=2 siedzi Riposte, a ten limit się nie zmienił. Piętnaście komórek jest bit w bit z kotwicą po limicie Riposte i z kotwicą po tekście ściany bez limitu AI. Żadna komórka, która była w paśmie, z niego nie wypada. Hard n=3 zostaje poza pasmem.
 
 | Pas | n | mediana przed | mediana po | średnia przed | średnia po | pasmo | werdykt |
 | --- | --- | --- | --- | --- | --- | --- | --- |

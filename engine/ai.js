@@ -1615,18 +1615,27 @@ export function chooseHeroAction(state, policy = "smart") {
     if (sum) return { type: "summon", summonKind: sum.summonKind };
   }
 
-  // Ice Wall: early barrier when 2+ foes. Repeatable if AP and mana remain.
-  // Upcast takes the longer wall when 4 mana is payable. Destroy-damage upcast stays a player choice.
+  // Ice Wall: early barrier when 2+ foes. Upcast takes the longer wall when 4 mana is payable.
+  // Heavy 1/fight tylko dla AI; gracz w labie może rzucać ponownie.
+  // iceWallUsed is set only after this picker’s cast resolves (fromAi). legalActions ignores it.
   if (
     (policy === "smart" || policy === "mixKits") &&
     actor.hasIceWall &&
+    !actor.iceWallUsed &&
     foes.length >= 2 &&
     (actor.attacksThisTurn | 0) === 0
   ) {
     const walls = legal.filter((a) => a.type === "iceWall");
     const wall =
       walls.find((a) => a.upcastMode === "spaces") || walls.find((a) => !a.upcast);
-    if (wall) return { type: "iceWall", upcast: !!wall.upcast, upcastMode: wall.upcastMode || null };
+    if (wall) {
+      return {
+        type: "iceWall",
+        upcast: !!wall.upcast,
+        upcastMode: wall.upcastMode || null,
+        fromAi: true,
+      };
+    }
   }
 
   // Combat feats before Spotter/Ask: Pin / Barrage need stress+AP on bow kit

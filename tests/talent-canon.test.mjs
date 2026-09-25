@@ -9,6 +9,8 @@ import { beginTurn, endTurn } from "../engine/turn.js";
 import { powerRoll } from "../engine/powerRoll.js";
 import { systemsBargainT1Damage, tryRiposte, placeIceWall, iceWallDestroySplash } from "../engine/feats.js";
 import { legalActions } from "../engine/actions.js";
+import { chooseHeroAction } from "../engine/ai.js";
+import { applyAction } from "../engine/encounter.js";
 import { paintToxicCloud } from "../engine/clouds.js";
 import { freshStatuses } from "../engine/status.js";
 import { createRng } from "../engine/rng.js";
@@ -198,6 +200,19 @@ test("Living Bomb burn uses DEX ≤ INT and death burst is 10+INT in range 3", (
   assert.equal(shut.st.burn, 2);
   assert.equal(shut.livingBomb.dmg, 10 + 1 + 2 * 1);
 
+  const listed = legalActions(
+    { actors: [caster, open], objects: [], hazards: [], bounds: { minX: 0, minY: 0, maxX: 11, maxY: 7 } },
+    Object.assign(caster, { abilityIds: ["mystic-living-bomb"], ap: 3, mana: 10, x: 0, y: 0 }),
+    { "mystic-living-bomb": ab }
+  ).filter((a) => a.abilityId === "mystic-living-bomb");
+  assert.equal(listed.length, 2);
+  assert.equal(listed[0].apCost, 2);
+  assert.equal(listed[0].manaCost, 2);
+  assert.equal(listed[0].upcast, undefined);
+  assert.equal(listed[1].label, "Living Bomb (Upcast)");
+  assert.equal(listed[1].manaCost, 3);
+  assert.equal(listed[1].upcast, true);
+
   const near = actor({ id: "near", side: "enemy", x: 5, y: 0, hp: 30, hpMax: 30, def: { Fire: 0 } });
   const far = actor({ id: "far", side: "enemy", x: 8, y: 0, hp: 30, hpMax: 30, def: { Fire: 0 } });
   const bombActors = [caster, shut, near, far];
@@ -293,6 +308,71 @@ test("Ice Wall costs 2 AP and 3 mana, places 4 segments, and can be cast again",
   const bystander = actor({ id: "by", side: "enemy", x: boom.segments[0].x, y: boom.segments[0].y + 1, hp: 20, hpMax: 20 });
   iceWallDestroySplash(boom.segments[0], [bystander]);
   assert.equal(bystander.hp, 16);
+});
+
+test("Ice Wall once-per-fight is AI-only; the lab button stays", () => {
+  const bounds = { minX: 0, minY: 0, maxX: 11, maxY: 7 };
+  const hero = actor({
+    id: "mystic",
+    name: "Mystic",
+    hasIceWall: true,
+    int: 1,
+    ap: 6,
+    apMax: 3,
+    mana: 10,
+    stress: 0,
+    x: 2,
+    y: 2,
+    attacksThisTurn: 0,
+    kitPickedThisTurn: true,
+    weaponOptions: [],
+  });
+  const foes = [
+    actor({ id: "w1", name: "Wolf A", side: "enemy", x: 10, y: 1, hp: 18, hpMax: 18 }),
+    actor({ id: "w2", name: "Wolf B", side: "enemy", x: 10, y: 4, hp: 18, hpMax: 18 }),
+  ];
+  const state = {
+    actors: [hero, ...foes],
+    objects: [],
+    hazards: [],
+    bounds,
+    queue: [hero.id],
+    queueIndex: 0,
+    abilityById: {},
+    log: [],
+    awaitingKitPick: false,
+    awaitingHeroPick: false,
+  };
+
+  const human = applyAction(state, { type: "iceWall" });
+  assert.equal(human.ok, true, human.reason);
+  assert.equal(hero.iceWallUsed, undefined);
+  assert.equal(state.objects.filter((o) => o.iceWall).length, 4);
+  const still = legalActions(state, hero, {}).filter((a) => a.type === "iceWall");
+  assert.ok(still.some((a) => !a.upcast));
+  const again = chooseHeroAction(state, "smart");
+  assert.equal(again.type, "iceWall");
+  assert.equal(again.fromAi, true);
+
+  hero.ap = 6;
+  hero.mana = 10;
+  hero.attacksThisTurn = 0;
+  const ai = applyAction(state, again);
+  assert.equal(ai.ok, true, ai.reason);
+  assert.equal(hero.iceWallUsed, true);
+  assert.ok(state.objects.filter((o) => o.iceWall).length > 4);
+  hero.ap = 6;
+  hero.mana = 10;
+  hero.attacksThisTurn = 0;
+  const refused = chooseHeroAction(state, "smart");
+  assert.notEqual(refused.type, "iceWall");
+  const buttons = legalActions(state, hero, {}).filter((a) => a.type === "iceWall");
+  assert.ok(buttons.some((a) => !a.upcast), "lab list still offers Ice Wall");
+  assert.ok(buttons.some((a) => a.upcastMode === "spaces"));
+  assert.ok(buttons.some((a) => a.upcastMode === "damage"));
+  const humanAgain = applyAction(state, { type: "iceWall" });
+  assert.equal(humanAgain.ok, true, humanAgain.reason);
+  assert.equal(hero.iceWallUsed, true);
 });
 
 test("Grapple damage scales by tier and the Restrain gate is +0/+1/+1", () => {
