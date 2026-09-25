@@ -1,7 +1,7 @@
 ﻿import { makeHero, makeMob } from "./actor.js";
 import { beginTurn, endTurn, refreshAp, spendAp as payAp, hasWeaponEquipped } from "./turn.js";
 import { weaponSwap, activeKitRef, activeKitIndex, normalizeKitParts } from "./kits.js";
-import { resolveStrike, tryDefendReaction, resolveCatchBreath, resolveSteelYourself, resolveCreateOpening, finishCreateOpeningPick, resolveShove, resolveAskQuestion, listRangedOaCandidates, lowestDefDmgTypeAmong, ELEMENTAL_BOLT_TYPES } from "./strike.js";
+import { resolveStrike, tryDefendReaction, resolveCatchBreath, resolveSteelYourself, resolveCreateOpening, finishCreateOpeningPick, resolveShove, resolveAskQuestion, listRangedOaCandidates, lowestDefDmgTypeAmong, ELEMENTAL_BOLT_TYPES, resolveWindGaleEcho } from "./strike.js";
 import { resolveMove } from "./move.js";
 import { legalActions, packHunterBonus } from "./actions.js";
 import { createRng } from "./rng.js";
@@ -416,6 +416,22 @@ function beginActorTurn(state, actor) {
   if (actor.frontlinerApGranted) {
     pushLog(state, actor.name + " Frontliner +1 AP");
     actor.frontlinerApGranted = false;
+  }
+  if (actor.windGaleEcho && !actor.stunnedSkipTurn) {
+    const echo = resolveWindGaleEcho(state, actor);
+    if (echo && echo.ok) {
+      const tgt = actorById(state, echo.targetId);
+      pushLog(
+        state,
+        actor.name +
+          " Wind Gale echo (free) → " +
+          ((tgt && tgt.name) || echo.targetId || "foe") +
+          " · raw " +
+          (echo.raw | 0)
+      );
+    } else if (echo && !echo.ok) {
+      pushLog(state, actor.name + " Wind Gale echo fizzles (" + (echo.reason || "?") + ")");
+    }
   }
   return actor;
 }
@@ -1037,7 +1053,9 @@ export function applyAction(state, action) {
       actor.name +
         " Spotter Mark → " +
         ((tgt && tgt.name) || action.targetId) +
-        " (−1 AP · −1 stress · allies BREAK 2 this round · Crit 1 next ranged)"
+        " (−1 AP · −1 stress · allies BREAK " +
+        (r.breakBonus | 0) +
+        " this round · Crit 1 next ranged)"
     );
     return { ok: true, result: r };
   }
@@ -1050,7 +1068,10 @@ export function applyAction(state, action) {
   }
 
   if (action.type === "magicShield") {
-    const r = applyMagicShield(state, actor, action.targetId || actor.id);
+    const r = applyMagicShield(state, actor, action.targetId || actor.id, {
+      upcast: !!action.upcast,
+      extraTargetId: action.extraTargetId || null,
+    });
     if (!r.ok) return r;
     const tgt = actorById(state, r.targetId);
     pushLog(
@@ -1491,6 +1512,8 @@ export function applyAction(state, action) {
       cleaveTargetId: action.cleaveTargetId || null,
       extraTargetIds: action.extraTargetIds || null,
       spendStressAdv: !!action.spendStressAdv,
+      spendStressMove: !!action.spendStressMove,
+      stressMoveWhen: action.stressMoveWhen || null,
       upcast: !!action.upcast,
       sourceAllyId: action.sourceAllyId || null,
     });

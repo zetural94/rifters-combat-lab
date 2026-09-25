@@ -246,7 +246,7 @@ export function iceWallDestroySplash(obj, actors) {
   return hit;
 }
 
-/** Spotter: Mark foe (1 at a time). Allies get BREAK 2 on next hit this round; scout Crit 1 on next ranged vs Mark. */
+/** Spotter: Mark foe (1 at a time). Allies get BREAK 2+INT on next hit this round; scout Crit 1 on next ranged vs Mark. */
 export function applySpotterMark(state, actor, targetId) {
   if (!actor || !actor.hasSpotter) return { ok: false, reason: "no-feat" };
   if ((actor.ap | 0) < 1) return { ok: false, reason: "no-ap" };
@@ -264,14 +264,16 @@ export function applySpotterMark(state, actor, targetId) {
   for (const a of state.actors || []) {
     if (a && a.spotterMarked) delete a.spotterMarked;
   }
+  const breakBonus = 2 + Math.max(0, actor.int | 0);
   target.spotterMarked = {
     byId: actor.id,
     round: state.round | 0,
     allyBreakLeft: {}, // attackerId → used this round
+    breakBonus,
   };
   actor.spotterMarkId = target.id;
   actor.spotterCritPending = true;
-  return { ok: true, targetId: target.id, range };
+  return { ok: true, targetId: target.id, range, breakBonus };
 }
 
 export function spotterRange(actor, state) {
@@ -288,7 +290,7 @@ export function spotterRange(actor, state) {
 
 /**
  * Consume Spotter bonuses for this attack.
- * Allies (not the marker): next attack vs Mark this round → BREAK 2 once each.
+ * Allies (not the marker): next attack vs Mark this round → BREAK 2+INT once each.
  * Marker: next ranged Strike vs Mark → Crit 1.
  * @returns {{ breakBonus: number, critBonus: number }}
  */
@@ -316,7 +318,7 @@ export function consumeSpotterAttackBonus(atk, tgt, opts = {}) {
   if (!isMarker && nowRound === markRound && !opts.asReaction) {
     const used = mark.allyBreakLeft || (mark.allyBreakLeft = {});
     if (!used[atk.id]) {
-      breakBonus = 2;
+      breakBonus = mark.breakBonus != null ? mark.breakBonus | 0 : 2;
       if (!opts.dryRun) used[atk.id] = true;
     }
   }
@@ -378,24 +380,49 @@ export function applyShadowDash(state, actor, dest) {
   return { ok: true, dest: { x: actor.x, y: actor.y } };
 }
 
-/** Magic Shield: 1 mana free 1/turn · SHIELD 3+INT · Range 5 ally or self. */
-export function applyMagicShield(state, actor, targetId) {
+/** Magic Shield amount: SHIELD 2+INT. UPCAST adds another INT (2+2×INT). */
+export function magicShieldAmount(actor, upcast = false) {
+  const INT = Math.max(0, (actor && actor.int) | 0);
+  return 2 + INT + (upcast ? INT : 0);
+}
+
+/** Magic Shield: 1 mana free 1/turn · SHIELD 2+INT · Range 5 ally or self.
+ *  opts.upcast (+1 mana): SHIELD +INT and an additional ally (opts.extraTargetId). */
+export function applyMagicShield(state, actor, targetId, opts = {}) {
   if (!actor || !actor.hasMagicShield) return { ok: false, reason: "no-feat" };
   if (actor.magicShieldUsedThisTurn) return { ok: false, reason: "used" };
-  if (!canPayMana(actor, 1)) return { ok: false, reason: "no-mana" };
+  const upcast = !!(opts && opts.upcast);
+  const manaNeed = upcast ? 2 : 1;
+  if (!canPayMana(actor, manaNeed)) return { ok: false, reason: "no-mana" };
   const target =
     !targetId || targetId === actor.id
       ? actor
       : (state.actors || []).find((a) => a && a.id === targetId);
   if (!target || target.side !== actor.side || target.dead) return { ok: false, reason: "bad-target" };
   if (target !== actor && !inRange(actor, target, 5)) return { ok: false, reason: "out-of-range" };
-  const pay = spendMana(actor, 1);
+  let extra = null;
+  if (upcast && opts.extraTargetId && opts.extraTargetId !== target.id) {
+    extra = (state.actors || []).find((a) => a && a.id === opts.extraTargetId);
+    if (!extra || extra.side !== actor.side || extra.dead) return { ok: false, reason: "bad-extra" };
+    if (extra !== actor && !inRange(actor, extra, 5)) return { ok: false, reason: "extra-oor" };
+  }
+  const pay = spendMana(actor, manaNeed);
   if (!pay.ok) return pay;
-  const amount = 3 + (actor.int | 0);
+  const amount = magicShieldAmount(actor, upcast);
   if (!target.st) target.st = {};
   target.st.shield = (target.st.shield | 0) + amount;
+  if (extra) {
+    if (!extra.st) extra.st = {};
+    extra.st.shield = (extra.st.shield | 0) + amount;
+  }
   actor.magicShieldUsedThisTurn = true;
-  return { ok: true, targetId: target.id, shield: amount };
+  return {
+    ok: true,
+    targetId: target.id,
+    extraTargetId: extra ? extra.id : null,
+    shield: amount,
+    upcast,
+  };
 }
 
 /** Blink max Chebyshev range (Rozwój): half SPEED; UPCAST → full SPEED. */
@@ -444,15 +471,15 @@ export function applyBlink(state, actor, dest, opts = {}) {
   return { ok: true, dest: { x: actor.x, y: actor.y }, shield, upcast };
 }
 
-/** Bless INT bonus (Rozwój): +INT; UPCAST adds +2×INT (total +3×INT). */
+/** Bless INT bonus: +INT. UPCAST replaces that with +2×INT. */
 export function blessBonus(actor, upcast = false) {
   const INT = Math.max(0, (actor && actor.int) | 0);
-  return upcast ? INT + INT * 2 : INT;
+  return upcast ? INT * 2 : INT;
 }
 
 /**
  * Bless (Rozwój COMPLETE): Free Action, 1/turn, 1 MANA (+1 upcast), Range 3.
- * REQUIRES target spend 1 Recovery → heal higher of 2d10 + YOUR INT (upcast +2×INT → total +3×INT).
+ * REQUIRES target spend 1 Recovery → heal higher of 2d10 + YOUR INT (upcast: +2×INT instead).
  * Also grants one reroll token until end of combat (together with the heal spend).
  * Without Recovery: not legal / cannot cast.
  */
@@ -651,15 +678,15 @@ export function tryHiddenBola(defender, attacker, incomingRaw, opts = {}) {
   return { ok: true, reduce, raw: next, knockdown: !!knockdown, pay };
 }
 
-/** Healing Water Recovery bonus (Rozwój): +INT; UPCAST adds +2×INT (total +3×INT). */
+/** Healing Water Recovery bonus: +INT. UPCAST replaces that with +2×INT. */
 export function healingWaterBonus(actor, upcast = false) {
   const INT = Math.max(0, (actor && actor.int) | 0);
-  return upcast ? INT + INT * 2 : INT;
+  return upcast ? INT * 2 : INT;
 }
 
 /**
  * Healing Water (Rozwój COMPLETE): Reaction, 1 AP + 1 MANA (+1 upcast), Range 4.
- * Ally: Cleanse 2+INT; REQUIRES spend 1 Recovery → heal higher of 2d10 + INT (upcast +2×INT → +3×INT);
+ * Ally: Cleanse 2+INT; REQUIRES spend 1 Recovery → heal higher of 2d10 + INT (upcast: +2×INT instead);
  * Adv 1 on next roll. Without Recovery: not legal.
  */
 export function applyHealingWater(state, actor, targetId, opts = {}) {

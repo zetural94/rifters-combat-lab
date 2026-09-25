@@ -2,28 +2,61 @@
   "kind": "ability",
   "id": "primalist-wind-gale",
   "name": "Wind Gale",
-  "source": "progressAxisDraft Primalist · smoke Air Push",
+  "source": "progressAxis Primalist",
   "costAp": 2,
   "costMana": 2,
+  "upcastMana": 3,
   "range": 4,
-  "aoe": { "range": 4 },
+  "aoe": { "shape": "gale" },
   "isAttack": true,
   "roll": { "stat": "INT", "mode": "power" },
   "dmgType": "Air",
   "tiers": {
-    "t1": { "dmg": 4, "aoeMode": "all", "dmgType": "Air" },
-    "t2": {
-      "dmg": 6,
+    "t1": {
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 5,
       "aoeMode": "all",
       "dmgType": "Air",
-      "extras": [{ "id": "push", "x": 2 }]
+      "extras": [
+        {
+          "id": "push",
+          "x": 2,
+          "xStat": "INT",
+          "gate": { "stat": "STR", "vs": "attacker", "vsStat": "INT", "nBonus": -1 }
+        }
+      ]
+    },
+    "t2": {
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 8,
+      "aoeMode": "all",
+      "dmgType": "Air",
+      "extras": [
+        {
+          "id": "push",
+          "x": 3,
+          "xStat": "INT",
+          "gate": { "stat": "STR", "vs": "attacker", "vsStat": "INT" }
+        }
+      ]
     },
     "t3": {
-      "dmg": 8,
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 10,
       "aoeMode": "all",
       "dmgType": "Air",
-      "extras": [{ "id": "push", "x": 3 }]
+      "extras": [
+        {
+          "id": "push",
+          "x": 4,
+          "xStat": "INT",
+          "gate": { "stat": "STR", "vs": "attacker", "vsStat": "INT", "nBonus": 1 }
+        }
+      ]
     }
   },
-  "notes": "Draft Air 4/6/8 + Push T2/T3 (direction skip — radial push). Slow gate on T2 unused for smoke."
+  "notes": "2 AP, 2 MANA, Range 4, direction 3×2. 5×INT Push 2+INT if STR≤INT−1 / 8×INT Push 3+INT if STR≤INT / 10×INT Push 4+INT if STR≤INT+1. UPCAST 3: repeat free at the start of your next turn."
 }

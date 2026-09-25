@@ -1008,7 +1008,7 @@
     }
 
     async function startLab() {
-    const V = "20260925ice";
+    const V = "20260925canon";
     const engine = await import("./engine/index.js?v=" + V);
     const preview = await import("./engine/abilityPreview.js?v=" + V);
     const r1 = await import("./mc/r1.js?v=" + V);
@@ -1051,6 +1051,7 @@
       gatePass,
       resolveMaxTargets,
       resolveAbilityTierDamage,
+      reachableCells,
       applyDamage,
       iceWallDestroySplash,
       critPassiveBonusDmg,
@@ -2451,6 +2452,14 @@
           }
         }
       }
+      if (pending && pending.type === "cleavePick") {
+        for (const id of pending.legalExtra || []) {
+          const t = actorById(state, id);
+          if (t) {
+            for (const k of footprintKeys(t)) legalCells.add(k);
+          }
+        }
+      }
       if (pending && pending.type === "pushPick" && pending.dirs) {
         for (const d of pending.dirs) {
           if (d.preview) legalCells.add(d.preview.x + "," + d.preview.y);
@@ -2738,9 +2747,22 @@
             (Number(effect.dmg) || 0) === 0;
           const hasOther = !!(effect.status || effect.extras || effect.text || effect.break);
           if (!(numericZero && hasOther)) {
-            dmgLabel = String(effect.dmg | 0);
-            if (effect.dmgBonus) dmgLabel += "+" + (effect.dmgBonus | 0);
-            if (effect.dmgStat) dmgLabel += "+" + String(effect.dmgStat).toUpperCase();
+            if (effect.dmgStat && actor) {
+              const mult = Math.max(1, (effect.dmgStatMult | 0) || 1);
+              const total =
+                (Number(effect.dmg) || 0) +
+                (effect.dmgBonus | 0) +
+                statVal(actor, effect.dmgStat) * mult;
+              dmgLabel = String(total);
+            } else {
+              dmgLabel = String(effect.dmg | 0);
+              if (effect.dmgBonus) dmgLabel += "+" + (effect.dmgBonus | 0);
+              if (effect.dmgStat) {
+                const mult =
+                  (effect.dmgStatMult | 0) > 1 ? (effect.dmgStatMult | 0) + "×" : "";
+                dmgLabel += "+" + mult + String(effect.dmgStat).toUpperCase();
+              }
+            }
           }
         }
         if (dmgLabel != null) bits.push(dmgLabel + (effect.dmgType ? " " + effect.dmgType : ""));
@@ -2858,6 +2880,9 @@
       if (ab.costAp != null) meta.push(ab.costAp + " AP");
       if (ab.costStress != null) meta.push(ab.costStress + " stress");
       if (ab.optionalStressAdv) meta.push("+" + (ab.optionalStressAdv | 0) + " stress: Adv 1");
+      if (ab.optionalStressMove) meta.push("+" + (ab.optionalStressMove | 0) + " stress: Move");
+      if (ab.upcastMana) meta.push("upcast +" + (ab.upcastMana | 0) + " mana");
+      if (ab.aoe && ab.aoe.shape === "gale") meta.push("3×2");
       if (ab.range != null) meta.push("R" + (ab.range | 0));
       if (ab.aoe && ab.aoe.range != null) meta.push("AoE R" + (ab.aoe.range | 0));
       if (ab.aoe && ab.aoe.maxTargets != null) {
@@ -3819,6 +3844,136 @@
         return;
       }
 
+      if (pending && pending.type === "stressMovePick") {
+        addGroup((pending.abName || "Barrage") + " · Move");
+        addUxNote(
+          "Spend " +
+            (pending.cost | 0) +
+            " stress to Move your Speed before or after the shots. The Move does not cost AP."
+        );
+        btn("Move before", {
+          primary: true,
+          onclick: () => {
+            const cur = currentActor(state);
+            const snap = strikeSnapFromPending({
+              type: "strike",
+              stressMoveResolved: true,
+              spendStressMove: true,
+              stressMoveWhen: "before",
+              targetId: pending.targetId || pending.primaryId,
+            });
+            pending = {
+              type: "barrageMove",
+              when: "before",
+              cells: cur ? barrageMoveCells(cur) : [],
+              strike: snap,
+            };
+            elHint.textContent = "Barrage — click a cell to Move, then the shots resolve.";
+            render();
+          },
+        });
+        btn("Move after", {
+          onclick: () => {
+            const snap = strikeSnapFromPending({
+              type: "strike",
+              stressMoveResolved: true,
+              spendStressMove: true,
+              stressMoveWhen: "after",
+              targetId: pending.targetId || pending.primaryId,
+            });
+            const tid = pending.targetId || pending.primaryId;
+            pending = snap;
+            beginStrike(tid);
+          },
+        });
+        btn("No Move", {
+          onclick: () => {
+            const snap = strikeSnapFromPending({
+              type: "strike",
+              stressMoveResolved: true,
+              spendStressMove: false,
+              stressMoveWhen: null,
+              targetId: pending.targetId || pending.primaryId,
+            });
+            const tid = pending.targetId || pending.primaryId;
+            pending = snap;
+            beginStrike(tid);
+          },
+        });
+        return;
+      }
+
+      if (pending && pending.type === "cleavePick") {
+        addGroup((pending.abName || "Flurry") + " · half damage");
+        addUxNote(
+          "Spend " + (pending.cost | 0) + " stress to hit one other Range 1 foe for half the damage."
+        );
+        const legal = pending.legalExtra || [];
+        for (const id of legal) {
+          const foe = actorById(state, id);
+          btn("Half · " + ((foe && foe.name) || id), {
+            primary: true,
+            onclick: () => {
+              const snap = strikeSnapFromPending({
+                type: "strike",
+                cleaveResolved: true,
+                cleaveTargetId: id,
+                targetId: pending.targetId || pending.primaryId,
+              });
+              const tid = pending.targetId || pending.primaryId;
+              pending = snap;
+              beginStrike(tid);
+            },
+          });
+        }
+        btn(legal.length ? "No extra target" : "No foe in Range 1", {
+          onclick: () => {
+            const snap = strikeSnapFromPending({
+              type: "strike",
+              cleaveResolved: true,
+              cleaveTargetId: null,
+              targetId: pending.targetId || pending.primaryId,
+            });
+            const tid = pending.targetId || pending.primaryId;
+            pending = snap;
+            beginStrike(tid);
+          },
+        });
+        return;
+      }
+
+      if (pending && pending.type === "barrageMove") {
+        addGroup("Barrage · Move");
+        btn(pending.when === "before" ? "Skip Move and shoot" : "Skip remaining Move", {
+          onclick: () => {
+            if (pending.when === "before" && pending.strike) {
+              const snap = pending.strike;
+              const tid = snap.targetId;
+              pending = snap;
+              beginStrike(tid);
+              return;
+            }
+            pending = null;
+            elHint.textContent = "Pick an action, then a cell / target.";
+            render();
+          },
+        });
+        return;
+      }
+
+      if (pending && pending.type === "magicShield" && pending.primaryId) {
+        addGroup("Magic Shield · additional target");
+        btn("No additional target", {
+          onclick: () => {
+            const primary = pending.primaryId;
+            const upcast = !!pending.upcast;
+            pending = null;
+            doAction({ type: "magicShield", targetId: primary, upcast });
+          },
+        });
+        return;
+      }
+
       if (pending && pending.type === "multiTarget") {
         const primary = actorById(state, pending.primaryId);
         const maxExtra = pending.maxExtra | 0;
@@ -3861,9 +4016,15 @@
                 dmgTypeOverride: pending.dmgTypeOverride,
                 spendStressAdv: !!pending.spendStressAdv,
                 stressAdvResolved: true,
+                spendStressMove: !!pending.spendStressMove,
+                stressMoveWhen: pending.stressMoveWhen || null,
+                stressMoveResolved: !!pending.stressMoveResolved,
                 rangedOaResolved: !!pending.rangedOaResolved,
                 extraTargetIds: extras,
                 multiTargetReady: true,
+                cleaveTargetId: pending.cleaveTargetId || null,
+                cleaveResolved: !!pending.cleaveResolved,
+                upcast: !!pending.upcast,
               };
               pending = snap;
               beginStrike(primaryId);
@@ -6366,6 +6527,9 @@
         supportAllyId: allyId,
         dmgTypeOverride: pending.dmgTypeOverride || null,
         spendStressAdv: !!pending.spendStressAdv,
+        spendStressMove: !!pending.spendStressMove,
+        stressMoveWhen: pending.stressMoveWhen || null,
+        cleaveTargetId: pending.cleaveTargetId || null,
         upcast: !!pending.upcast,
         skipRangedOa: true,
         extraTargetIds:
@@ -6382,12 +6546,62 @@
       }
       if (maybeOfferPush(r.result)) return;
       const now = currentActor(state);
+      if (now && now.barrageMoveAfter) {
+        now.barrageMoveAfter = false;
+        pending = { type: "barrageMove", when: "after", cells: barrageMoveCells(now) };
+        inspectId = now.id;
+        elHint.textContent = "Barrage — Move after the shots (0 AP). Click a cell or Skip.";
+        render();
+        return;
+      }
       if (now) inspectId = now.id;
       if (!now || now.side !== "hero" || state.over) afterHeroAction();
       else {
         elHint.textContent = "Pick an action, then a cell / target.";
         render();
       }
+    }
+
+    function barrageMoveCells(actor) {
+      const occ = new Set();
+      for (const a of state.actors || []) {
+        if (!a || a === actor || a.dead) continue;
+        if (a.side === "enemy" && (a.hp | 0) <= 0) continue;
+        for (const k of footprintKeys(a)) occ.add(k);
+      }
+      for (const o of state.objects || []) {
+        if (o) occ.add((o.x | 0) + "," + (o.y | 0));
+      }
+      const budget = Math.max(
+        0,
+        actor.moveBudget != null ? actor.moveBudget | 0 : actor.speed | 0
+      );
+      return reachableCells(actor, budget, occ, state.bounds, state.hazards || []);
+    }
+
+    function strikeSnapFromPending(extra) {
+      return Object.assign(
+        {
+          abilityId: pending.abilityId,
+          flurry: pending.flurry,
+          useAim: pending.useAim,
+          dmgTypeOverride: pending.dmgTypeOverride,
+          spendStressAdv: !!pending.spendStressAdv,
+          stressAdvResolved: !!pending.stressAdvResolved,
+          spendStressMove: !!pending.spendStressMove,
+          stressMoveWhen: pending.stressMoveWhen || null,
+          stressMoveResolved: !!pending.stressMoveResolved,
+          rangedOaResolved: !!pending.rangedOaResolved,
+          multiTargetReady: !!pending.multiTargetReady,
+          extraTargetIds: pending.extraTargetIds || null,
+          selected: pending.selected || [],
+          cleaveTargetId: pending.cleaveTargetId || null,
+          cleaveResolved: !!pending.cleaveResolved,
+          upcast: !!pending.upcast,
+          targetId: pending.targetId || pending.primaryId,
+        },
+        extra || {}
+      );
     }
 
     function beginStrike(targetId) {
@@ -6405,6 +6619,32 @@
         ab && ab.aoe && ab.aoe.maxTargets != null
           ? resolveMaxTargets(ab, cur)
           : 1;
+      if (
+        ab &&
+        (ab.optionalStressMove | 0) > 0 &&
+        !(pending && pending.stressMoveResolved) &&
+        cur
+      ) {
+        const baseNeed = ab.costStress != null ? ab.costStress | 0 : ab.stressCost | 0;
+        const optNeed = ab.optionalStressMove | 0;
+        if ((cur.stress | 0) >= baseNeed + optNeed) {
+          pending = Object.assign(strikeSnapFromPending(), {
+            type: "stressMovePick",
+            targetId,
+            primaryId: targetId,
+            cost: optNeed,
+            abName: ab.name || abilityId,
+          });
+          elHint.textContent =
+            (ab.name || "Ability") +
+            " — spend " +
+            optNeed +
+            " stress to Move before or after?";
+          render();
+          return;
+        }
+        pending.stressMoveResolved = true;
+      }
       // Self-AoE (Intimidating Shout): no target pick — roll sets radius.
       if (selfAoe && targetId == null) {
         if (!ab) {
@@ -6540,6 +6780,47 @@
           return;
         }
       }
+      // Lightning Bolt upcast: one extra foe within Range of the primary, half damage.
+      if (
+        upcast &&
+        ab &&
+        (ab.upcastExtraRange | 0) > 0 &&
+        !(pending && pending.multiTargetReady) &&
+        cur
+      ) {
+        const primary = actorById(state, targetId);
+        const extraR = ab.upcastExtraRange | 0;
+        const legal = (state.actors || [])
+          .filter(
+            (t) =>
+              t &&
+              primary &&
+              t.side !== cur.side &&
+              !t.dead &&
+              (t.hp | 0) > 0 &&
+              t.id !== targetId &&
+              inRange(primary, t, extraR)
+          )
+          .map((t) => t.id);
+        pending = Object.assign(strikeSnapFromPending(), {
+          type: "multiTarget",
+          targetId,
+          primaryId: targetId,
+          selected: [],
+          maxExtra: 1,
+          legalExtra: legal,
+          abName: (ab.name || abilityId) + " half",
+          halfSplash: true,
+          upcast: true,
+        });
+        elHint.textContent =
+          (ab.name || "Upcast") +
+          " — pick one foe within " +
+          extraR +
+          " of the primary for half damage (or Confirm to skip).";
+        render();
+        return;
+      }
       // Barrage / Flurry: player chooses up to maxTargets (canon: "you choose")
       if (maxTargets > 1 && !(pending && pending.multiTargetReady)) {
         const pickR = ab.range != null ? ab.range | 0 : 1;
@@ -6580,6 +6861,41 @@
         render();
         return;
       }
+      const halfCleave = (ab && ab.traits || []).find((t) => t && t.id === "halfCleave");
+      if (halfCleave && !(pending && pending.cleaveResolved) && cur) {
+        const cleaveCost = halfCleave.stressCost != null ? halfCleave.stressCost | 0 : 1;
+        const baseNeed = ab.costStress != null ? ab.costStress | 0 : ab.stressCost | 0;
+        const advNeed = pending && pending.spendStressAdv ? ab.optionalStressAdv | 0 : 0;
+        if ((cur.stress | 0) >= baseNeed + advNeed + cleaveCost) {
+          const legal = (state.actors || [])
+            .filter(
+              (t) =>
+                t &&
+                t.side !== cur.side &&
+                !t.dead &&
+                (t.hp | 0) > 0 &&
+                t.id !== targetId &&
+                inRange(cur, t, 1)
+            )
+            .map((t) => t.id);
+          pending = Object.assign(strikeSnapFromPending(), {
+            type: "cleavePick",
+            targetId,
+            primaryId: targetId,
+            legalExtra: legal,
+            cost: cleaveCost,
+            abName: ab.name || abilityId,
+          });
+          elHint.textContent =
+            (ab.name || "Flurry") +
+            " — spend " +
+            cleaveCost +
+            " stress to hit another Range 1 foe for half damage?";
+          render();
+          return;
+        }
+        pending.cleaveResolved = true;
+      }
       const extraTargetIds =
         (pending && pending.extraTargetIds) ||
         (pending && pending.selected) ||
@@ -6592,6 +6908,9 @@
         useAim,
         dmgTypeOverride,
         spendStressAdv,
+        spendStressMove: !!(pending && pending.spendStressMove),
+        stressMoveWhen: (pending && pending.stressMoveWhen) || null,
+        cleaveTargetId: (pending && pending.cleaveTargetId) || null,
         extraTargetIds: extraTargetIds && extraTargetIds.length ? extraTargetIds.slice() : null,
         upcast,
       };
@@ -6616,6 +6935,9 @@
         declaration: decl,
         dmgTypeOverride,
         spendStressAdv,
+        spendStressMove: !!base.spendStressMove,
+        stressMoveWhen: base.stressMoveWhen || null,
+        cleaveTargetId: base.cleaveTargetId || null,
         extraTargetIds: base.extraTargetIds,
         upcast,
       };
@@ -6692,6 +7014,31 @@
           inspectId = here.id;
           render();
         }
+        return;
+      }
+      if (pending.type === "barrageMove") {
+        const cell = (pending.cells || []).find((c) => c.x === x && c.y === y);
+        if (!cell) return;
+        const when = pending.when;
+        const strike = pending.strike;
+        const r = applyAction(state, { type: "move", dest: { x, y }, skipAp: true });
+        if (!r.ok) {
+          elHint.textContent = "Illegal: " + (r.reason || "?");
+          render();
+          return;
+        }
+        const resume = function () {
+          if (when === "before" && strike) {
+            pending = strike;
+            beginStrike(strike.targetId);
+            return;
+          }
+          pending = null;
+          elHint.textContent = "Pick an action, then a cell / target.";
+          render();
+        };
+        if (r.pendingOas && r.pendingOas.length && beginMoveOaQueue(r.pendingOas, resume)) return;
+        resume();
         return;
       }
       if (
@@ -6786,8 +7133,23 @@
         const t = pending.type;
         const upcast = !!pending.upcast;
         const tid = a.id;
+        if (t === "magicShield" && upcast && !pending.primaryId) {
+          const others = (pending.targets || []).filter((id) => id !== tid);
+          pending = {
+            type: "magicShield",
+            upcast: true,
+            primaryId: tid,
+            targets: others,
+          };
+          elHint.textContent =
+            "Magic Shield upcast — click an additional ally in Range 5, or skip.";
+          render();
+          return;
+        }
+        const extraTargetId = pending.primaryId ? tid : null;
+        const primaryId = pending.primaryId || tid;
         pending = null;
-        const act = { type: t, targetId: tid, upcast };
+        const act = { type: t, targetId: primaryId, extraTargetId, upcast };
         if (t === "bless") act.spendRecovery = true;
         doAction(act);
         return;
@@ -7117,6 +7479,42 @@
           dmgTypeOverride: pending.types[0],
         });
         commitHeroStrike(null);
+        return true;
+      }
+      if (t === "stressMovePick") {
+        const snap = strikeSnapFromPending({
+          type: "strike",
+          stressMoveResolved: true,
+          spendStressMove: false,
+          stressMoveWhen: null,
+          targetId: pending.targetId || pending.primaryId,
+        });
+        const tid = pending.targetId || pending.primaryId;
+        pending = snap;
+        beginStrike(tid);
+        return true;
+      }
+      if (t === "cleavePick") {
+        const snap = strikeSnapFromPending({
+          type: "strike",
+          cleaveResolved: true,
+          cleaveTargetId: null,
+          targetId: pending.targetId || pending.primaryId,
+        });
+        const tid = pending.targetId || pending.primaryId;
+        pending = snap;
+        beginStrike(tid);
+        return true;
+      }
+      if (t === "barrageMove") {
+        if (pending.when === "before" && pending.strike) {
+          const snap = pending.strike;
+          pending = snap;
+          beginStrike(snap.targetId);
+          return true;
+        }
+        pending = null;
+        render();
         return true;
       }
       if (t === "stressAdvPick") {
@@ -8518,6 +8916,10 @@
           if (!a || !patch) return { ok: false };
           if (patch.ap != null) a.ap = patch.ap | 0;
           if (patch.mana != null) a.mana = patch.mana | 0;
+          if (patch.int != null) a.int = patch.int | 0;
+          if (patch.str != null) a.str = patch.str | 0;
+          if (patch.dex != null) a.dex = patch.dex | 0;
+          if (patch.stress != null) a.stress = patch.stress | 0;
           if (patch.attacksThisTurn != null) a.attacksThisTurn = patch.attacksThisTurn | 0;
           render();
           return { ok: true, ap: a.ap | 0, mana: a.mana | 0 };
@@ -8551,6 +8953,11 @@
           a.y = y | 0;
           render();
           return { ok: true };
+        },
+        buttons() {
+          return Array.from(document.querySelectorAll("#actions button")).map((b) =>
+            b.textContent || ""
+          );
         },
         smashIce(objId) {
           const obj = (state.objects || []).find((o) => o && o.id === objId && o.iceWall);

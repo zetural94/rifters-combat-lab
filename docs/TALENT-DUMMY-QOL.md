@@ -25,7 +25,7 @@ Shield Bash is unchanged: `3 / 5 / 7` plus Taunt. It is not a WD talent.
 - **assassin-expose-weakness** — Dual Daggers 6/12/18 · Stiletto 2/10/14
 - **assassin-flurry-daggers** — Dual Daggers 4/7/18 · Stiletto 2/6/14
 - **brawler-flurry-blows** — Fighting Gloves 13/18/33 · Quarterstaff 15/20/33
-- **brawler-grapple** — Fighting Gloves 6/8/11 · Quarterstaff 7/9/11
+- **brawler-grapple** — Fighting Gloves 7/10/14 · Quarterstaff 8/11/14
 - **brawler-uppercut** — Fighting Gloves 6/8/11 · Quarterstaff 7/9/11
 - **fighter-forceful-push** — Heavy Sword 6/13/18 · Longsword + Shield 7/11/15
 - **fighter-heavy-swing** — Heavy Sword 7/12/26 · Longsword + Shield 8/10/20
@@ -40,7 +40,7 @@ Shield Bash is unchanged: `3 / 5 / 7` plus Taunt. It is not a WD talent.
 
 - **OK** `acolyte-bless` — fires Bless; also listed: Bless (Upcast)
 - **OK** `acolyte-enfeeble` — flat 0/0/0; fires kit 1 T1 raw 0
-- **OK** `acolyte-purge-wicked` — flat 6/10/14; fires kit 1 T1 raw 6
+- **OK** `acolyte-purge-wicked` — scales @1 INT 6/10/12; fires kit 1 T1 raw 6
 - **OK** `acolyte-summon-archer` — fires Summon · Archer
 - **OK** `acolyte-summon-mage` — fires Summon · Mage
 - **OK** `acolyte-summon-warrior` — fires Summon · Warrior
@@ -62,7 +62,7 @@ Shield Bash is unchanged: `3 / 5 / 7` plus Taunt. It is not a WD talent.
 
 - **OK** `brawler-flurry-blows` — fires kit 1 T1 raw 13; fires kit 2 T3 raw 33
 - **OK** `brawler-full-contact` — passive: fullContact
-- **OK** `brawler-grapple` — fires kit 1 T1 raw 6; fires kit 2 T3 raw 11
+- **OK** `brawler-grapple` — fires kit 1 T1 raw 7; fires kit 2 T3 raw 14
 - **OK** `brawler-guard` — fires Guard
 - **OK** `brawler-martial-artist` — passive: martialArtist, moveBudget, rushIgnoreLeft, speed; MOVE 2 safe arms after an attack, not on the opening list
 - **OK** `brawler-pugilist` — passive: def, pugilist, stability, stabilityBase
@@ -83,24 +83,24 @@ Shield Bash is unchanged: `3 / 5 / 7` plus Taunt. It is not a WD talent.
 ### Mystic
 
 - **OK** `mystic-blink` — fires Blink; also listed: Blink (Upcast)
-- **OK** `mystic-enhance-weapon` — fires Enhance Weapon
+- **OK** `mystic-enhance-weapon` — fires Enhance Weapon; also listed: Enhance Weapon (Upcast)
 - **OK** `mystic-game-knowledge` — passive: gameKnowledge; OOC stub (system rolls / XP) — no combat action
-- **OK** `mystic-ice-wall` — fires Ice Wall
-- **OK** `mystic-lightning-bolt` — flat 8/12/14; fires kit 1 T1 raw 8
+- **OK** `mystic-ice-wall` — fires Ice Wall; also listed: Ice Wall (Upcast +3 spaces), Ice Wall (Upcast +2 destroy)
+- **OK** `mystic-lightning-bolt` — scales @1 INT 8/12/14; fires kit 1 T1 raw 8
 - **OK** `mystic-living-bomb` — flat 0/0/0; fires kit 1 T1 raw 0
-- **OK** `mystic-magic-shield` — fires Magic Shield
+- **OK** `mystic-magic-shield` — fires Magic Shield; also listed: Magic Shield (Upcast)
 - **OK** `mystic-shadowplay` — flat 0/0/0; fires kit 1 T1 raw 0
 
 ### Primalist
 
 - **OK** `primalist-barkskin` — fires Barkskin; also listed: Barkskin (Upcast)
-- **OK** `primalist-entangle` — flat 4/8/10; fires kit 1 T1 raw 4
+- **OK** `primalist-entangle` — scales @1 INT 5/8/10; fires kit 1 T1 raw 5
 - **OK** `primalist-feral-invocation` — fires Feral Invocation
-- **OK** `primalist-frost-shock` — flat 5/8/10; fires kit 1 T1 raw 5
+- **OK** `primalist-frost-shock` — scales @1 INT 5/8/10; fires kit 1 T1 raw 5
 - **OK** `primalist-healing-water` — fires Healing Water; also listed: Healing Water (Upcast)
 - **OK** `primalist-primal-instinct` — passive: def, primalInstinct, stability, stabilityBase
 - **OK** `primalist-summon-elemental` — fires Summon · Elemental
-- **OK** `primalist-wind-gale` — flat 4/6/8; fires kit 1 T1 raw 4
+- **OK** `primalist-wind-gale` — scales @1 INT 5/8/10; fires kit 1 T1 raw 5
 
 ### Scout
 

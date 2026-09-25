@@ -544,7 +544,7 @@ export const FEAT_SMOKE_STUBS = {
   "scout-spotter": {
     xp: 150,
     classId: "scout",
-    label: "Spotter: 1AP+1stress Mark; allies BREAK 2; Crit 1 next ranged",
+    label: "Spotter: 1AP+1stress Mark; allies BREAK 2+INT; Crit 1 next ranged",
     apply(actor) {
       actor.hasSpotter = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["scout-spotter"]);
@@ -589,7 +589,7 @@ export const FEAT_SMOKE_STUBS = {
   "scout-pin-shot": {
     xp: 150,
     classId: "scout",
-    label: "Pin Shot (1 AP + 1 stress · WD · Slow 1 gated / Slow 2 / Knockdown)",
+    label: "Pin Shot (1 AP + 1 stress · WD · DEX≤DEX Slow 1 / Slow 2 / Knockdown)",
     apply(actor) {
       actor.pinShot = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["scout-pin-shot"]);
@@ -602,7 +602,7 @@ export const FEAT_SMOKE_STUBS = {
   "scout-barrage": {
     xp: 250,
     classId: "scout",
-    label: "Barrage (3AP+1stress · max 1+DEX · WD+DEX / +2DEX / +3DEX)",
+    label: "Barrage (3AP+1stress · max 1+DEX · WD+DEX / +2DEX / +3DEX · +1 stress Move)",
     apply(actor) {
       actor.barrage = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["scout-barrage"]);
@@ -615,7 +615,7 @@ export const FEAT_SMOKE_STUBS = {
   "mystic-lightning-bolt": {
     xp: 250,
     classId: "mystic",
-    label: "Lightning Bolt (2AP+1mana · 8/12/14 Lightning)",
+    label: "Lightning Bolt (2AP+1mana · 4×INT+4 / 6×INT+6 / 7×INT+7 · upcast half)",
     apply(actor) {
       actor.lightningBolt = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["mystic-lightning-bolt"]);
@@ -628,7 +628,7 @@ export const FEAT_SMOKE_STUBS = {
   "mystic-magic-shield": {
     xp: 150,
     classId: "mystic",
-    label: "Magic Shield: 1 mana free 1/turn SHIELD 3+INT",
+    label: "Magic Shield: 1 mana free 1/turn SHIELD 2+INT (upcast +INT and extra ally)",
     apply(actor) {
       actor.hasMagicShield = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["mystic-magic-shield"]);
@@ -637,7 +637,7 @@ export const FEAT_SMOKE_STUBS = {
   "acolyte-enfeeble": {
     xp: 150,
     classId: "acolyte",
-    label: "Enfeeble (1AP+1mana · Intimidate 3 AoE R4)",
+    label: "Enfeeble (1AP+1mana · Intimidate 2×INT · AoE 2 Range 4)",
     apply(actor) {
       actor.enfeeble = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["acolyte-enfeeble"]);
@@ -650,7 +650,7 @@ export const FEAT_SMOKE_STUBS = {
   "primalist-frost-shock": {
     xp: 150,
     classId: "primalist",
-    label: "Frost Shock (1AP+1mana · Water + Slow)",
+    label: "Frost Shock (1AP+1mana · 5/8/10×INT Water + Slow)",
     apply(actor) {
       actor.frostShock = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["primalist-frost-shock"]);
@@ -838,7 +838,7 @@ export const FEAT_SMOKE_STUBS = {
   "acolyte-purge-wicked": {
     xp: 250,
     classId: "acolyte",
-    label: "Purge the Wicked (2AP+1mana · Light + Intimidate)",
+    label: "Purge the Wicked (2AP+1mana · 6/10/12×INT Light)",
     apply(actor) {
       actor.purgeWicked = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["acolyte-purge-wicked"]);
@@ -864,7 +864,7 @@ export const FEAT_SMOKE_STUBS = {
   "primalist-entangle": {
     xp: 250,
     classId: "primalist",
-    label: "Entangle (2AP+2mana · Earth AoE + Slow/Restrain)",
+    label: "Entangle (2AP+2mana · 5/8/10×INT Earth + Slow/Restrain)",
     apply(actor) {
       actor.entangle = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["primalist-entangle"]);
@@ -877,7 +877,7 @@ export const FEAT_SMOKE_STUBS = {
   "primalist-wind-gale": {
     xp: 250,
     classId: "primalist",
-    label: "Wind Gale (2AP+2mana · Air AoE + Push)",
+    label: "Wind Gale (2AP+2mana · 3×2 · 5/8/10×INT Air + gated Push)",
     apply(actor) {
       actor.windGale = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["primalist-wind-gale"]);

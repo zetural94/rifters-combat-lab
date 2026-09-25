@@ -18,7 +18,7 @@
       "dmgStat": "DEX",
       "dmgFallback": 6,
       "aoeMode": "all",
-      "status": { "id": "bleed", "x": 2, "gate": { "stat": "STR", "vs": "attacker" } }
+      "status": { "id": "bleed", "x": 2, "gate": { "stat": "STR", "vsStat": "DEX" } }
     },
     "t3": {
       "dmg": "2WD",
@@ -27,9 +27,9 @@
       "status": {
         "id": "bleed",
         "x": 3,
-        "gate": { "stat": "STR", "vs": "attacker", "nBonus": 1 }
+        "gate": { "stat": "STR", "vsStat": "DEX", "nBonus": 1 }
       }
     }
   },
-  "notes": "Left: 2 AP + 1 stress, 2+DEX targets R4. WD / WD+DEX+Bleed2 / 2WD (2× this tier)+Bleed3. dmgType from active kit (Stiletto → Toxic)."
+  "notes": "2 AP + 1 stress, 2+DEX targets, Range 4. WD / WD+DEX and Bleed 2 if STR≤YOUR DEX / 2WD and Bleed 3 if STR≤YOUR DEX+1. dmgType from the active kit."
 }

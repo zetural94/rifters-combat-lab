@@ -7,7 +7,7 @@ import { resolveStrike, resolveAbilityTierDamage } from "../engine/strike.js";
 import { applyDamage } from "../engine/damage.js";
 import { beginTurn, endTurn } from "../engine/turn.js";
 import { powerRoll } from "../engine/powerRoll.js";
-import { systemsBargainT1Damage, tryRiposte, placeIceWall, iceWallDestroySplash } from "../engine/feats.js";
+import { systemsBargainT1Damage, tryRiposte, placeIceWall, iceWallDestroySplash, applyMagicShield, magicShieldAmount, blessBonus, healingWaterBonus, applySpotterMark, consumeSpotterAttackBonus } from "../engine/feats.js";
 import { legalActions } from "../engine/actions.js";
 import { chooseHeroAction } from "../engine/ai.js";
 import { applyAction } from "../engine/encounter.js";
@@ -542,13 +542,13 @@ test("Grapple lasts until the end of the grappler's next turn; T2 grants Adv bot
   assert.equal(hero.grappleHold, null);
 });
 
-test("Pin Shot gates only the T1 slow; Riposte is 5×DEX", () => {
+test("Pin Shot gates every tier on DEX; Riposte is 5×DEX", () => {
   const pin = card("scout-pin-shot");
   assert.equal(pin.costAp, 1);
   assert.equal(pin.costStress, 1);
   assert.ok(pin.tiers.t1.status.gate);
-  assert.equal(pin.tiers.t2.status.gate, undefined);
-  assert.equal(pin.tiers.t3.status.gate, undefined);
+  assert.ok(pin.tiers.t2.status.gate);
+  assert.ok(pin.tiers.t3.status.gate);
   const bow = card("scout-shortbow");
   const scout = actor({
     id: "scout",
@@ -573,7 +573,21 @@ test("Pin Shot gates only the T1 slow; Riposte is 5×DEX", () => {
     declared: { effect: pin.tiers.t2, tier: 2, roll: { tier: 2, d1: 6, d2: 6, total: 14 } },
   });
   assert.equal(r.ok, true, r.reason);
-  assert.equal(foe.st.slow, 2);
+  assert.equal(foe.st.slow | 0, 0);
+  const soft = actor({ id: "soft", side: "enemy", dex: 1, x: 4, y: 0, hp: 40, hpMax: 40 });
+  const r2 = resolveStrike({
+    attacker: scout,
+    target: soft,
+    ability: pin,
+    actors: [scout, soft],
+    abilityById,
+    state: { abilityById, actors: [scout, soft] },
+    rng: createRng(1),
+    skipAp: true,
+    declared: { effect: pin.tiers.t2, tier: 2, roll: { tier: 2, d1: 6, d2: 6, total: 14 } },
+  });
+  assert.equal(r2.ok, true, r2.reason);
+  assert.equal(soft.st.slow, 2);
 
   const once = actor({ dex: 1, hasRiposte: true, stress: 2 });
   const rip = tryRiposte(once, 8, { range: 1 });
@@ -606,4 +620,145 @@ test("Summon Archer cards stay on the printed 7×INT shot and tiered Bone Arrow"
   assert.equal(bone.tiers.t3.dmgStatMult, 10);
   assert.equal(bone.costStress, 1);
   assert.equal(bone.tiers.t1.status.gate.vsStat, "INT");
+});
+
+function declaredStrike(attacker, target, ability, effect, tier, extra) {
+  const actors = [attacker, target].concat((extra && extra.others) || []);
+  return resolveStrike(
+    Object.assign(
+      {
+        attacker,
+        target,
+        ability,
+        actors,
+        abilityById: { [ability.id]: ability },
+        state: { abilityById: { [ability.id]: ability }, actors },
+        rng: createRng(1),
+        skipAp: true,
+        declared: {
+          effect,
+          tier,
+          roll: { tier, d1: 8, d2: 8, total: 18 },
+        },
+      },
+      extra || {}
+    )
+  );
+}
+
+test("Lightning Bolt scales with INT and upcast splashes half", () => {
+  const bolt = card("mystic-lightning-bolt");
+  const hero = actor({ id: "my", int: 1, abilityIds: [bolt.id] });
+  assert.equal(resolveAbilityTierDamage(bolt, bolt.tiers.t1, hero), 8);
+  assert.equal(resolveAbilityTierDamage(bolt, bolt.tiers.t2, hero), 12);
+  assert.equal(resolveAbilityTierDamage(bolt, bolt.tiers.t3, hero), 14);
+  hero.int = 2;
+  assert.equal(resolveAbilityTierDamage(bolt, bolt.tiers.t1, hero), 12);
+  assert.equal(resolveAbilityTierDamage(bolt, bolt.tiers.t2, hero), 18);
+  assert.equal(resolveAbilityTierDamage(bolt, bolt.tiers.t3, hero), 21);
+  const primary = actor({ id: "p", side: "enemy", dex: 0, x: 4, y: 0, hp: 40, hpMax: 40, def: { Lightning: 0 } });
+  const splash = actor({ id: "s", side: "enemy", dex: 9, x: 5, y: 0, hp: 40, hpMax: 40, def: { Lightning: 0 } });
+  const far = actor({ id: "f", side: "enemy", x: 8, y: 0, hp: 40, hpMax: 40, def: { Lightning: 0 } });
+  const hit = declaredStrike(hero, primary, bolt, bolt.tiers.t1, 1, {
+    others: [splash, far],
+    upcast: true,
+    extraTargetIds: [splash.id, far.id],
+  });
+  assert.equal(hit.ok, true, hit.reason);
+  assert.equal(hit.raw, 12);
+  assert.equal(primary.st.shock, 2);
+  assert.equal(primary.hp, 28);
+  assert.equal(splash.hp, 34);
+  assert.equal(hit.halfSplash && hit.halfSplash.raw, 6);
+  assert.equal(far.hp, 40);
+  const gated = actor({ id: "g", side: "enemy", dex: 9, x: 4, y: 0, hp: 30, hpMax: 30 });
+  const miss = declaredStrike(hero, gated, bolt, bolt.tiers.t1, 1);
+  assert.equal(miss.ok, true);
+  assert.equal(gated.st.shock | 0, 0);
+});
+
+test("Enfeeble, Purge, Entangle, Frost and Wind Gale use the scaling canon", () => {
+  const enf = card("acolyte-enfeeble");
+  const hero = actor({ id: "ac", int: 2, x: 0, y: 0 });
+  const near = actor({ id: "n", side: "enemy", x: 1, y: 0, hp: 30, hpMax: 30, str: 0, dex: 0, int: 1 });
+  const mid = actor({ id: "m", side: "enemy", x: 4, y: 0, hp: 30, hpMax: 30 });
+  const r = declaredStrike(hero, near, enf, enf.tiers.t1, 1, { others: [mid] });
+  assert.equal(r.ok, true, r.reason);
+  assert.equal(near.st.intimidate, 4);
+  assert.equal(mid.st.intimidate | 0, 0);
+  const up = declaredStrike(hero, mid, enf, enf.tiers.t1, 1, { upcast: true, others: [near] });
+  assert.equal(up.ok, true, up.reason);
+  assert.ok((mid.st.intimidate | 0) >= 4);
+
+  const purge = card("acolyte-purge-wicked");
+  const foe = actor({ id: "pw", side: "enemy", x: 2, y: 0, hp: 80, hpMax: 80, def: { Light: 0 } });
+  assert.equal(resolveAbilityTierDamage(purge, purge.tiers.t3, hero), 24);
+  const pr = declaredStrike(hero, foe, purge, purge.tiers.t1, 1, { upcast: true });
+  assert.equal(pr.raw, 12);
+  assert.equal(foe.vulnerable && foe.vulnerable.Light, 4);
+
+  const ent = card("primalist-entangle");
+  const vine = actor({ id: "v", side: "enemy", x: 2, y: 0, hp: 40, hpMax: 40, str: 0, int: 2, def: { Earth: 0 } });
+  assert.equal(resolveAbilityTierDamage(ent, ent.tiers.t1, hero), 10);
+  const er = declaredStrike(hero, vine, ent, ent.tiers.t1, 1, { upcast: true });
+  assert.equal(er.raw, 10);
+  assert.equal(vine.st.slow, 2);
+  assert.equal(vine.st.poison, 4);
+
+  const frost = card("primalist-frost-shock");
+  const cold = actor({ id: "c", side: "enemy", x: 2, y: 0, hp: 40, hpMax: 40, dex: 0, def: { Water: 0 } });
+  assert.equal(resolveAbilityTierDamage(frost, frost.tiers.t2, hero), 16);
+  const fr = declaredStrike(hero, cold, frost, frost.tiers.t2, 2, { upcast: true });
+  assert.equal(fr.raw, 16);
+  assert.equal(cold.st.slow, 2);
+  assert.equal(cold.st.intimidate, 5);
+
+  const gale = card("primalist-wind-gale");
+  const pushed = actor({ id: "gp", side: "enemy", x: 2, y: 0, hp: 40, hpMax: 40, str: 0, stability: 0, def: { Air: 0 } });
+  const beside = actor({ id: "gb", side: "enemy", x: 2, y: 1, hp: 40, hpMax: 40, str: 9, stability: 0, def: { Air: 0 } });
+  const gr = declaredStrike(hero, pushed, gale, gale.tiers.t1, 1, {
+    others: [beside],
+    bounds: { minX: 0, maxX: 8, minY: 0, maxY: 6 },
+  });
+  assert.equal(gr.ok, true, gr.reason);
+  assert.equal(gr.raw, 10);
+  assert.ok((pushed.x | 0) > 2, "gated push should move STR 0");
+  assert.equal(beside.x, 2, "STR above the gate stays put");
+  assert.equal(beside.hp, 30);
+});
+
+test("Magic Shield is 2+INT and Bless upcast is 2×INT", () => {
+  const hero = actor({ id: "my", int: 2, hasMagicShield: true, mana: 10 });
+  const ally = actor({ id: "al", x: 1, y: 0, hp: 20, hpMax: 20 });
+  assert.equal(magicShieldAmount(hero, false), 4);
+  assert.equal(magicShieldAmount(hero, true), 6);
+  const base = applyMagicShield({ actors: [hero, ally] }, hero, ally.id);
+  assert.equal(base.ok, true);
+  assert.equal(base.shield, 4);
+  assert.equal(ally.st.shield, 4);
+  hero.magicShieldUsedThisTurn = false;
+  hero.mana = 10;
+  const up = applyMagicShield({ actors: [hero, ally] }, hero, hero.id, {
+    upcast: true,
+    extraTargetId: ally.id,
+  });
+  assert.equal(up.ok, true, up.reason);
+  assert.equal(up.shield, 6);
+  assert.equal(hero.st.shield, 6);
+  assert.equal(ally.st.shield, 10);
+  assert.equal(blessBonus(hero, false), 2);
+  assert.equal(blessBonus(hero, true), 4);
+  assert.equal(healingWaterBonus(hero, true), 4);
+});
+
+test("Spotter Break is 2+INT", () => {
+  const scout = actor({ id: "sc", int: 3, hasSpotter: true, ap: 3, stress: 3, abilityIds: ["scout-shortbow-strike"] });
+  const foe = actor({ id: "foe", side: "enemy", x: 4, y: 0, hp: 20, hpMax: 20 });
+  const state = { round: 1, actors: [scout, foe], abilityById: {} };
+  const mark = applySpotterMark(state, scout, foe.id);
+  assert.equal(mark.ok, true, mark.reason);
+  assert.equal(mark.breakBonus, 5);
+  const ally = actor({ id: "ally", x: 1, y: 1 });
+  const bonus = consumeSpotterAttackBonus(ally, foe, { round: 1, isAttack: true });
+  assert.equal(bonus.breakBonus, 5);
 });
