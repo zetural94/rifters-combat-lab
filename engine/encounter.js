@@ -391,7 +391,7 @@ function runSummonAfter(state, summoner) {
     const r = applyAction(state, action);
     if (!r || !r.ok) break;
   }
-  endTurn(pet);
+  endTurn(pet, { actors: state.actors });
   state.queue = savedQ;
   state.queueIndex = savedI;
 }
@@ -628,6 +628,7 @@ function continueAfterFinishedTurn(state, cur) {
         a.aimUsedThisRound = false;
         a.flurryUsedThisRound = false;
         a.stealthUsedThisRound = false;
+        a.riposteUsedThisRound = false;
         a.glaiveFreeOaUsed = false;
         a.roundUsed = {};
         a.actedThisRound = false;
@@ -689,7 +690,7 @@ export function advanceTurn(state) {
   // Human lab: the summon's Move + Action is a real turn, not an AI script.
   // MC leaves playSummons unset and still auto-resolves via runSummonAfter.
   if (cur && cur.summon && state.summonInterlude) {
-    endTurn(cur);
+    endTurn(cur, { actors: state.actors });
     const saved = state.summonInterlude;
     state.summonInterlude = null;
     state.queue = saved.queue;
@@ -699,7 +700,7 @@ export function advanceTurn(state) {
     return;
   }
 
-  if (cur) endTurn(cur);
+  if (cur) endTurn(cur, { actors: state.actors });
 
   // Summon acts after its summoner's turn (not a main queue slot).
   if (cur && cur.side === "hero" && !cur.summon) {

@@ -3,9 +3,9 @@ import assert from "node:assert/strict";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { resolveStrike } from "../engine/strike.js";
+import { resolveStrike, resolveAbilityTierDamage } from "../engine/strike.js";
 import { applyDamage } from "../engine/damage.js";
-import { beginTurn } from "../engine/turn.js";
+import { beginTurn, endTurn } from "../engine/turn.js";
 import { powerRoll } from "../engine/powerRoll.js";
 import { systemsBargainT1Damage, tryRiposte } from "../engine/feats.js";
 import { paintToxicCloud } from "../engine/clouds.js";
@@ -142,6 +142,9 @@ test("Toxic Cloud is 4×INT, persists, poisons on enter and start, and stacks", 
 
 test("Living Bomb burn uses DEX ≤ INT and death burst is 8+INT in range 3", () => {
   const ab = card("mystic-living-bomb");
+  assert.equal(ab.costAp, 1);
+  assert.equal(ab.costMana, 2);
+  assert.equal(ab.tiers.t1.status.gate.nBonus, -1);
   const caster = actor({ id: "mystic", int: 1, x: 0, y: 0 });
   const open = actor({
     id: "open",
@@ -207,7 +210,73 @@ test("Living Bomb burn uses DEX ≤ INT and death burst is 8+INT in range 3", ()
   assert.equal(caster.hp, 30);
 });
 
-test("Grapple restrain lasts until the grappler's next turn; T2 grants Adv both ways", () => {
+test("Grapple damage scales by tier and the Restrain gate is +0/+1/+1", () => {
+  const ab = card("brawler-grapple");
+  const gloves = card("brawler-fighting-gloves");
+  assert.equal(ab.tiers.t2.status.gate.nBonus, 1);
+  assert.equal(ab.tiers.t3.status.gate.nBonus, 1);
+  assert.equal(ab.tiers.t1.status.gate.nBonus, undefined);
+  const hero = actor({
+    id: "brawler",
+    str: 2,
+    abilityIds: ["brawler-fighting-gloves-strike"],
+    weaponOptions: ["fighting-gloves"],
+    activeKit: 0,
+  });
+  const ctx = { abilityById: { "brawler-fighting-gloves-strike": gloves } };
+  assert.equal(resolveAbilityTierDamage(ab, ab.tiers.t1, hero, ctx), 6 + 2);
+  assert.equal(resolveAbilityTierDamage(ab, ab.tiers.t2, hero, ctx), 8 + 4);
+  assert.equal(resolveAbilityTierDamage(ab, ab.tiers.t3, hero, ctx), 11 + 6);
+  const bare = actor({ id: "bare", str: 3, abilityIds: [], weaponOptions: [] });
+  assert.equal(resolveAbilityTierDamage(ab, ab.tiers.t1, bare, ctx), 7);
+  assert.equal(resolveAbilityTierDamage(ab, ab.tiers.t2, bare, ctx), 10);
+  assert.equal(resolveAbilityTierDamage(ab, ab.tiers.t3, bare, ctx), 14);
+
+  function strikeTier(tier, foeStr) {
+    const atk = actor({
+      id: "brawler",
+      str: 1,
+      x: 0,
+      y: 0,
+      abilityIds: ["brawler-grapple", "brawler-fighting-gloves-strike"],
+      weaponOptions: ["fighting-gloves"],
+      activeKit: 0,
+    });
+    const foe = actor({
+      id: "foe",
+      side: "enemy",
+      str: foeStr,
+      x: 1,
+      y: 0,
+      hp: 40,
+      hpMax: 40,
+    });
+    const key = "t" + tier;
+    const hit = resolveStrike({
+      attacker: atk,
+      target: foe,
+      ability: ab,
+      actors: [atk, foe],
+      abilityById: ctx.abilityById,
+      state: { abilityById: Object.assign({ "brawler-grapple": ab }, ctx.abilityById), actors: [atk, foe] },
+      rng: createRng(1),
+      skipAp: true,
+      declared: { effect: ab.tiers[key], tier, roll: { tier, d1: 6, d2: 6, total: 18 } },
+    });
+    assert.equal(hit.ok, true, hit.reason);
+    return foe;
+  }
+  assert.equal(!!strikeTier(1, 1).st.restrain, true);
+  assert.equal(!!strikeTier(1, 2).st.restrain, false);
+  assert.equal(!!strikeTier(2, 2).st.restrain, true);
+  assert.equal(!!strikeTier(2, 3).st.restrain, false);
+  assert.equal(!!strikeTier(3, 2).st.restrain, true);
+  assert.equal(!!strikeTier(3, 3).st.restrain, false);
+  const t2Miss = strikeTier(2, 3);
+  assert.equal(t2Miss.grappleLock.advVsTarget, true);
+});
+
+test("Grapple lasts until the end of the grappler's next turn; T2 grants Adv both ways", () => {
   const ab = card("brawler-grapple");
   const gloves = card("brawler-fighting-gloves");
   const hero = actor({
@@ -234,6 +303,7 @@ test("Grapple restrain lasts until the grappler's next turn; T2 grants Adv both 
     "brawler-fighting-gloves-strike": gloves,
   };
   const actors = [hero, foe, ally];
+  const turnState = { actors, hazards: [], clouds: [] };
   const r = resolveStrike({
     attacker: hero,
     target: foe,
@@ -246,11 +316,16 @@ test("Grapple restrain lasts until the grappler's next turn; T2 grants Adv both 
     declared: { effect: ab.tiers.t2, tier: 2, roll: { tier: 2, d1: 5, d2: 5, total: 14 } },
   });
   assert.equal(r.ok, true, r.reason);
+  assert.equal(r.raw, 8 + 4);
   assert.equal(!!foe.st.restrain, true);
   assert.equal(foe.grappleLock.advVsTarget, true);
   assert.equal(hero.grappleHold.advVsSelf, true);
 
-  beginTurn(foe, { actors, state: { actors, hazards: [], clouds: [] } });
+  endTurn(hero, { actors });
+  assert.equal(!!foe.st.restrain, true);
+  assert.equal(hero.grappleHold.releaseOnEnd, true);
+
+  beginTurn(foe, { actors, state: turnState });
   assert.equal(!!foe.st.restrain, true);
 
   const vsFoe = resolveStrike({
@@ -279,9 +354,27 @@ test("Grapple restrain lasts until the grappler's next turn; T2 grants Adv both 
   });
   assert.ok((vsHero.adv | 0) >= 1);
 
-  beginTurn(hero, { actors, state: { actors, hazards: [], clouds: [] } });
+  beginTurn(hero, { actors, state: turnState });
+  assert.equal(!!foe.st.restrain, true);
+  assert.ok(foe.grappleLock);
+
+  const duringNext = resolveStrike({
+    attacker: ally,
+    target: foe,
+    ability: gloves,
+    actors,
+    abilityById,
+    state: { abilityById, actors },
+    rng: createRng(4),
+    skipAp: true,
+    declared: { effect: gloves.tiers.t1, tier: 1, roll: { tier: 1, d1: 1, d2: 1, total: 3 } },
+  });
+  assert.ok((duringNext.adv | 0) >= 1);
+
+  endTurn(hero, { actors });
   assert.equal(!!foe.st.restrain, false);
   assert.equal(foe.grappleLock, null);
+  assert.equal(hero.grappleHold, null);
 });
 
 test("Pin Shot gates only the T1 slow; Riposte is 5×DEX", () => {
@@ -317,11 +410,18 @@ test("Pin Shot gates only the T1 slow; Riposte is 5×DEX", () => {
   assert.equal(r.ok, true, r.reason);
   assert.equal(foe.st.slow, 2);
 
-  const rip = tryRiposte(actor({ dex: 1, hasRiposte: true, stress: 2 }), 8, { range: 1 });
+  const once = actor({ dex: 1, hasRiposte: true, stress: 2 });
+  const rip = tryRiposte(once, 8, { range: 1 });
   assert.equal(rip.ok, true);
   assert.equal(rip.reduce, 5);
   assert.equal(rip.raw, 3);
   assert.equal(rip.oa, false);
+  assert.equal(once.stress, 1);
+  assert.equal(once.riposteUsedThisRound, true);
+  const again = tryRiposte(once, 8, { range: 1 });
+  assert.equal(again.ok, false);
+  assert.equal(again.reason, "used-this-round");
+  assert.equal(once.stress, 1);
   const rip0 = tryRiposte(actor({ dex: 1, hasRiposte: true, stress: 2 }), 4, { range: 1 });
   assert.equal(rip0.raw, 0);
   assert.equal(rip0.oa, true);

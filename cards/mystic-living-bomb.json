@@ -3,7 +3,7 @@
   "id": "mystic-living-bomb",
   "name": "Living Bomb",
   "source": "progressAxisDraft Mystic · mark+Burn",
-  "costAp": 2,
+  "costAp": 1,
   "costMana": 2,
   "upcastMana": 1,
   "range": 5,
@@ -27,5 +27,5 @@
       "extras": [{ "id": "livingBomb" }]
     }
   },
-  "notes": "2 AP 2 mana, Range 5. On death: 8+INT Fire in Range 3. Burn gate is DEX ≤ YOUR INT (T1 −1, T3 +1). UPCAST 1: on-death damage +2×INT."
+  "notes": "1 AP 2 mana, Range 5. On death: 8+INT Fire in Range 3. Burn gate is DEX ≤ YOUR INT (T1 −1, T3 +1). UPCAST 1: on-death damage +2×INT."
 }

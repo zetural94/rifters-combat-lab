@@ -30,6 +30,7 @@ export function listMitigationReactions(defender, attacker, ability, decl) {
     const reduce = 5 * Math.max(0, defender.dex | 0);
     let reason = null;
     if (!melee) reason = "melee RANGE 1 only";
+    else if (defender.riposteUsedThisRound) reason = "already used this round";
     else if ((defender.stress | 0) < 1) reason = "needs 1 stress";
     out.push({
       id: "riposte",

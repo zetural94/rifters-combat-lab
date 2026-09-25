@@ -772,7 +772,7 @@ export const FEAT_SMOKE_STUBS = {
   "brawler-grapple": {
     xp: 250,
     classId: "brawler",
-    label: "Grapple (2AP+1stress · WD + Restrain)",
+    label: "Grapple (2AP+1stress · WD+STR / 2×STR / 3×STR · Restrain until end of next turn)",
     apply(actor) {
       actor.grapple = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["brawler-grapple"]);
@@ -785,7 +785,7 @@ export const FEAT_SMOKE_STUBS = {
   "assassin-riposte": {
     xp: 300,
     classId: "assassin",
-    label: "Riposte: free reaction −5×DEX; 0 dmg → weapon OA",
+    label: "Riposte: free reaction 1/round −5×DEX; 0 dmg → weapon OA",
     apply(actor) {
       actor.hasRiposte = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["assassin-riposte"]);
@@ -803,7 +803,7 @@ export const FEAT_SMOKE_STUBS = {
   "mystic-living-bomb": {
     xp: 250,
     classId: "mystic",
-    label: "Living Bomb (2AP+2mana · Burn DEX≤INT · death 8+INT Fire R3)",
+    label: "Living Bomb (1AP+2mana · Burn DEX≤INT · death 8+INT Fire R3)",
     apply(actor) {
       actor.livingBombFeat = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["mystic-living-bomb"]);

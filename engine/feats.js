@@ -547,7 +547,7 @@ export function applyEnhanceWeapon(actor, opts = {}) {
 }
 
 /**
- * Riposte: Reaction, free action, 1 stress · reduce DMG by 5×DEX.
+ * Riposte: Reaction, free action, 1 stress, once per round · reduce DMG by 5×DEX.
  * Only vs RANGE 1 (melee) attacks. If you take no DMG → standard weapon OA (adjacent).
  */
 export function tryRiposte(defender, incomingRaw, opts = {}) {
@@ -556,8 +556,10 @@ export function tryRiposte(defender, incomingRaw, opts = {}) {
   if (opts.ranged || (opts.range != null && (opts.range | 0) > 1)) {
     return { ok: false, reason: "melee-only" };
   }
+  if (defender.riposteUsedThisRound) return { ok: false, reason: "used-this-round" };
   if ((defender.stress | 0) < 1) return { ok: false, reason: "no-stress" };
-  // Free action reaction: 0 AP, only 1 stress (Rozwój).
+  // Free action reaction: 0 AP, only 1 stress (Rozwój). Once per round.
+  defender.riposteUsedThisRound = true;
   defender.stress = (defender.stress | 0) - 1;
   const reduce = 5 * Math.max(0, defender.dex | 0);
   const next = Math.max(0, (incomingRaw | 0) - reduce);

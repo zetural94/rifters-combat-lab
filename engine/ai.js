@@ -1513,7 +1513,7 @@ function pickToxicApproach(state, actor, legal, foes) {
 
 /** Living Bomb: mark the foe most likely to die beside another body. */
 function pickLivingBombAction(state, actor, legal, foes) {
-  if (!actor.livingBombFeat || (actor.ap | 0) < 2 || !canPayMana(actor, 2)) return null;
+  if (!actor.livingBombFeat || (actor.ap | 0) < 1 || !canPayMana(actor, 2)) return null;
   const bomb = legal.find(
     (a) => a.type === "strike" && /living-bomb/i.test(a.abilityId || "") && a.targets && a.targets.length
   );
@@ -2154,7 +2154,7 @@ export function chooseHeroAction(state, policy = "smart") {
       );
       const combatArmed =
         (actor.lightningBolt && canPayMana(actor, 1) && (actor.ap | 0) >= 2) ||
-        (actor.livingBombFeat && canPayMana(actor, 2) && (actor.ap | 0) >= 2);
+        (actor.livingBombFeat && canPayMana(actor, 2) && (actor.ap | 0) >= 1);
       if (bloodied || !combatArmed) {
         return { type: "magicShield", targetId: (bloodied && bloodied.id) || actor.id };
       }
