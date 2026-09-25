@@ -2,9 +2,18 @@
   "kind": "ability",
   "id": "primalist-entangle",
   "name": "Entangle",
-  "source": "progressAxisDraft Primalist · smoke Earth control",
+  "source": "progressAxis Primalist",
   "costAp": 2,
   "costMana": 2,
+  "upcastMana": 1,
+  "upcastExtras": [
+    {
+      "id": "poison",
+      "x": 2,
+      "xStat": "INT",
+      "gate": { "stat": "INT", "vs": "attacker" }
+    }
+  ],
   "range": 5,
   "aoe": { "range": 2 },
   "isAttack": true,
@@ -12,23 +21,29 @@
   "dmgType": "Earth",
   "tiers": {
     "t1": {
-      "dmg": 4,
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 5,
       "aoeMode": "all",
       "dmgType": "Earth",
-      "status": { "id": "slow", "x": 1, "gate": { "stat": "STR", "vs": "attacker", "nBonus": -1 } }
+      "status": { "id": "slow", "x": 2, "gate": { "stat": "STR", "vs": "attacker", "vsStat": "INT", "nBonus": -1 } }
     },
     "t2": {
-      "dmg": 8,
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 8,
       "aoeMode": "all",
       "dmgType": "Earth",
-      "status": { "id": "restrain", "gate": { "stat": "STR", "vs": "attacker" } }
+      "status": { "id": "restrain", "gate": { "stat": "STR", "vs": "attacker", "vsStat": "INT" } }
     },
     "t3": {
-      "dmg": 10,
+      "dmg": 0,
+      "dmgStat": "INT",
+      "dmgStatMult": 10,
       "aoeMode": "all",
       "dmgType": "Earth",
-      "status": { "id": "restrain", "gate": { "stat": "STR", "vs": "attacker", "nBonus": 1 } }
+      "status": { "id": "restrain", "gate": { "stat": "STR", "vs": "attacker", "vsStat": "INT", "nBonus": 1 } }
     }
   },
-  "notes": "Draft Earth 4/8/10 + Slow/Restrain vs STR≤INT."
+  "notes": "2 AP, 2 MANA, Range 5, AoE 2. 5×INT Slow 2 if STR≤INT−1 / 8×INT Restrain STR≤INT / 10×INT Restrain STR≤INT+1. UPCAST 1: INT≤YOUR INT Poison 2+INT."
 }

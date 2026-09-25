@@ -294,7 +294,13 @@ for (const id of Object.keys(FEAT_SMOKE_STUBS).sort()) {
         row.status = "ISSUE";
         row.notes.push("card prints WD but useWeapon is not set");
       }
-      row.notes.push("flat " + nums.filter((n) => n != null).join("/"));
+      const scales =
+        card.tiers &&
+        ["t1", "t2", "t3"].some((k) => card.tiers[k] && card.tiers[k].dmgStat);
+      row.notes.push(
+        (scales ? "scales @" + ((hero.int | 0) || 0) + " INT " : "flat ") +
+          nums.filter((n) => n != null).join("/")
+      );
     }
 
     if (card) {

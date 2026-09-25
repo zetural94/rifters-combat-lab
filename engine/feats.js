@@ -55,16 +55,32 @@ export function activateSystemsBargain(actor, opts = {}) {
 }
 
 /**
- * Ice Wall smoke: 5 segments, HP = 3+INT, adjacent difficult.
- * Places a line between caster and preferred foe (or horizontal in front).
+ * Ice Wall: 3 MANA, 2 AP, Range 5.
+ * Create a 4-space wall (line; the lab does not draw a custom shape).
+ * Adjacent = Difficult Terrain. Each segment HP = 3 + INT.
+ * Destroyed segment: 2 unpreventable to adjacent.
+ * UPCAST 1 (+1 mana): +3 spaces OR +2 destroy damage (opts.upcastMode "spaces" | "damage").
+ * Repeatable for a human click. Heavy 1/fight tylko dla AI; gracz w labie może rzucać ponownie.
+ * chooseHeroAction passes fromAi, and only that path sets iceWallUsed. legalActions never checks it.
  */
+export const ICE_WALL_AP = 2;
+export const ICE_WALL_MANA = 3;
+export const ICE_WALL_SEGMENTS = 4;
+export const ICE_WALL_NOTE =
+  "Ice Wall: 3 MANA, 2 AP, Range 5. Create a 4-space wall (any shape). Adjacent = Difficult Terrain. Each segment HP = 3 + INT. Destroyed segment: 2 unpreventable to adjacent. UPCAST 1: +3 spaces or +2 destroy damage.";
+
+export function iceWallUpcastMode(opts = {}) {
+  const raw = opts.upcastMode || opts.upcast;
+  if (raw === "spaces" || raw === "damage") return raw;
+  return null;
+}
+
 export function placeIceWall(state, actor, opts = {}) {
   if (!actor || !actor.hasIceWall) return { ok: false, reason: "no-feat" };
-  if (actor.iceWallUsed) return { ok: false, reason: "already" };
-  if (!opts.skipMana) {
-    const pay = spendMana(actor, 2);
-    if (!pay.ok) return { ok: false, reason: pay.reason || "no-mana" };
-  }
+  const mode = iceWallUpcastMode(opts);
+  const manaNeed = ICE_WALL_MANA + (mode ? 1 : 0);
+  const segments = ICE_WALL_SEGMENTS + (mode === "spaces" ? 3 : 0);
+  const destroyDmg = 2 + (mode === "damage" ? 2 : 0);
   const foes = (state.actors || []).filter(
     (a) => a && a.side === "enemy" && !a.dead && (a.hp | 0) > 0
   );
@@ -72,16 +88,30 @@ export function placeIceWall(state, actor, opts = {}) {
     opts.preferred ||
     foes.slice().sort((a, b) => chebyshev(actor, a) - chebyshev(actor, b))[0] ||
     null;
-  const cells = pickIceWallCells(actor, preferred, state, 5);
+  const cells = pickIceWallCells(actor, preferred, state, segments);
   if (!cells.length) return { ok: false, reason: "no-space" };
 
+  if (!opts.skipAp && (actor.ap | 0) < ICE_WALL_AP) return { ok: false, reason: "no-ap" };
+  if (!opts.skipMana && !canPayMana(actor, manaNeed)) return { ok: false, reason: "no-mana" };
+  if (!opts.skipAp && !spendAp(actor, ICE_WALL_AP)) return { ok: false, reason: "no-ap" };
+  let pay = { ok: true, mana: 0, stress: 0 };
+  if (!opts.skipMana) {
+    pay = spendMana(actor, manaNeed);
+    if (!pay.ok) {
+      if (!opts.skipAp) actor.ap = (actor.ap | 0) + ICE_WALL_AP;
+      return { ok: false, reason: pay.reason || "no-mana" };
+    }
+  }
+
   const segHp = Math.max(1, 3 + (actor.int | 0));
+  const castN = (actor.iceWallCasts | 0) + 1;
+  actor.iceWallCasts = castN;
   state.objects = state.objects || [];
   const placed = [];
   for (let i = 0; i < cells.length; i++) {
     const c = cells[i];
     const obj = {
-      id: "ice-" + actor.id + "-" + i,
+      id: "ice-" + actor.id + "-" + castN + "-" + i,
       x: c.x,
       y: c.y,
       material: "ice",
@@ -89,7 +119,7 @@ export function placeIceWall(state, actor, opts = {}) {
       hpMax: segHp,
       label: "Ice Wall",
       iceWall: true,
-      destroyDmg: 2,
+      destroyDmg,
       destroyed: false,
     };
     state.objects.push(obj);
@@ -116,11 +146,22 @@ export function placeIceWall(state, actor, opts = {}) {
     label: "Ice Wall adjacent",
   });
 
-  actor.iceWallUsed = true;
-  return { ok: true, segments: placed, segHp };
+  // AI / Monte Carlo only. A lab click does not pass fromAi, so the button stays up.
+  if (opts.fromAi) actor.iceWallUsed = true;
+  noteTalent(state, {
+    kind: "cast",
+    abilityId: "mystic-ice-wall",
+    actorId: actor.id,
+    side: actor.side,
+    upcast: !!mode,
+    upcastMode: mode,
+    segments: placed.length,
+    fromAi: !!opts.fromAi,
+  });
+  return { ok: true, segments: placed, segHp, destroyDmg, upcastMode: mode, manaNeed };
 }
 
-export function pickIceWallCells(actor, preferred, state, n = 5) {
+export function pickIceWallCells(actor, preferred, state, n = 4) {
   const bounds = state.bounds || { minX: 0, minY: 0, maxX: 11, maxY: 7 };
   const blocked = new Set();
   for (const a of state.actors || []) {
@@ -148,29 +189,44 @@ export function pickIceWallCells(actor, preferred, state, n = 5) {
   }
 
   const horizontal = Math.abs(tx - ax) >= Math.abs(ty - ay);
+  const want = Math.max(1, n | 0);
+
+  function fullLine(ox, oy) {
+    if (chebyshev({ x: ax, y: ay }, { x: ox, y: oy }) > 5) return null;
+    const start = -Math.floor((want - 1) / 2);
+    const cells = [];
+    for (let i = 0; i < want; i++) {
+      const off = start + i;
+      const x = horizontal ? ox + off : ox;
+      const y = horizontal ? oy : oy + off;
+      if (x < bounds.minX || x > bounds.maxX || y < bounds.minY || y > bounds.maxY) return null;
+      if (x === ax && y === ay) return null;
+      if (blocked.has(x + "," + y)) return null;
+      cells.push({ x, y });
+    }
+    return cells;
+  }
+
+  const shifts = [0, -1, 1, -2, 2, -3, 3, -4, 4];
+  for (const perp of shifts) {
+    for (const along of shifts) {
+      const ox = horizontal ? mx + along : mx + perp;
+      const oy = horizontal ? my + perp : my + along;
+      const line = fullLine(ox, oy);
+      if (line) return line;
+    }
+  }
+
+  // Cramped board: take the longest partial line that still fits.
   const cells = [];
-  const half = Math.floor(n / 2);
-  for (let i = -half; i <= half && cells.length < n; i++) {
+  const half = Math.floor(want / 2);
+  for (let i = -half; i <= half && cells.length < want; i++) {
     const x = horizontal ? mx + i : mx;
     const y = horizontal ? my : my + i;
     if (x < bounds.minX || x > bounds.maxX || y < bounds.minY || y > bounds.maxY) continue;
     const key = x + "," + y;
-    if (blocked.has(key)) continue;
-    if (x === ax && y === ay) continue;
+    if (blocked.has(key) || (x === ax && y === ay)) continue;
     cells.push({ x, y });
-    blocked.add(key);
-  }
-  // Fill remaining along axis if short
-  let guard = 0;
-  while (cells.length < n && guard++ < 12) {
-    const tip = cells[cells.length - 1] || { x: mx, y: my };
-    const nx = horizontal ? tip.x + 1 : tip.x;
-    const ny = horizontal ? tip.y : tip.y + 1;
-    if (nx < bounds.minX || nx > bounds.maxX || ny < bounds.minY || ny > bounds.maxY) break;
-    const key = nx + "," + ny;
-    if (blocked.has(key)) break;
-    cells.push({ x: nx, y: ny });
-    blocked.add(key);
   }
   return cells;
 }
@@ -190,7 +246,7 @@ export function iceWallDestroySplash(obj, actors) {
   return hit;
 }
 
-/** Spotter: Mark foe (1 at a time). Allies get BREAK 2 on next hit this round; scout Crit 1 on next ranged vs Mark. */
+/** Spotter: Mark foe (1 at a time). Allies get BREAK 2+INT on next hit this round; scout Crit 1 on next ranged vs Mark. */
 export function applySpotterMark(state, actor, targetId) {
   if (!actor || !actor.hasSpotter) return { ok: false, reason: "no-feat" };
   if ((actor.ap | 0) < 1) return { ok: false, reason: "no-ap" };
@@ -208,14 +264,16 @@ export function applySpotterMark(state, actor, targetId) {
   for (const a of state.actors || []) {
     if (a && a.spotterMarked) delete a.spotterMarked;
   }
+  const breakBonus = 2 + Math.max(0, actor.int | 0);
   target.spotterMarked = {
     byId: actor.id,
     round: state.round | 0,
     allyBreakLeft: {}, // attackerId → used this round
+    breakBonus,
   };
   actor.spotterMarkId = target.id;
   actor.spotterCritPending = true;
-  return { ok: true, targetId: target.id, range };
+  return { ok: true, targetId: target.id, range, breakBonus };
 }
 
 export function spotterRange(actor, state) {
@@ -232,7 +290,7 @@ export function spotterRange(actor, state) {
 
 /**
  * Consume Spotter bonuses for this attack.
- * Allies (not the marker): next attack vs Mark this round → BREAK 2 once each.
+ * Allies (not the marker): next attack vs Mark this round → BREAK 2+INT once each.
  * Marker: next ranged Strike vs Mark → Crit 1.
  * @returns {{ breakBonus: number, critBonus: number }}
  */
@@ -260,7 +318,7 @@ export function consumeSpotterAttackBonus(atk, tgt, opts = {}) {
   if (!isMarker && nowRound === markRound && !opts.asReaction) {
     const used = mark.allyBreakLeft || (mark.allyBreakLeft = {});
     if (!used[atk.id]) {
-      breakBonus = 2;
+      breakBonus = mark.breakBonus != null ? mark.breakBonus | 0 : 2;
       if (!opts.dryRun) used[atk.id] = true;
     }
   }
@@ -322,24 +380,49 @@ export function applyShadowDash(state, actor, dest) {
   return { ok: true, dest: { x: actor.x, y: actor.y } };
 }
 
-/** Magic Shield: 1 mana free 1/turn · SHIELD 3+INT · Range 5 ally or self. */
-export function applyMagicShield(state, actor, targetId) {
+/** Magic Shield amount: SHIELD 2+INT. UPCAST adds another INT (2+2×INT). */
+export function magicShieldAmount(actor, upcast = false) {
+  const INT = Math.max(0, (actor && actor.int) | 0);
+  return 2 + INT + (upcast ? INT : 0);
+}
+
+/** Magic Shield: 1 mana free 1/turn · SHIELD 2+INT · Range 5 ally or self.
+ *  opts.upcast (+1 mana): SHIELD +INT and an additional ally (opts.extraTargetId). */
+export function applyMagicShield(state, actor, targetId, opts = {}) {
   if (!actor || !actor.hasMagicShield) return { ok: false, reason: "no-feat" };
   if (actor.magicShieldUsedThisTurn) return { ok: false, reason: "used" };
-  if (!canPayMana(actor, 1)) return { ok: false, reason: "no-mana" };
+  const upcast = !!(opts && opts.upcast);
+  const manaNeed = upcast ? 2 : 1;
+  if (!canPayMana(actor, manaNeed)) return { ok: false, reason: "no-mana" };
   const target =
     !targetId || targetId === actor.id
       ? actor
       : (state.actors || []).find((a) => a && a.id === targetId);
   if (!target || target.side !== actor.side || target.dead) return { ok: false, reason: "bad-target" };
   if (target !== actor && !inRange(actor, target, 5)) return { ok: false, reason: "out-of-range" };
-  const pay = spendMana(actor, 1);
+  let extra = null;
+  if (upcast && opts.extraTargetId && opts.extraTargetId !== target.id) {
+    extra = (state.actors || []).find((a) => a && a.id === opts.extraTargetId);
+    if (!extra || extra.side !== actor.side || extra.dead) return { ok: false, reason: "bad-extra" };
+    if (extra !== actor && !inRange(actor, extra, 5)) return { ok: false, reason: "extra-oor" };
+  }
+  const pay = spendMana(actor, manaNeed);
   if (!pay.ok) return pay;
-  const amount = 3 + (actor.int | 0);
+  const amount = magicShieldAmount(actor, upcast);
   if (!target.st) target.st = {};
   target.st.shield = (target.st.shield | 0) + amount;
+  if (extra) {
+    if (!extra.st) extra.st = {};
+    extra.st.shield = (extra.st.shield | 0) + amount;
+  }
   actor.magicShieldUsedThisTurn = true;
-  return { ok: true, targetId: target.id, shield: amount };
+  return {
+    ok: true,
+    targetId: target.id,
+    extraTargetId: extra ? extra.id : null,
+    shield: amount,
+    upcast,
+  };
 }
 
 /** Blink max Chebyshev range (Rozwój): half SPEED; UPCAST → full SPEED. */
@@ -388,15 +471,15 @@ export function applyBlink(state, actor, dest, opts = {}) {
   return { ok: true, dest: { x: actor.x, y: actor.y }, shield, upcast };
 }
 
-/** Bless INT bonus (Rozwój): +INT; UPCAST adds +2×INT (total +3×INT). */
+/** Bless INT bonus: +INT. UPCAST replaces that with +2×INT. */
 export function blessBonus(actor, upcast = false) {
   const INT = Math.max(0, (actor && actor.int) | 0);
-  return upcast ? INT + INT * 2 : INT;
+  return upcast ? INT * 2 : INT;
 }
 
 /**
  * Bless (Rozwój COMPLETE): Free Action, 1/turn, 1 MANA (+1 upcast), Range 3.
- * REQUIRES target spend 1 Recovery → heal higher of 2d10 + YOUR INT (upcast +2×INT → total +3×INT).
+ * REQUIRES target spend 1 Recovery → heal higher of 2d10 + YOUR INT (upcast: +2×INT instead).
  * Also grants one reroll token until end of combat (together with the heal spend).
  * Without Recovery: not legal / cannot cast.
  */
@@ -547,7 +630,7 @@ export function applyEnhanceWeapon(actor, opts = {}) {
 }
 
 /**
- * Riposte: Reaction, free action, 1 stress · reduce DMG by 5×DEX.
+ * Riposte: Reaction, free action, 1 stress, once per round · reduce DMG by 5×DEX.
  * Only vs RANGE 1 (melee) attacks. If you take no DMG → standard weapon OA (adjacent).
  */
 export function tryRiposte(defender, incomingRaw, opts = {}) {
@@ -556,8 +639,10 @@ export function tryRiposte(defender, incomingRaw, opts = {}) {
   if (opts.ranged || (opts.range != null && (opts.range | 0) > 1)) {
     return { ok: false, reason: "melee-only" };
   }
+  if (defender.riposteUsedThisRound) return { ok: false, reason: "used-this-round" };
   if ((defender.stress | 0) < 1) return { ok: false, reason: "no-stress" };
-  // Free action reaction: 0 AP, only 1 stress (Rozwój).
+  // Free action reaction: 0 AP, only 1 stress (Rozwój). Once per round.
+  defender.riposteUsedThisRound = true;
   defender.stress = (defender.stress | 0) - 1;
   const reduce = 5 * Math.max(0, defender.dex | 0);
   const next = Math.max(0, (incomingRaw | 0) - reduce);
@@ -593,15 +678,15 @@ export function tryHiddenBola(defender, attacker, incomingRaw, opts = {}) {
   return { ok: true, reduce, raw: next, knockdown: !!knockdown, pay };
 }
 
-/** Healing Water Recovery bonus (Rozwój): +INT; UPCAST adds +2×INT (total +3×INT). */
+/** Healing Water Recovery bonus: +INT. UPCAST replaces that with +2×INT. */
 export function healingWaterBonus(actor, upcast = false) {
   const INT = Math.max(0, (actor && actor.int) | 0);
-  return upcast ? INT + INT * 2 : INT;
+  return upcast ? INT * 2 : INT;
 }
 
 /**
  * Healing Water (Rozwój COMPLETE): Reaction, 1 AP + 1 MANA (+1 upcast), Range 4.
- * Ally: Cleanse 2+INT; REQUIRES spend 1 Recovery → heal higher of 2d10 + INT (upcast +2×INT → +3×INT);
+ * Ally: Cleanse 2+INT; REQUIRES spend 1 Recovery → heal higher of 2d10 + INT (upcast: +2×INT instead);
  * Adv 1 on next roll. Without Recovery: not legal.
  */
 export function applyHealingWater(state, actor, targetId, opts = {}) {

@@ -186,7 +186,7 @@ Train talents: ice-wall, lightning-bolt, magic-shield, blink, enhance-weapon, li
 
 | Kit | Ability | Help offered? | Result | What happened |
 | --- | --- | --- | --- | --- |
-| kit1 | Ice Wall · 0 AP · 2 mana | no | N/A | click-resolves or target buff — no Power Roll |
+| kit1 | Ice Wall · 2 AP · 3 mana | no | N/A | click-resolves or target buff — no Power Roll |
 | kit1 | Magic Shield · 0 AP · 1 mana · pick target | no | N/A | click-resolves or target buff — no Power Roll |
 | kit1 | Enhance Weapon · 1 AP · 1 mana | no | N/A | click-resolves or target buff — no Power Roll |
 | kit1 | Blink · 1 AP · 1 mana · pick cell | no | N/A | cell move — no Power Roll |
@@ -201,7 +201,7 @@ Train talents: ice-wall, lightning-bolt, magic-shield, blink, enhance-weapon, li
 | kit1 | Shove · 1 AP | no | N/A | roll commits without a Help choice |
 | kit1 | Defend · Reaction · 1 AP | no | N/A | reaction — not an action Power Roll |
 | kit1 | CATCH BREATH · Reaction · 1 AP | no | N/A | reaction — not an action Power Roll |
-| kit2 | Ice Wall · 0 AP · 2 mana | no | N/A | click-resolves or target buff — no Power Roll |
+| kit2 | Ice Wall · 2 AP · 3 mana | no | N/A | click-resolves or target buff — no Power Roll |
 | kit2 | Magic Shield · 0 AP · 1 mana · pick target | no | N/A | click-resolves or target buff — no Power Roll |
 | kit2 | Enhance Weapon · 1 AP · 1 mana | no | N/A | click-resolves or target buff — no Power Roll |
 | kit2 | Blink · 1 AP · 1 mana · pick cell | no | N/A | cell move — no Power Roll |

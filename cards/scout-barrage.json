@@ -10,6 +10,7 @@
   "isAttack": true,
   "roll": { "stat": "DEX", "mode": "power" },
   "useWeapon": true,
+  "optionalStressMove": 1,
   "dmgType": "Physical",
   "tiers": {
     "t1": {
@@ -33,5 +34,5 @@
       "aoeMode": "all"
     }
   },
-  "notes": "3 AP + 1 stress. max 1+DEX targets. WD+DEX / WD+2×DEX / WD+3×DEX from active kit (Shortbow). Optional MOVE stress not in lab yet."
+  "notes": "3 AP + 1 stress. max 1+DEX targets. WD+DEX / WD+2×DEX / WD+3×DEX from active kit (Shortbow). Optional +1 stress: Move before or after (Speed, no AP)."
 }

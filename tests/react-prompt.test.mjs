@@ -60,6 +60,26 @@ test("Riposte is offered on melee and blocked on ranged", () => {
   assert.match(blocked.reason, /melee/i);
 });
 
+test("Riposte is offered once per round and stays explained after it is spent", () => {
+  const spent = hero({ riposteUsedThisRound: true });
+  const row = listMitigationReactions(spent, foe(), { range: 1 }, {}).find((r) => r.id === "riposte");
+  assert.equal(row.ok, false);
+  assert.match(row.reason, /this round/);
+  assert.match(mitigationButtonLabel(spent, row), /this round/);
+
+  const fresh = hero();
+  const decl = { raw: 12 };
+  const first = commitMitigationChoice(fresh, foe(), { range: 1 }, decl, "riposte");
+  assert.equal(first.ok, true);
+  assert.equal(fresh.riposteUsedThisRound, true);
+  const nextDecl = { raw: 12 };
+  const second = commitMitigationChoice(fresh, foe(), { range: 1 }, nextDecl, "riposte");
+  assert.equal(second.ok, false);
+  assert.equal(second.reason, "used-this-round");
+  assert.equal(fresh.stress, 1);
+  assert.equal(nextDecl.raw, 12);
+});
+
 test("Riposte and Hidden Bola stay closed without stress or when already spent", () => {
   const dry = listMitigationReactions(hero({ stress: 0 }), foe(), { range: 1 }, {});
   assert.equal(dry.find((row) => row.id === "riposte").ok, false);

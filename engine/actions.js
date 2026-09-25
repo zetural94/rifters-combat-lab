@@ -5,7 +5,7 @@ import { isMonsterEconomy, canReact } from "./turn.js";
 import { objectBlockKeys } from "./terrain.js";
 import { reachableCells } from "./move.js";
 import { hordeStackInRange } from "./horde.js";
-import { canPayMana, activateGuard, applyMagicShield } from "./feats.js";
+import { canPayMana, activateGuard, applyMagicShield, ICE_WALL_NOTE } from "./feats.js";
 import { placeSummon, SUMMON_TEMPLATES } from "./summon.js";
 
 function living(actors, side) {
@@ -288,20 +288,38 @@ export function legalActions(state, actor, abilityById) {
     }
   }
 
-  // Ice Wall — 2 mana, 1/fight (AP 0 for smoke; draft has no AP line beyond mana)
-  if (
-    !monster &&
-    actor.hasIceWall &&
-    !actor.iceWallUsed &&
-    canPayMana(actor, 2)
-  ) {
+  // Ice Wall — 2 AP + 3 mana. Human may cast again. The AI picker, not this list, is once per fight.
+  if (!monster && actor.hasIceWall && (actor.ap | 0) >= 2 && canPayMana(actor, 3)) {
     actions.push({
       type: "iceWall",
       label: "Ice Wall",
-      apCost: 0,
-      manaCost: 2,
+      apCost: 2,
+      manaCost: 3,
       feat: true,
+      note: ICE_WALL_NOTE,
     });
+    if (canPayMana(actor, 4)) {
+      actions.push({
+        type: "iceWall",
+        label: "Ice Wall (Upcast +3 spaces)",
+        apCost: 2,
+        manaCost: 4,
+        feat: true,
+        upcast: true,
+        upcastMode: "spaces",
+        note: ICE_WALL_NOTE,
+      });
+      actions.push({
+        type: "iceWall",
+        label: "Ice Wall (Upcast +2 destroy)",
+        apCost: 2,
+        manaCost: 4,
+        feat: true,
+        upcast: true,
+        upcastMode: "damage",
+        note: ICE_WALL_NOTE,
+      });
+    }
   }
 
   // Spotter Mark — 1 AP + 1 stress, WR (weapon/ability max range, min 8)
@@ -338,14 +356,26 @@ export function legalActions(state, actor, abilityById) {
     const allies = living(actors, actor.side).filter(
       (a) => a === actor || inRange(actor, a, 5)
     );
+    const shieldIds = allies.map((a) => a.id);
     actions.push({
       type: "magicShield",
       label: "Magic Shield",
       apCost: 0,
       manaCost: 1,
       feat: true,
-      targets: allies.map((a) => a.id),
+      targets: shieldIds,
     });
+    if (canPayMana(actor, 2)) {
+      actions.push({
+        type: "magicShield",
+        label: "Magic Shield (Upcast)",
+        apCost: 0,
+        manaCost: 2,
+        feat: true,
+        upcast: true,
+        targets: shieldIds.slice(),
+      });
+    }
   }
 
   // Bless — free 1 mana 1/turn (UPCAST +1 mana → Recovery +2×INT)
@@ -426,6 +456,16 @@ export function legalActions(state, actor, abilityById) {
       manaCost: 1,
       feat: true,
     });
+    if (canPayMana(actor, 2)) {
+      actions.push({
+        type: "enhanceWeapon",
+        label: "Enhance Weapon (Upcast)",
+        apCost: 1,
+        manaCost: 2,
+        feat: true,
+        upcast: true,
+      });
+    }
   }
 
   // Healing Water — 1 AP + 1 mana (UPCAST +1 → Recovery +2×INT)
@@ -728,12 +768,13 @@ export function legalActions(state, actor, abilityById) {
           (ab.aoe && (ab.aoe.range != null || ab.aoe.shape === "cube" || ab.aoe.size != null));
         if (!isAoe && !actor.summon) continue;
       }
-      actions.push({
+      const strike = {
         type: "strike",
         label: ab.name,
         apCost: monster ? 0 : cost,
         slot: monster ? "action" : null,
         stressCost: (!monster || actor.summon) && stressNeed > 0 ? stressNeed : 0,
+        manaCost: !monster && manaNeed > 0 ? manaNeed : 0,
         abilityId: ab.id,
         targets: targets.map((t) => t.id),
         noTargets: !targets.length,
@@ -745,7 +786,33 @@ export function legalActions(state, actor, abilityById) {
           !actor.movedThisTurn &&
           !actor.aimUsedThisRound,
         aimArmed: !!actor.aimArmed,
-      });
+      };
+      actions.push(strike);
+      const upMana = !monster ? ab.upcastMana | 0 : 0;
+      if (upMana > 0 && canPayMana(actor, manaNeed + upMana) && (monster || ap >= cost)) {
+        let upRange = range;
+        let upTargets = strike.targets.slice();
+        if (ab.upcastRange != null) {
+          upRange = ab.upcastRange | 0;
+          upTargets = pool
+            .filter((f) =>
+              actor.hordeStackId
+                ? hordeStackInRange(actor, f, upRange, actors)
+                : inRange(actor, f, upRange)
+            )
+            .map((t) => t.id);
+        }
+        actions.push(
+          Object.assign({}, strike, {
+            label: ab.name + " (Upcast)",
+            manaCost: manaNeed + upMana,
+            upcast: true,
+            range: upRange,
+            targets: upTargets,
+            noTargets: !upTargets.length,
+          })
+        );
+      }
     }
   }
 

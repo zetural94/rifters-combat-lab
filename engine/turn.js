@@ -221,8 +221,8 @@ export function beginTurn(actor, opts = {}) {
   } else if (actor.barkskinUntilTurn) {
     actor.barkskinUntilTurn = false;
   }
-  // Grapple lasts until the start of the grappler's next turn, not the target's.
-  releaseGrappleHold(actor, opts.actors);
+  // Non-grapple Restrain still drops at the start of the restrained actor's turn.
+  // Grapple Restrain stays (grappleLock) until the end of the grappler's next turn.
   if (actor.st && actor.st.restrain && !actor.grappleLock) {
     actor.st.restrain = false;
     actor.grappleFocus = false;
@@ -298,21 +298,25 @@ function hasWeaponEquipped(actor, weaponId) {
 }
 
 /**
- * Grapple lock until the grappler's next turn.
+ * Grapple lock until the end of the grappler's next turn.
  * T2: Adv 1 on attacks vs the grappler and vs the target.
  * T3: Adv 1 on attacks vs the target only.
- * Restrain itself stays on the gated status.
+ * Restrain itself stays on the gated status and drops with the lock.
  */
 export function applyGrappleLock(atk, tgt, tier, actors) {
   if (!atk || !tgt) return;
   if (atk.grappleHold && atk.grappleHold.targetId && atk.grappleHold.targetId !== tgt.id) {
     releaseGrappleHold(atk, actors);
   }
-  atk.grappleHold = { targetId: tgt.id, advVsSelf: (tier | 0) === 2 };
+  atk.grappleHold = {
+    targetId: tgt.id,
+    advVsSelf: (tier | 0) === 2,
+    releaseOnEnd: false,
+  };
   tgt.grappleLock = { byId: atk.id, advVsTarget: (tier | 0) >= 2 };
 }
 
-/** Drop a Grapple when the grappler's next turn starts. */
+/** Drop a Grapple lock and its Restrain. */
 export function releaseGrappleHold(actor, actors) {
   const hold = actor && actor.grappleHold;
   if (!hold) return;
@@ -332,8 +336,11 @@ export function oaRangeFor(actor) {
   return 1;
 }
 
-/** End of turn: AP resets to max, then reaction window opens. */
-export function endTurn(actor) {
+/**
+ * End of turn: AP resets to max, then reaction window opens.
+ * Grapple applied this turn only arms here. It drops at the end of the next turn.
+ */
+export function endTurn(actor, opts = {}) {
   if (!isMonsterEconomy(actor)) {
     refreshAp(actor);
   } else if (actor && actor.st) {
@@ -342,6 +349,10 @@ export function endTurn(actor) {
     if (actor.st.disarm) actor.st.disarm = false;
     if (actor.st.silence) actor.st.silence = false;
     actor.stunnedSkipTurn = false;
+  }
+  if (actor && actor.grappleHold) {
+    if (actor.grappleHold.releaseOnEnd) releaseGrappleHold(actor, opts.actors);
+    else actor.grappleHold.releaseOnEnd = true;
   }
   openReactionWindow(actor);
 }

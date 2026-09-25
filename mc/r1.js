@@ -535,7 +535,7 @@ export const FEAT_SMOKE_STUBS = {
   "mystic-ice-wall": {
     xp: 350,
     classId: "mystic",
-    label: "Ice Wall (2 mana 1/fight · 5 seg · adj difficult)",
+    label: "Ice Wall (2AP+3mana · Range 5 · 4 seg · HP 3+INT · upcast +3 spaces or +2 destroy)",
     apply(actor) {
       actor.hasIceWall = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["mystic-ice-wall"]);
@@ -544,7 +544,7 @@ export const FEAT_SMOKE_STUBS = {
   "scout-spotter": {
     xp: 150,
     classId: "scout",
-    label: "Spotter: 1AP+1stress Mark; allies BREAK 2; Crit 1 next ranged",
+    label: "Spotter: 1AP+1stress Mark; allies BREAK 2+INT; Crit 1 next ranged",
     apply(actor) {
       actor.hasSpotter = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["scout-spotter"]);
@@ -589,7 +589,7 @@ export const FEAT_SMOKE_STUBS = {
   "scout-pin-shot": {
     xp: 150,
     classId: "scout",
-    label: "Pin Shot (1 AP + 1 stress · WD · Slow 1 gated / Slow 2 / Knockdown)",
+    label: "Pin Shot (1 AP + 1 stress · WD · DEX≤DEX Slow 1 / Slow 2 / Knockdown)",
     apply(actor) {
       actor.pinShot = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["scout-pin-shot"]);
@@ -602,7 +602,7 @@ export const FEAT_SMOKE_STUBS = {
   "scout-barrage": {
     xp: 250,
     classId: "scout",
-    label: "Barrage (3AP+1stress · max 1+DEX · WD+DEX / +2DEX / +3DEX)",
+    label: "Barrage (3AP+1stress · max 1+DEX · WD+DEX / +2DEX / +3DEX · +1 stress Move)",
     apply(actor) {
       actor.barrage = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["scout-barrage"]);
@@ -615,7 +615,7 @@ export const FEAT_SMOKE_STUBS = {
   "mystic-lightning-bolt": {
     xp: 250,
     classId: "mystic",
-    label: "Lightning Bolt (2AP+1mana · 8/12/14 Lightning)",
+    label: "Lightning Bolt (2AP+1mana · 4×INT+4 / 6×INT+6 / 7×INT+7 · upcast half)",
     apply(actor) {
       actor.lightningBolt = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["mystic-lightning-bolt"]);
@@ -628,7 +628,7 @@ export const FEAT_SMOKE_STUBS = {
   "mystic-magic-shield": {
     xp: 150,
     classId: "mystic",
-    label: "Magic Shield: 1 mana free 1/turn SHIELD 3+INT",
+    label: "Magic Shield: 1 mana free 1/turn SHIELD 2+INT (upcast +INT and extra ally)",
     apply(actor) {
       actor.hasMagicShield = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["mystic-magic-shield"]);
@@ -637,7 +637,7 @@ export const FEAT_SMOKE_STUBS = {
   "acolyte-enfeeble": {
     xp: 150,
     classId: "acolyte",
-    label: "Enfeeble (1AP+1mana · Intimidate 3 AoE R4)",
+    label: "Enfeeble (1AP+1mana · Intimidate 2×INT · AoE 2 Range 4)",
     apply(actor) {
       actor.enfeeble = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["acolyte-enfeeble"]);
@@ -650,7 +650,7 @@ export const FEAT_SMOKE_STUBS = {
   "primalist-frost-shock": {
     xp: 150,
     classId: "primalist",
-    label: "Frost Shock (1AP+1mana · Water + Slow)",
+    label: "Frost Shock (1AP+1mana · 5/8/10×INT Water + Slow)",
     apply(actor) {
       actor.frostShock = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["primalist-frost-shock"]);
@@ -772,7 +772,7 @@ export const FEAT_SMOKE_STUBS = {
   "brawler-grapple": {
     xp: 250,
     classId: "brawler",
-    label: "Grapple (2AP+1stress · WD + Restrain)",
+    label: "Grapple (2AP+1stress · WD+STR / 2×STR / 3×STR · Restrain until end of next turn)",
     apply(actor) {
       actor.grapple = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["brawler-grapple"]);
@@ -785,7 +785,7 @@ export const FEAT_SMOKE_STUBS = {
   "assassin-riposte": {
     xp: 300,
     classId: "assassin",
-    label: "Riposte: free reaction −5×DEX; 0 dmg → weapon OA",
+    label: "Riposte: free reaction 1/round −5×DEX; 0 dmg → weapon OA",
     apply(actor) {
       actor.hasRiposte = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["assassin-riposte"]);
@@ -803,7 +803,7 @@ export const FEAT_SMOKE_STUBS = {
   "mystic-living-bomb": {
     xp: 250,
     classId: "mystic",
-    label: "Living Bomb (2AP+2mana · Burn DEX≤INT · death 8+INT Fire R3)",
+    label: "Living Bomb (2AP+2mana · Burn DEX≤INT · death 10+INT Fire R3)",
     apply(actor) {
       actor.livingBombFeat = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["mystic-living-bomb"]);
@@ -838,7 +838,7 @@ export const FEAT_SMOKE_STUBS = {
   "acolyte-purge-wicked": {
     xp: 250,
     classId: "acolyte",
-    label: "Purge the Wicked (2AP+1mana · Light + Intimidate)",
+    label: "Purge the Wicked (2AP+1mana · 6/10/12×INT Light)",
     apply(actor) {
       actor.purgeWicked = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["acolyte-purge-wicked"]);
@@ -864,7 +864,7 @@ export const FEAT_SMOKE_STUBS = {
   "primalist-entangle": {
     xp: 250,
     classId: "primalist",
-    label: "Entangle (2AP+2mana · Earth AoE + Slow/Restrain)",
+    label: "Entangle (2AP+2mana · 5/8/10×INT Earth + Slow/Restrain)",
     apply(actor) {
       actor.entangle = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["primalist-entangle"]);
@@ -877,7 +877,7 @@ export const FEAT_SMOKE_STUBS = {
   "primalist-wind-gale": {
     xp: 250,
     classId: "primalist",
-    label: "Wind Gale (2AP+2mana · Air AoE + Push)",
+    label: "Wind Gale (2AP+2mana · 3×2 · 5/8/10×INT Air + gated Push)",
     apply(actor) {
       actor.windGale = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["primalist-wind-gale"]);
@@ -2027,6 +2027,9 @@ export function playRift(pack, seed, opts = {}) {
     }
     const summary = playFight(state, policy);
     if (state.talentTrace) summary.talentTrace = state.talentTrace;
+    if (opts.traceTalents && state.log) {
+      summary.logMsgs = state.log.map((e) => (e && e.msg) || "");
+    }
     // Per-fight drop from resources entering this encounter (not from full 12)
     summary.recDrop = Math.max(0, recBefore - (summary.recLeft | 0));
     fights.push({

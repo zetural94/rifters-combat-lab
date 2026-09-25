@@ -59,7 +59,15 @@ export function previewTierTriplet(ability, actor, kitIndex, abilityById) {
     if (isWeaponDmgToken(eff.dmg)) {
       out.push(previewTierDamage(ability, eff, actor, kitIndex, abilityById));
     } else {
-      out.push(eff.dmg | 0);
+      let n = Number(eff.dmg) || 0;
+      n += eff.dmgBonus | 0;
+      if (eff.dmgStat && actor) {
+        const key = String(eff.dmgStat).toLowerCase();
+        const v =
+          key === "str" ? actor.str | 0 : key === "dex" ? actor.dex | 0 : actor.int | 0;
+        n += v * Math.max(1, (eff.dmgStatMult | 0) || 1);
+      }
+      out.push(Math.max(0, n));
     }
   }
   return out;

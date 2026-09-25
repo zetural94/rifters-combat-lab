@@ -585,6 +585,25 @@ function resolveAllySource(atk, tgt, ctx, ab) {
   return best;
 }
 
+/** Wind Gale template: 3 wide × 2 deep, anchored on the clicked foe, away from the caster. */
+function windGaleCells(origin, target) {
+  let dx = Math.sign((target.x | 0) - (origin.x | 0));
+  let dy = Math.sign((target.y | 0) - (origin.y | 0));
+  if (!dx && !dy) dx = 1;
+  const px = -dy;
+  const py = dx;
+  const cells = [];
+  for (let depth = 0; depth <= 1; depth++) {
+    for (let w = -1; w <= 1; w++) {
+      cells.push({
+        x: (target.x | 0) + dx * depth + px * w,
+        y: (target.y | 0) + dy * depth + py * w,
+      });
+    }
+  }
+  return cells;
+}
+
 /**
  * @param {object} ctx
  */
@@ -602,7 +621,8 @@ export function resolveStrike(ctx) {
   const req = traitRequires(ab, atk, ctx);
   if (!req.ok) return req;
 
-  const range = ab.range != null ? ab.range | 0 : 1;
+  let range = ab.range != null ? ab.range | 0 : 1;
+  if (ctx.upcast && ab.upcastRange != null) range = ab.upcastRange | 0;
   const actorsField = ctx.actors || ctx.allies || [];
   // Shadowplay: choose an ally as the fear source. Blast is AoE around that ally,
   // not around the caster. Cast range is the range to the ally (self is always legal).
@@ -686,15 +706,18 @@ export function resolveStrike(ctx) {
   const stressCost = ab.costStress != null ? ab.costStress | 0 : ab.stressCost | 0;
   const optStressNeed =
     (ab.optionalStressAdv | 0) > 0 && ctx.spendStressAdv ? ab.optionalStressAdv | 0 : 0;
+  const optMoveNeed =
+    (ab.optionalStressMove | 0) > 0 && ctx.spendStressMove ? ab.optionalStressMove | 0 : 0;
   if (
     !ctx.skipAp &&
     !ctx.dryRun &&
     (!monster || atk.summon) &&
-    (stressCost > 0 || optStressNeed > 0)
+    (stressCost > 0 || optStressNeed > 0 || optMoveNeed > 0)
   ) {
-    const totalStress = stressCost + optStressNeed;
+    const totalStress = stressCost + optStressNeed + optMoveNeed;
     if ((atk.stress | 0) < totalStress) return { ok: false, reason: "no-stress" };
     atk.stress = (atk.stress | 0) - totalStress;
+    if (optMoveNeed > 0 && ctx.stressMoveWhen === "after") atk.barrageMoveAfter = true;
   }
   let manaCost = ab.costMana != null ? ab.costMana | 0 : ab.manaCost | 0;
   if (ctx.upcast && (ab.upcastMana | 0) > 0) manaCost += ab.upcastMana | 0;
@@ -1227,14 +1250,17 @@ export function resolveStrike(ctx) {
   if (ctx._aoeOrigin) aoeOrigin = ctx._aoeOrigin;
   const aoeShape = aoe.shape || (aoe.range != null || aoe.size != null || effect.aoeRange != null ? (aoe.shape || "blast") : null);
   // Tier may shrink AoE (Intimidating Shout Range 1/2/3 by tier).
-  const aoeR =
-    aoeShape === "cube"
+  let aoeR =
+    aoeShape === "cube" || aoeShape === "gale"
       ? null
       : effect.aoeRange != null
         ? effect.aoeRange | 0
         : aoe.range != null
           ? aoe.range | 0
           : null;
+  if (ctx.upcast && ab.upcastAoeRange != null && aoeShape !== "gale") {
+    aoeR = ab.upcastAoeRange | 0;
+  }
   const aoeSize = aoeShape === "cube" ? Math.max(1, aoe.size | 0 || 2) : null;
   const aoeMode =
     selfAoe
@@ -1245,7 +1271,10 @@ export function resolveStrike(ctx) {
   let aoeCells = null;
   if (aoeShape === "cube") {
     aoeCells = cubeCellsIncluding(tgt || atk, aoeSize, ctx.bounds);
+  } else if (aoeShape === "gale" && tgt) {
+    aoeCells = windGaleCells(aoeOrigin, tgt);
   }
+  const cellAoe = aoeShape === "cube" || aoeShape === "gale";
   const aoeCellSet = aoeCells
     ? new Set(aoeCells.map((c) => cellKey(c.x, c.y)))
     : null;
@@ -1254,7 +1283,7 @@ export function resolveStrike(ctx) {
     for (const other of ctx.actors) {
       if (!other || (!selfAoe && other === tgt) || other.side === atk.side) continue;
       if (other.dead || (other.hp | 0) <= 0) continue;
-      if (aoeShape === "cube") {
+      if (cellAoe) {
         if (!aoeCellSet.has(cellKey(other.x, other.y))) continue;
       } else if (aoeR != null) {
         if (!inRange(aoeOrigin, other, aoeR)) continue;
@@ -1408,6 +1437,7 @@ export function resolveStrike(ctx) {
   let dmgResult = { dealt: 0 };
   const statuses = [];
   const statusesBlocked = [];
+  const aoePushes = [];
   if (!selfAoe && tgt) {
     dmgResult = applyDamage(tgt, raw, {
       dmgType,
@@ -1450,6 +1480,36 @@ export function resolveStrike(ctx) {
       } else if (!gatePass(tgt, fearSt.gate, { vsActor: atk })) {
         statusesBlocked.push(fearSt);
       }
+    }
+  }
+  let halfSplash = null;
+  if (
+    !ctx.dryRun &&
+    !selfAoe &&
+    tgt &&
+    ctx.upcast &&
+    (ab.upcastExtraRange | 0) > 0 &&
+    Array.isArray(ctx.extraTargetIds) &&
+    ctx.extraTargetIds.length
+  ) {
+    const extra = (ctx.actors || []).find((a) => a && a.id === ctx.extraTargetIds[0]);
+    const extraR = ab.upcastExtraRange | 0;
+    if (
+      extra &&
+      extra !== tgt &&
+      extra.side !== atk.side &&
+      !extra.dead &&
+      (extra.hp | 0) > 0 &&
+      inRange(tgt, extra, extraR)
+    ) {
+      const half = Math.floor((raw | 0) / 2);
+      if (half > 0) {
+        applyDamage(extra, half, {
+          dmgType,
+          actors: ctx.actors || actorsField,
+        });
+      }
+      halfSplash = { id: extra.id, raw: half };
     }
   }
   if (opening && !opening._needsPick && isAttack) {
@@ -1501,7 +1561,7 @@ export function resolveStrike(ctx) {
             }
             continue;
           }
-          if (aoeShape === "cube") {
+          if (cellAoe) {
             if (!aoeCellSet || !aoeCellSet.has(cellKey(other.x, other.y))) continue;
           } else if (aoeR != null) {
             if (!inRange(aoeOrigin, other, aoeR) && !(multiPick && other.hordeStackId)) continue;
@@ -1512,7 +1572,7 @@ export function resolveStrike(ctx) {
         for (const other of ctx.actors) {
           if (!other || (!selfAoe && other === tgt) || other.side === atk.side) continue;
           if (other.dead || (other.hp | 0) <= 0) continue;
-          if (aoeShape === "cube") {
+          if (cellAoe) {
             if (!aoeCellSet || !aoeCellSet.has(cellKey(other.x, other.y))) continue;
           } else if (aoeR != null) {
             if (!inRange(aoeOrigin, other, aoeR)) continue;
@@ -1547,6 +1607,28 @@ export function resolveStrike(ctx) {
         for (const st0 of statusesFrom(effect)) {
           const st = resolveStatusSpec(st0, atk);
           if (applyStatus(other, st, { sourceId: atk.id, sourceActor: atk })) applied.push(st);
+        }
+        if (!ctx.dryRun) {
+          for (const ex of extrasFrom(effect)) {
+            if (!ex || ex.id !== "push") continue;
+            if (ex.gate && !gatePass(other, ex.gate, { vsActor: atk })) continue;
+            let spaces = ex.x | 0;
+            if (ex.xStat) {
+              spaces +=
+                (statOf(atk, ex.xStat) | 0) * Math.max(1, (ex.xStatMult | 0) || 1);
+            }
+            const fcRaw = atk.fullContact;
+            const fc = fcRaw === true ? { pushBonus: 1, maySlide: true } : fcRaw;
+            if (fc && fc.pushBonus) spaces += fc.pushBonus | 0;
+            aoePushes.push(
+              applyPush(atk, other, spaces, {
+                actors: ctx.actors || [],
+                bounds: ctx.bounds,
+                objects: ctx.objects,
+                hazards: ctx.hazards || (ctx.state && ctx.state.hazards),
+              })
+            );
+          }
         }
         let dealt = 0;
         if (raw > 0) {
@@ -1640,7 +1722,7 @@ export function resolveStrike(ctx) {
   // Card Crit line before forced movement (Push must not yank targets out of Crit RANGE).
   const cardCritHits = critRiders ? applyCardCrit(atk, ctx) : [];
 
-  const forced = [];
+  const forced = aoePushes;
   const pendingPushes = [];
   const supportEvents = [];
   function applyExtrasList(list) {
@@ -1680,8 +1762,11 @@ export function resolveStrike(ctx) {
         hazards: ctx.hazards || (ctx.state && ctx.state.hazards),
       };
       if (ex.id === "push") {
+        if (ex.gate && !gatePass(tgt, ex.gate, { vsActor: atk })) continue;
         let spaces = ex.x | 0;
-        if (ex.xStat) spaces += statOf(atk, ex.xStat) | 0;
+        if (ex.xStat) {
+          spaces += (statOf(atk, ex.xStat) | 0) * Math.max(1, (ex.xStatMult | 0) || 1);
+        }
         const fcRaw = atk.fullContact;
         const fc =
           fcRaw === true ? { pushBonus: 1, maySlide: true } : fcRaw;
@@ -1743,7 +1828,7 @@ export function resolveStrike(ctx) {
         const INT = Math.max(0, atk.int | 0);
         const up = ctx.upcast ? 2 * INT : 0;
         tgt.livingBomb = {
-          dmg: 8 + INT + up,
+          dmg: 10 + INT + up,
           fromId: atk.id,
           range: 3,
           upcast: !!ctx.upcast,
@@ -1941,6 +2026,42 @@ export function resolveStrike(ctx) {
     }
   }
 
+  if (!ctx.dryRun && ctx.upcast && Array.isArray(ab.upcastExtras) && ab.upcastExtras.length) {
+    const foes = [];
+    if (tgt && !selfAoe) foes.push(tgt);
+    for (const hit of aoeHits) {
+      const other = (ctx.actors || []).find((a) => a && a.id === hit.id);
+      if (other && foes.indexOf(other) < 0) foes.push(other);
+    }
+    for (const foe of foes) {
+      for (const ex0 of ab.upcastExtras) {
+        if (!ex0 || !ex0.id) continue;
+        if (ex0.id === "vulnerable") {
+          let vx = Math.max(0, ex0.x | 0);
+          if (ex0.xStat) {
+            vx += (statOf(atk, ex0.xStat) | 0) * Math.max(1, (ex0.xStatMult | 0) || 1);
+          }
+          vx = Math.max(1, vx);
+          const typ = ex0.dmgType || dmgType || "Physical";
+          if (!foe.vulnerable) foe.vulnerable = {};
+          foe.vulnerable[typ] = (foe.vulnerable[typ] | 0) + vx;
+          continue;
+        }
+        const st = resolveStatusSpec(ex0, atk);
+        applyStatus(foe, st, { sourceId: atk.id, sourceActor: atk });
+      }
+    }
+  }
+  if (
+    !ctx.dryRun &&
+    ctx.upcast &&
+    !ctx.windGaleEcho &&
+    ab.id === "primalist-wind-gale" &&
+    tgt
+  ) {
+    atk.windGaleEcho = { targetId: tgt.id };
+  }
+
   if (isAttack && !ctx.asReaction) noteAttack(atk);
 
   // Dual Daggers Flurry: after a non-flurry Strike, unlock 0 AP rushed follow-up 1/round
@@ -2020,6 +2141,7 @@ export function resolveStrike(ctx) {
     aoeR,
     aoeMode,
     cleaveHit,
+    halfSplash,
     aoeCells,
     aoeShape,
     terrainLeft,
@@ -2746,4 +2868,45 @@ export function listRangedOaCandidates(attacker, ability, actors, getReactionAbi
     });
   }
   return out;
+}
+
+/** Free Wind Gale repeat armed by UPCAST 3. Does not chain another echo. */
+export function resolveWindGaleEcho(state, actor) {
+  if (!state || !actor || !actor.windGaleEcho) return null;
+  const echo = actor.windGaleEcho;
+  actor.windGaleEcho = null;
+  const ab = state.abilityById && state.abilityById["primalist-wind-gale"];
+  if (!ab) return { ok: false, reason: "no-ability" };
+  const range = ab.range != null ? ab.range | 0 : 4;
+  const living = (state.actors || []).filter(
+    (a) => a && a.side !== actor.side && !a.dead && (a.hp | 0) > 0
+  );
+  let tgt = living.find((a) => a.id === echo.targetId && inRange(actor, a, range));
+  if (!tgt) {
+    living.sort((a, b) => {
+      const da = Math.max(Math.abs((a.x | 0) - (actor.x | 0)), Math.abs((a.y | 0) - (actor.y | 0)));
+      const db = Math.max(Math.abs((b.x | 0) - (actor.x | 0)), Math.abs((b.y | 0) - (actor.y | 0)));
+      return da - db;
+    });
+    tgt = living.find((a) => inRange(actor, a, range)) || null;
+  }
+  if (!tgt) return { ok: false, reason: "no-target" };
+  const echoed = resolveStrike({
+    attacker: actor,
+    target: tgt,
+    ability: ab,
+    actors: state.actors,
+    abilityById: state.abilityById,
+    state,
+    rng: state.rng,
+    bounds: state.bounds,
+    objects: state.objects,
+    hazards: state.hazards,
+    skipAp: true,
+    upcast: false,
+    windGaleEcho: true,
+    round: state.round | 0,
+  });
+  if (echoed && echoed.ok) echoed.targetId = tgt.id;
+  return echoed;
 }

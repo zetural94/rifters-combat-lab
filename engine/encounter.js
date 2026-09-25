@@ -1,7 +1,7 @@
 ﻿import { makeHero, makeMob } from "./actor.js";
 import { beginTurn, endTurn, refreshAp, spendAp as payAp, hasWeaponEquipped } from "./turn.js";
 import { weaponSwap, activeKitRef, activeKitIndex, normalizeKitParts } from "./kits.js";
-import { resolveStrike, tryDefendReaction, resolveCatchBreath, resolveSteelYourself, resolveCreateOpening, finishCreateOpeningPick, resolveShove, resolveAskQuestion, listRangedOaCandidates, lowestDefDmgTypeAmong, ELEMENTAL_BOLT_TYPES } from "./strike.js";
+import { resolveStrike, tryDefendReaction, resolveCatchBreath, resolveSteelYourself, resolveCreateOpening, finishCreateOpeningPick, resolveShove, resolveAskQuestion, listRangedOaCandidates, lowestDefDmgTypeAmong, ELEMENTAL_BOLT_TYPES, resolveWindGaleEcho } from "./strike.js";
 import { resolveMove } from "./move.js";
 import { legalActions, packHunterBonus } from "./actions.js";
 import { createRng } from "./rng.js";
@@ -391,7 +391,7 @@ function runSummonAfter(state, summoner) {
     const r = applyAction(state, action);
     if (!r || !r.ok) break;
   }
-  endTurn(pet);
+  endTurn(pet, { actors: state.actors });
   state.queue = savedQ;
   state.queueIndex = savedI;
 }
@@ -416,6 +416,22 @@ function beginActorTurn(state, actor) {
   if (actor.frontlinerApGranted) {
     pushLog(state, actor.name + " Frontliner +1 AP");
     actor.frontlinerApGranted = false;
+  }
+  if (actor.windGaleEcho && !actor.stunnedSkipTurn) {
+    const echo = resolveWindGaleEcho(state, actor);
+    if (echo && echo.ok) {
+      const tgt = actorById(state, echo.targetId);
+      pushLog(
+        state,
+        actor.name +
+          " Wind Gale echo (free) → " +
+          ((tgt && tgt.name) || echo.targetId || "foe") +
+          " · raw " +
+          (echo.raw | 0)
+      );
+    } else if (echo && !echo.ok) {
+      pushLog(state, actor.name + " Wind Gale echo fizzles (" + (echo.reason || "?") + ")");
+    }
   }
   return actor;
 }
@@ -628,6 +644,7 @@ function continueAfterFinishedTurn(state, cur) {
         a.aimUsedThisRound = false;
         a.flurryUsedThisRound = false;
         a.stealthUsedThisRound = false;
+        a.riposteUsedThisRound = false;
         a.glaiveFreeOaUsed = false;
         a.roundUsed = {};
         a.actedThisRound = false;
@@ -689,7 +706,7 @@ export function advanceTurn(state) {
   // Human lab: the summon's Move + Action is a real turn, not an AI script.
   // MC leaves playSummons unset and still auto-resolves via runSummonAfter.
   if (cur && cur.summon && state.summonInterlude) {
-    endTurn(cur);
+    endTurn(cur, { actors: state.actors });
     const saved = state.summonInterlude;
     state.summonInterlude = null;
     state.queue = saved.queue;
@@ -699,7 +716,7 @@ export function advanceTurn(state) {
     return;
   }
 
-  if (cur) endTurn(cur);
+  if (cur) endTurn(cur, { actors: state.actors });
 
   // Summon acts after its summoner's turn (not a main queue slot).
   if (cur && cur.side === "hero" && !cur.summon) {
@@ -1004,7 +1021,12 @@ export function applyAction(state, action) {
   }
 
   if (action.type === "iceWall") {
-    const r = placeIceWall(state, actor);
+    const r = placeIceWall(state, actor, {
+      upcast: !!action.upcast,
+      upcastMode: action.upcastMode || null,
+      // Heavy 1/fight tylko dla AI. Human clicks omit fromAi.
+      fromAi: !!action.fromAi,
+    });
     if (!r.ok) return r;
     pushLog(
       state,
@@ -1013,7 +1035,11 @@ export function applyAction(state, action) {
         (r.segments || []).length +
         " (HP " +
         (r.segHp | 0) +
-        "/seg · adjacent difficult)"
+        "/seg · destroy " +
+        (r.destroyDmg | 0) +
+        " · adjacent difficult" +
+        (r.upcastMode ? " · upcast " + r.upcastMode : "") +
+        ")"
     );
     return { ok: true, result: r };
   }
@@ -1027,7 +1053,9 @@ export function applyAction(state, action) {
       actor.name +
         " Spotter Mark → " +
         ((tgt && tgt.name) || action.targetId) +
-        " (−1 AP · −1 stress · allies BREAK 2 this round · Crit 1 next ranged)"
+        " (−1 AP · −1 stress · allies BREAK " +
+        (r.breakBonus | 0) +
+        " this round · Crit 1 next ranged)"
     );
     return { ok: true, result: r };
   }
@@ -1040,7 +1068,10 @@ export function applyAction(state, action) {
   }
 
   if (action.type === "magicShield") {
-    const r = applyMagicShield(state, actor, action.targetId || actor.id);
+    const r = applyMagicShield(state, actor, action.targetId || actor.id, {
+      upcast: !!action.upcast,
+      extraTargetId: action.extraTargetId || null,
+    });
     if (!r.ok) return r;
     const tgt = actorById(state, r.targetId);
     pushLog(
@@ -1481,6 +1512,8 @@ export function applyAction(state, action) {
       cleaveTargetId: action.cleaveTargetId || null,
       extraTargetIds: action.extraTargetIds || null,
       spendStressAdv: !!action.spendStressAdv,
+      spendStressMove: !!action.spendStressMove,
+      stressMoveWhen: action.stressMoveWhen || null,
       upcast: !!action.upcast,
       sourceAllyId: action.sourceAllyId || null,
     });

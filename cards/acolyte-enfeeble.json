@@ -2,11 +2,14 @@
   "kind": "ability",
   "id": "acolyte-enfeeble",
   "name": "Enfeeble",
-  "source": "progressAxisDraft Acolyte · smoke Intimidate AoE",
+  "source": "progressAxis Acolyte",
   "costAp": 1,
   "costMana": 1,
+  "upcastMana": 1,
+  "upcastRange": 5,
+  "upcastAoeRange": 3,
   "range": 4,
-  "aoe": { "range": 4 },
+  "aoe": { "range": 2 },
   "isAttack": true,
   "roll": { "stat": "INT", "mode": "power" },
   "dmgType": "Physical",
@@ -14,18 +17,18 @@
     "t1": {
       "dmg": 0,
       "aoeMode": "all",
-      "status": { "id": "intimidate", "x": 3 }
+      "status": { "id": "intimidate", "x": 0, "xStat": "INT", "xStatMult": 2 }
     },
     "t2": {
       "dmg": 0,
       "aoeMode": "all",
-      "status": { "id": "intimidate", "x": 3 }
+      "status": { "id": "intimidate", "x": 0, "xStat": "INT", "xStatMult": 2 }
     },
     "t3": {
       "dmg": 0,
       "aoeMode": "all",
-      "status": { "id": "intimidate", "x": 3 }
+      "status": { "id": "intimidate", "x": 0, "xStat": "INT", "xStatMult": 2 }
     }
   },
-  "notes": "Draft: 1 AP + 1 mana, AoE R4 Intimidate 3 all. Smoke flat X=3 all tiers."
+  "notes": "1 AP, 1 MANA, AoE 2, Range 4. All enemies in the blast: INTIMIDATE 2×INT. UPCAST 1: AoE 3, Range 5."
 }

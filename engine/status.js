@@ -125,10 +125,21 @@ const STACK_HARMFUL = new Set([
   "gloom",
 ]);
 
-/** Draft Perfectionist: +max(1, INT) to harmful status X. */
+/** Perfectionist: INT times per fight, 1 stress each, add +INT to a harmful stack. */
 export function perfectionistAmp(source) {
   if (!source || !source.perfectionist) return 0;
-  return Math.max(1, source.int | 0);
+  const INT = Math.max(0, source.int | 0);
+  if (INT <= 0) return 0;
+  if (source.perfectionistLeft == null) source.perfectionistLeft = INT;
+  if ((source.perfectionistLeft | 0) <= 0) return 0;
+  if ((source.stress | 0) < 1) return 0;
+  return INT;
+}
+
+function commitPerfectionist(source) {
+  if (!source) return;
+  source.stress = (source.stress | 0) - 1;
+  source.perfectionistLeft = (source.perfectionistLeft | 0) - 1;
 }
 
 /** Apply one status from card DSL (`statusApply`). Damage always separate. */
@@ -143,13 +154,6 @@ export function applyStatus(target, status, opts = {}) {
     return false;
   }
   const id = String(status.id || "").toLowerCase();
-  let x = Number(status.x) || 0;
-  const amp = perfectionistAmp(source);
-  if (amp > 0 && STACK_HARMFUL.has(id)) {
-    x = Math.max(1, x || 1) + amp;
-    status.x = x;
-    status.perfectionistAmp = amp;
-  }
   if (
     target.immuneStatuses &&
     target.immuneStatuses.some((s) => String(s).toLowerCase() === id)
@@ -158,6 +162,14 @@ export function applyStatus(target, status, opts = {}) {
   }
   if (!target.st) target.st = freshStatuses();
   const st = target.st;
+  let x = Number(status.x) || 0;
+  const amp =
+    !opts.dryRun && STACK_HARMFUL.has(id) ? perfectionistAmp(source) : 0;
+  if (amp > 0) {
+    x = Math.max(1, x || 1) + amp;
+    status.x = x;
+    status.perfectionistAmp = amp;
+  }
 
   switch (id) {
     case "burn":
@@ -167,6 +179,7 @@ export function applyStatus(target, status, opts = {}) {
     case "unsteady":
     case "slow":
       st[id] = (st[id] | 0) + Math.max(1, x || 1);
+      if (amp) commitPerfectionist(source);
       return true;
     case "stun":
       st.stun = true;
@@ -199,10 +212,12 @@ export function applyStatus(target, status, opts = {}) {
     case "intimidate":
       // Stacks like Burn/Bleed; consumed on your next attack (−X damage).
       st.intimidate = (st.intimidate | 0) + Math.max(1, x || 1);
+      if (amp) commitPerfectionist(source);
       return true;
     case "gloom":
       // Stacks add; at start of turn → DISADV = stacks for that turn, then −1.
       st.gloom = (st.gloom | 0) + Math.max(1, x || 1);
+      if (amp) commitPerfectionist(source);
       return true;
     default:
       st[id] = (st[id] | 0) + x;
