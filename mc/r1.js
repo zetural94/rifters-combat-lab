@@ -803,7 +803,7 @@ export const FEAT_SMOKE_STUBS = {
   "mystic-living-bomb": {
     xp: 250,
     classId: "mystic",
-    label: "Living Bomb (1AP+2mana · Burn DEX≤INT · death 8+INT Fire R3)",
+    label: "Living Bomb (2AP+2mana · Burn DEX≤INT · death 8+3×INT Fire R3)",
     apply(actor) {
       actor.livingBombFeat = true;
       actor.featSmoke = (actor.featSmoke || []).concat(["mystic-living-bomb"]);

@@ -140,9 +140,9 @@ test("Toxic Cloud is 4×INT, persists, poisons on enter and start, and stacks", 
   assert.ok(foe.hp < 40 - 8);
 });
 
-test("Living Bomb burn uses DEX ≤ INT and death burst is 8+INT in range 3", () => {
+test("Living Bomb burn uses DEX ≤ INT and death burst is 8+3×INT in range 3", () => {
   const ab = card("mystic-living-bomb");
-  assert.equal(ab.costAp, 1);
+  assert.equal(ab.costAp, 2);
   assert.equal(ab.costMana, 2);
   assert.equal(ab.tiers.t1.status.gate.nBonus, -1);
   const caster = actor({ id: "mystic", int: 1, x: 0, y: 0 });
@@ -180,7 +180,7 @@ test("Living Bomb burn uses DEX ≤ INT and death burst is 8+INT in range 3", ()
   assert.equal(miss.ok, true, miss.reason);
   assert.equal(open.st.burn | 0, 0);
   assert.ok(open.livingBomb);
-  assert.equal(open.livingBomb.dmg, 9);
+  assert.equal(open.livingBomb.dmg, 8 + 3 * 1);
 
   const hit = resolveStrike({
     attacker: caster,
@@ -195,7 +195,7 @@ test("Living Bomb burn uses DEX ≤ INT and death burst is 8+INT in range 3", ()
   });
   assert.equal(hit.ok, true, hit.reason);
   assert.equal(shut.st.burn, 2);
-  assert.equal(shut.livingBomb.dmg, 8 + 1 + 2);
+  assert.equal(shut.livingBomb.dmg, 8 + 3 * 1 + 2 * 1);
 
   const near = actor({ id: "near", side: "enemy", x: 5, y: 0, hp: 30, hpMax: 30, def: { Fire: 0 } });
   const far = actor({ id: "far", side: "enemy", x: 8, y: 0, hp: 30, hpMax: 30, def: { Fire: 0 } });
